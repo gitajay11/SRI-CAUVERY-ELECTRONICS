@@ -7,6 +7,7 @@ import { cn } from '@tamizh/core/utils';
 import { buildQuery, first, type SearchParams } from '@/lib/query';
 import { useAdmin } from '@/components/providers/AdminProviders';
 import { Select } from '@/components/ui/Field';
+import { SelectMenu } from '@/components/ui/SelectMenu';
 import { CloseIcon, FilterIcon, SearchIcon } from '@/components/ui/Icons';
 
 /**
@@ -69,22 +70,6 @@ export function FilterBar({
     selects.filter((select) => select.value !== '').length +
     toggles.filter((toggle) => first(params[toggle.name]) === toggle.value).length;
 
-  /**
-   * What the empty option should say depends on whether a label is visible.
-   *
-   * In the compact row there is none — the control is all the shopper sees —
-   * so the empty option carries the filter's own name and a closed control
-   * reads "Status" when unset and "Delivered" when set. Inside the sheet the
-   * name is already printed above the control, so repeating it there just
-   * gives you "Category / Category"; the caller's own wording is used instead.
-   */
-  const optionsFor = (select: SelectFilter, { labelled = false } = {}) =>
-    select.options.map((option) =>
-      option.value === '' && !labelled
-        ? { ...option, label: select.placeholder ?? select.label }
-        : option,
-    );
-
   const controls = (
     <>
       {selects.map((select) => (
@@ -92,22 +77,13 @@ export function FilterBar({
         // status or a date range, capped so one long category name cannot
         // push the rest of the row off the screen.
         <div key={select.name} className="w-40 shrink-0 lg:w-44">
-          <Select
-            size="sm"
-            fullWidth
-            aria-label={select.label}
+          <SelectMenu
+            label={select.label}
+            placeholder={select.placeholder ?? select.label}
             value={select.value}
-            onChange={(event) => go({ [select.name]: event.target.value || null })}
-            className={cn(
-              select.value !== '' && 'border-brand-500 bg-success-50 text-link',
-            )}
-          >
-            {optionsFor(select).map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </Select>
+            options={select.options}
+            onChange={(next) => go({ [select.name]: next || null })}
+          />
         </div>
       ))}
 
@@ -250,7 +226,12 @@ export function FilterBar({
                       setOpen(false);
                     }}
                   >
-                    {optionsFor(select, { labelled: true }).map((option) => (
+                    {/* The sheet prints the filter's name above each control,
+                        so the options keep the caller's own wording — naming
+                        the filter again inside would read "Category /
+                        Category". The compact row has no label, which is why
+                        SelectMenu takes a placeholder instead. */}
+                    {select.options.map((option) => (
                       <option key={option.value} value={option.value}>
                         {option.label}
                       </option>

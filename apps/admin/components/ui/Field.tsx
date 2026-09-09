@@ -1,8 +1,16 @@
 'use client';
 
-import { useId, useState, type ComponentProps, type ReactNode } from 'react';
+import {
+  Children,
+  isValidElement,
+  useId,
+  useState,
+  type ComponentProps,
+  type ReactNode,
+} from 'react';
 import { cn } from '@tamizh/core/utils';
 import { AlertIcon, ChevronDownIcon, EyeIcon, EyeOffIcon } from './Icons';
+import { SelectMenu, type SelectMenuOption } from './SelectMenu';
 
 /**
  * Form controls.
@@ -367,6 +375,49 @@ export function Select({
   );
 }
 
+/**
+ * Reads `<option>` children into the array SelectMenu wants.
+ *
+ * Keeping the children API is what lets every existing call site stay exactly
+ * as it was — several build their options from a static entry plus a mapped
+ * list, and rewriting eight of those by hand is a transcription error waiting
+ * to happen. `Children.toArray` flattens the fragments and arrays that come
+ * out of `.map()`, and an option's text can itself be an array of nodes, so
+ * the label is joined from whatever strings are inside.
+ */
+function optionsFromChildren(children: ReactNode): SelectMenuOption[] {
+  const out: SelectMenuOption[] = [];
+
+  const label = (node: ReactNode): string => {
+    if (node === null || node === undefined || typeof node === 'boolean') return '';
+    if (typeof node === 'string' || typeof node === 'number') return String(node);
+    if (Array.isArray(node)) return node.map(label).join('');
+    if (isValidElement(node)) {
+      return label((node.props as { children?: ReactNode }).children);
+    }
+    return '';
+  };
+
+  const walk = (node: ReactNode) => {
+    Children.toArray(node).forEach((child) => {
+      if (!isValidElement(child)) return;
+      if (child.type === 'option') {
+        const props = child.props as { value?: string | number; children?: ReactNode };
+        out.push({
+          value: String(props.value ?? ''),
+          label: label(props.children).trim(),
+        });
+        return;
+      }
+      // Fragments and any wrapper that just groups options.
+      walk((child.props as { children?: ReactNode }).children);
+    });
+  };
+
+  walk(children);
+  return out;
+}
+
 export function SelectField({
   label,
   hint,
@@ -386,16 +437,21 @@ export function SelectField({
       optionalLabel={optionalLabel}
     >
       {({ id, describedBy }) => (
-        <Select
-          {...props}
-          id={id}
-          required={required}
-          invalid={Boolean(error)}
-          aria-describedby={describedBy}
-          className={className}
-        >
-          {children}
-        </Select>
+        <div id={id} aria-describedby={describedBy}>
+          <SelectMenu
+            tone="field"
+            label={label}
+            value={String(props.value ?? '')}
+            options={optionsFromChildren(children)}
+            onChange={(next) =>
+              props.onChange?.({
+                target: { value: next },
+                currentTarget: { value: next },
+              } as never)
+            }
+            className={className}
+          />
+        </div>
       )}
     </FieldShell>
   );
