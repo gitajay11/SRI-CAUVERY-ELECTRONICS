@@ -29,27 +29,29 @@ export default function GlobalError({
           placeItems: 'center',
           padding: '2rem',
           background: '#faf9f6',
-          color: '#12211f',
+          color: '#14110c',
           fontFamily: "'Segoe UI', system-ui, -apple-system, sans-serif",
           textAlign: 'center',
         }}
       >
         <main style={{ maxWidth: '28rem' }}>
-          <div
+          {/*
+            A plain <img> to a static file: this boundary replaces the whole
+            document when the root layout fails, so it cannot use next/image or
+            any provider. Static assets are still served when the app is not.
+          */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/icons/icon-192.png"
+            alt=""
+            width={56}
+            height={56}
             style={{
-              width: '3.5rem',
-              height: '3.5rem',
+              display: 'block',
               margin: '0 auto 1.25rem',
               borderRadius: '0.9rem',
-              background: '#14110c',
-              display: 'grid',
-              placeItems: 'center',
             }}
-          >
-            <svg viewBox="0 0 100 100" width="24" height="24" fill="#d0a94e">
-              <path d="M62 12 28 55h17l-7 33 34-43H55Z" />
-            </svg>
-          </div>
+          />
           <h1 style={{ fontSize: '1.5rem', margin: '0 0 0.5rem' }}>
             Something went wrong
           </h1>
@@ -64,7 +66,7 @@ export default function GlobalError({
               padding: '0 1.5rem',
               borderRadius: '999px',
               border: 'none',
-              background: '#096b64',
+              background: '#8a6a19',
               color: '#fff',
               fontWeight: 600,
               fontSize: '0.95rem',
