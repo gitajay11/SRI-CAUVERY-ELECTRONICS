@@ -162,7 +162,7 @@ export function SettingsForm({
             onChange={(event) => set('whatsapp', event.target.value)}
             optionalLabel={t('common.optional')}
             disabled={readOnly}
-            hint="Digits only, with the country code: 919840000000"
+            hint="Digits only, with the country code: 919361670148"
           />
           <TextField
             label={t('settings.gstin')}

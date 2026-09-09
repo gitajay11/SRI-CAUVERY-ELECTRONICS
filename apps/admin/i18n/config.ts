@@ -1,4 +1,5 @@
-export const LOCALES = ['en', 'ta'] as const;
+/** Tamil first, matching the shop. The default below stays English. */
+export const LOCALES = ['ta', 'en'] as const;
 export type Locale = (typeof LOCALES)[number];
 
 export const DEFAULT_LOCALE: Locale = 'en';

@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { ApiError, api } from '@/lib/http';
 import { useLocale } from '@/components/providers/LocaleProvider';
 import { Button } from '@/components/ui/Button';
-import { FormError, TextField } from '@/components/ui/Field';
+import { FormError, PhoneField, TextField } from '@/components/ui/Field';
 import { BrandGlyph } from '@/components/layout/BrandMark';
 
 /**
@@ -105,15 +105,12 @@ export function AuthForm({ mode }: { mode: 'signin' | 'register' }) {
         />
 
         {isRegister ? (
-          <TextField
+          <PhoneField
             label={t('auth.phone')}
-            type="tel"
-            inputMode="numeric"
             value={form.phone}
-            onChange={(event) => set('phone')(event.target.value)}
-            autoComplete="tel"
+            onChange={set('phone')}
             optionalLabel={t('common.optional')}
-            placeholder="98400 00000"
+            placeholder="90000 00000"
             error={fields.phone}
           />
         ) : null}

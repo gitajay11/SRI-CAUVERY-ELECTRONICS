@@ -5,18 +5,25 @@ import { cn } from '@tamizh/core/utils';
 import { useCart } from '@/components/providers/CartProvider';
 import { useLocale } from '@/components/providers/LocaleProvider';
 import { Button, type ButtonSize, type ButtonVariant } from '@/components/ui/Button';
-import { CartIcon, CheckIcon } from '@/components/ui/Icons';
+import { CartIcon, MinusIcon, PlusIcon } from '@/components/ui/Icons';
 
 /**
  * Add-to-cart control.
  *
- * Shows a short "added" confirmation in place of the label so a shopper adding
- * several items from a grid gets feedback per card, not only in the header
- * badge. Disabled and labelled clearly when the item is out of stock.
+ * Once something is in the cart the button becomes a stepper showing how many
+ * are in there. It used to flash "Added" for two seconds and then revert to
+ * "Add to cart", which threw away the one fact the shopper wanted next — how
+ * many they now have — and made a second press look like the first, so it was
+ * impossible to tell a successful add from one that had not registered.
+ *
+ * The stepper is also the shortest path to the correction people actually
+ * make: adding one too many and wanting it back off again, without a trip to
+ * the cart page.
  */
 export function AddToCartButton({
   productId,
   productName,
+  variantId = null,
   quantity = 1,
   disabled = false,
   variant = 'primary',
@@ -25,6 +32,7 @@ export function AddToCartButton({
 }: {
   productId: string;
   productName: string;
+  variantId?: string | null;
   quantity?: number;
   disabled?: boolean;
   variant?: ButtonVariant;
@@ -32,8 +40,10 @@ export function AddToCartButton({
   className?: string;
 }) {
   const { t } = useLocale();
-  const { addItem } = useCart();
-  const [state, setState] = useState<'idle' | 'busy' | 'done'>('idle');
+  const { addItem, setQuantity, lineFor, pending } = useCart();
+  const [busy, setBusy] = useState(false);
+
+  const line = lineFor(productId, variantId);
 
   if (disabled) {
     return (
@@ -48,25 +58,64 @@ export function AddToCartButton({
     );
   }
 
+  if (line) {
+    const step = async (next: number) => {
+      setBusy(true);
+      await setQuantity(line.itemId, next);
+      setBusy(false);
+    };
+
+    return (
+      <div
+        className={cn(
+          'inline-flex items-stretch justify-between gap-1 rounded-full bg-action p-1 text-on-action',
+          size === 'sm' ? 'min-h-9' : size === 'lg' ? 'min-h-12' : 'min-h-11',
+          className,
+        )}
+      >
+        <button
+          type="button"
+          onClick={() => step(line.quantity - 1)}
+          disabled={busy || pending}
+          aria-label={t('product.decrease')}
+          className="grid aspect-square place-items-center rounded-full transition-colors hover:bg-carbon-900/10 disabled:opacity-50"
+        >
+          <MinusIcon className="text-[1.1em]" />
+        </button>
+
+        <span
+          aria-live="polite"
+          className="grid min-w-8 place-items-center px-1 text-sm font-bold tabular-nums"
+        >
+          {line.quantity}
+        </span>
+
+        <button
+          type="button"
+          onClick={() => step(line.quantity + 1)}
+          disabled={busy || pending}
+          aria-label={t('product.increase')}
+          className="grid aspect-square place-items-center rounded-full transition-colors hover:bg-carbon-900/10 disabled:opacity-50"
+        >
+          <PlusIcon className="text-[1.1em]" />
+        </button>
+      </div>
+    );
+  }
+
   return (
     <Button
-      variant={state === 'done' ? 'secondary' : variant}
+      variant={variant}
       size={size}
-      loading={state === 'busy'}
+      loading={busy}
       className={className}
       onClick={async () => {
-        setState('busy');
-        const ok = await addItem(productId, quantity, productName);
-        setState(ok ? 'done' : 'idle');
-        if (ok) setTimeout(() => setState('idle'), 2000);
+        setBusy(true);
+        await addItem(productId, quantity, productName);
+        setBusy(false);
       }}
     >
-      {state === 'done' ? (
-        <>
-          <CheckIcon className="text-[1.15em]" />
-          {t('product.added')}
-        </>
-      ) : state === 'busy' ? (
+      {busy ? (
         t('product.adding')
       ) : (
         <>

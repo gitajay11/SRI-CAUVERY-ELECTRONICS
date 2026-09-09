@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/Button';
 import {
   CheckboxField,
   FormError,
+  PhoneField,
   SelectField,
   TextAreaField,
   TextField,
@@ -165,14 +166,11 @@ export function CheckoutForm({
               required
               error={fields.customerName}
             />
-            <TextField
+            <PhoneField
               label={t('checkout.contact.phone')}
               value={form.customerPhone}
-              onChange={(event) => set('customerPhone')(event.target.value)}
-              type="tel"
-              inputMode="numeric"
-              autoComplete="tel"
-              placeholder="98400 00000"
+              onChange={set('customerPhone')}
+              placeholder="90000 00000"
               hint={t('checkout.contact.phoneHint')}
               required
               error={fields.customerPhone}

@@ -23,6 +23,16 @@ import { useLocale } from './LocaleProvider';
  * toast and refresh behaviour.
  */
 
+export interface CartLine {
+  itemId: string;
+  quantity: number;
+}
+
+/** Lines are keyed by product *and* variant, because the API accepts both. */
+export function lineKey(productId: string, variantId: string | null = null): string {
+  return `${productId}|${variantId ?? ''}`;
+}
+
 interface CartContextValue {
   count: number;
   /** True while a mutation is in flight. */
@@ -30,6 +40,8 @@ interface CartContextValue {
   addItem: (productId: string, quantity?: number, productName?: string) => Promise<boolean>;
   setQuantity: (itemId: string, quantity: number) => Promise<boolean>;
   removeItem: (itemId: string, productName?: string) => Promise<boolean>;
+  /** What is already in the cart for this product, if anything. */
+  lineFor: (productId: string, variantId?: string | null) => CartLine | null;
   wishlistIds: Set<string>;
   toggleWishlist: (productId: string) => Promise<void>;
 }
@@ -38,11 +50,13 @@ const CartContext = createContext<CartContextValue | null>(null);
 
 export function CartProvider({
   initialCount,
+  initialLines,
   initialWishlistIds,
   isSignedIn,
   children,
 }: {
   initialCount: number;
+  initialLines: { productId: string; variantId: string | null; itemId: string; quantity: number }[];
   initialWishlistIds: string[];
   isSignedIn: boolean;
   children: React.ReactNode;
@@ -51,6 +65,14 @@ export function CartProvider({
   const { toast } = useToast();
   const { t } = useLocale();
   const [count, setCount] = useState(initialCount);
+  const [lines, setLines] = useState<Record<string, CartLine>>(() =>
+    Object.fromEntries(
+      initialLines.map((l) => [
+        lineKey(l.productId, l.variantId),
+        { itemId: l.itemId, quantity: l.quantity },
+      ]),
+    ),
+  );
   const [wishlistIds, setWishlistIds] = useState(() => new Set(initialWishlistIds));
   const [busy, setBusy] = useState(false);
   const [isRefreshing, startRefresh] = useTransition();
@@ -58,6 +80,23 @@ export function CartProvider({
   const refresh = useCallback(() => {
     startRefresh(() => router.refresh());
   }, [router]);
+
+  /**
+   * Every mutation returns the whole cart, so the lines are re-derived from
+   * the server's answer rather than patched locally. A quantity the server
+   * clamped because stock ran out is then what the button shows.
+   */
+  const absorb = useCallback((cart: CartView) => {
+    setCount(cart.itemCount);
+    setLines(
+      Object.fromEntries(
+        cart.items.map((item) => [
+          lineKey(item.productId, item.variantId),
+          { itemId: item.id, quantity: item.quantity },
+        ]),
+      ),
+    );
+  }, []);
 
   const handleError = useCallback(
     (error: unknown) => {
@@ -76,7 +115,7 @@ export function CartProvider({
           productId,
           quantity,
         });
-        setCount(cart.itemCount);
+        absorb(cart);
         toast(productName ? `${productName} — ${t('product.added')}` : t('product.added'), {
           action: { label: t('nav.cart'), href: '/cart' },
         });
@@ -89,7 +128,7 @@ export function CartProvider({
         setBusy(false);
       }
     },
-    [handleError, refresh, t, toast],
+    [absorb, handleError, refresh, t, toast],
   );
 
   const setQuantity = useCallback<CartContextValue['setQuantity']>(
@@ -97,7 +136,7 @@ export function CartProvider({
       setBusy(true);
       try {
         const cart = await api.patch<CartView>('/api/cart/items', { itemId, quantity });
-        setCount(cart.itemCount);
+        absorb(cart);
         refresh();
         return true;
       } catch (error) {
@@ -107,7 +146,7 @@ export function CartProvider({
         setBusy(false);
       }
     },
-    [handleError, refresh],
+    [absorb, handleError, refresh],
   );
 
   const removeItem = useCallback<CartContextValue['removeItem']>(
@@ -152,6 +191,11 @@ export function CartProvider({
     [handleError, isSignedIn, refresh, t, toast, wishlistIds],
   );
 
+  const lineFor = useCallback<CartContextValue['lineFor']>(
+    (productId, variantId = null) => lines[lineKey(productId, variantId)] ?? null,
+    [lines],
+  );
+
   const value = useMemo<CartContextValue>(
     () => ({
       count,
@@ -159,10 +203,21 @@ export function CartProvider({
       addItem,
       setQuantity,
       removeItem,
+      lineFor,
       wishlistIds,
       toggleWishlist,
     }),
-    [count, busy, isRefreshing, addItem, setQuantity, removeItem, wishlistIds, toggleWishlist],
+    [
+      count,
+      busy,
+      isRefreshing,
+      addItem,
+      setQuantity,
+      removeItem,
+      lineFor,
+      wishlistIds,
+      toggleWishlist,
+    ],
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

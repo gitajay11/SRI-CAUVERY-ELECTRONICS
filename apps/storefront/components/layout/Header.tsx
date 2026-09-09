@@ -8,10 +8,10 @@ import { SearchBar } from './SearchBar';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import type { Theme } from '@tamizh/core/theme';
 import { ThemeToggle } from './ThemeToggle';
+import { CategoryMenu } from './CategoryMenu';
 import { MobileMenu } from './MobileMenu';
 import { HeaderActions } from './HeaderActions';
-import { CategoryIcon } from '@/components/ui/CategoryIcon';
-import { BoltIcon, ChevronDownIcon, PhoneIcon, TruckIcon } from '@/components/ui/Icons';
+import { BoltIcon, PhoneIcon, TruckIcon } from '@/components/ui/Icons';
 
 /**
  * Site header.
@@ -31,9 +31,7 @@ export async function Header({
   wishlistCount: number;
   theme: Theme;
 }) {
-  const { t, locale } = await getI18n();
-  const label = (category: CategoryView) =>
-    locale === 'ta' ? category.nameTa : category.name;
+  const { t } = await getI18n();
 
   return (
     <header className="sticky top-0 z-50 border-b border-ink-100 bg-surface/95 backdrop-blur supports-[backdrop-filter]:bg-surface/80">
@@ -107,42 +105,7 @@ export async function Header({
           </Link>
 
           {categories.map((category) => (
-            <div key={category.id} className="group relative">
-              <Link
-                href={`/categories/${category.slug}`}
-                className="flex items-center gap-1.5 px-3 py-2.5 text-sm font-semibold text-ink-700 transition-colors hover:text-link group-focus-within:text-link"
-              >
-                <CategoryIcon name={category.icon} className="size-4 text-brand-500" />
-                {label(category)}
-                {category.children && category.children.length > 0 ? (
-                  <ChevronDownIcon className="text-sm text-ink-400 transition-transform duration-200 group-hover:rotate-180" />
-                ) : null}
-              </Link>
-
-              {category.children && category.children.length > 0 ? (
-                <div className="invisible absolute left-0 top-full z-50 w-64 translate-y-1 rounded-2xl border border-ink-100 bg-surface p-2 opacity-0 shadow-card-hover transition-[opacity,transform] duration-200 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100">
-                  <ul>
-                    {category.children.map((child) => (
-                      <li key={child.id}>
-                        <Link
-                          href={`/categories/${child.slug}`}
-                          className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm text-ink-700 transition-colors hover:bg-success-50 hover:text-link"
-                        >
-                          <CategoryIcon
-                            name={child.icon}
-                            className="size-4 shrink-0 text-ink-400"
-                          />
-                          <span className="flex-1">{label(child)}</span>
-                          <span className="text-xs text-ink-400">
-                            {child.productCount}
-                          </span>
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ) : null}
-            </div>
+            <CategoryMenu key={category.id} category={category} />
           ))}
 
           <Link

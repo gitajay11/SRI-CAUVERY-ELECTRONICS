@@ -1,6 +1,14 @@
 import type { Locale } from '@tamizh/core/types';
 
-export const LOCALES = ['en', 'ta'] as const;
+/**
+ * Tamil first: this is a Tamil Nadu shop and the Tamil name is the one over
+ * the door. The order here drives the language switcher only.
+ *
+ * DEFAULT_LOCALE is a separate decision - it is what someone with no saved
+ * preference gets - and it stays English, because that is what a first-time
+ * visitor arriving from search is most likely to read.
+ */
+export const LOCALES = ['ta', 'en'] as const;
 export const DEFAULT_LOCALE: Locale = 'en';
 
 /** Cookie that carries the shopper's language choice across requests. */

@@ -113,3 +113,29 @@ export async function getCartCount(): Promise<number> {
   const { items } = await getRepository().getCart(owner);
   return items.reduce((sum, item) => sum + item.quantity, 0);
 }
+
+/**
+ * The cart's badge count and what is in it, in one read.
+ *
+ * Counting the cart already loads every line, so returning them alongside the
+ * total costs nothing — and it is what lets an "Add to cart" button on a
+ * freshly loaded page already know it is holding three of something, rather
+ * than finding out only after the shopper presses it again.
+ */
+export async function getCartSummary(): Promise<{
+  count: number;
+  lines: { productId: string; variantId: string | null; itemId: string; quantity: number }[];
+}> {
+  const owner = await resolveCartOwner();
+  if (!owner) return { count: 0, lines: [] };
+  const { items } = await getRepository().getCart(owner);
+  return {
+    count: items.reduce((sum, item) => sum + item.quantity, 0),
+    lines: items.map((item) => ({
+      productId: item.productId,
+      variantId: item.variantId,
+      itemId: item.id,
+      quantity: item.quantity,
+    })),
+  };
+}

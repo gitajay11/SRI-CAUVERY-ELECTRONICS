@@ -176,7 +176,11 @@ async function main() {
     const publicDir = path.join(ROOT, 'apps', app, 'public');
     await mkdir(iconsDir, { recursive: true });
 
-    const bar = app === 'admin';
+    // One crest, both applications. The admin icons used to carry a bronze bar
+    // so the two installed apps could be told apart on a phone home screen;
+    // the shop would rather have a single mark used consistently everywhere,
+    // so the bar is gone and the two icons are now identical.
+    const bar = false;
     const written = [];
 
     for (const size of SIZES) {

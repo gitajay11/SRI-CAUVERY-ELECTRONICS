@@ -12,9 +12,9 @@ export const shopConfig = {
   taglineEn: 'Electronics & Gifts for Every Occasion',
   taglineTa: 'ஒவ்வொரு நிகழ்விற்கும் மின்னணுவியல் & பரிசுகள்',
 
-  supportPhone: process.env.NEXT_PUBLIC_SUPPORT_PHONE ?? '+91 98400 00000',
+  supportPhone: process.env.NEXT_PUBLIC_SUPPORT_PHONE ?? '+91 93616 70148',
   supportEmail: process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? 'support@tamizhelectronics.in',
-  whatsapp: process.env.NEXT_PUBLIC_WHATSAPP ?? '919840000000',
+  whatsapp: process.env.NEXT_PUBLIC_WHATSAPP ?? '919361670148',
 
   address: {
     line1: '18/3, Bazaar Main Road',

@@ -87,6 +87,80 @@ type InputProps = Omit<ComponentProps<'input'>, 'id'> & {
   optionalLabel?: string;
 };
 
+/**
+ * A mobile number with its country code shown.
+ *
+ * The code is a fixed +91 rather than a picker, because the validation behind
+ * this field accepts Indian mobiles only — `phoneSchema` requires
+ * /^[6-9]\d{9}$/ — and delivery is within Tamil Nadu. A selector would offer
+ * countries the shop would then refuse, which is a worse experience than not
+ * offering them.
+ *
+ * The stored value stays the bare ten digits. The server already strips a
+ * leading +91 before validating, so nothing downstream had to change to show
+ * the code here.
+ */
+export function PhoneField({
+  label,
+  hint,
+  error,
+  optionalLabel,
+  required,
+  value,
+  onChange,
+  className,
+  ...props
+}: Omit<InputProps, 'type' | 'value' | 'onChange'> & {
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <FieldShell
+      label={label}
+      hint={hint}
+      error={error}
+      required={required}
+      optionalLabel={optionalLabel}
+    >
+      {({ id, describedBy }) => (
+        <div
+          className={cn(
+            'flex items-stretch overflow-hidden rounded-xl border transition-colors duration-150',
+            'border-ink-200 bg-surface focus-within:border-brand-500 focus-within:ring-4 focus-within:ring-brand-500/12',
+            error && 'border-danger-500 focus-within:ring-danger-500/12',
+          )}
+        >
+          <span
+            className="flex select-none items-center border-e border-ink-200 bg-raised px-3.5 text-base font-semibold text-ink-600"
+            aria-hidden="true"
+          >
+            +91
+          </span>
+          <input
+            {...props}
+            id={id}
+            type="tel"
+            inputMode="numeric"
+            autoComplete="tel-national"
+            maxLength={11}
+            required={required}
+            value={value}
+            // Digits and spacing only: the country code is already shown, so a
+            // second one typed into the box would be silently dropped later.
+            onChange={(event) => onChange(event.target.value.replace(/[^\d ]/g, ''))}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={describedBy}
+            className={cn(
+              'w-full min-w-0 bg-transparent px-3.5 py-3 text-base text-ink-900 outline-none placeholder:text-ink-400',
+              className,
+            )}
+          />
+        </div>
+      )}
+    </FieldShell>
+  );
+}
+
 export function TextField({
   label,
   hint,

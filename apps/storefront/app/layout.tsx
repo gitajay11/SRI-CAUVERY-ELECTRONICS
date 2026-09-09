@@ -9,7 +9,7 @@ import { getSessionUser } from '@/lib/auth';
 import { getRepository } from '@/services/repository';
 import { cookies } from 'next/headers';
 import { THEME_COOKIE, normalizeTheme, themeAttribute } from '@tamizh/core/theme';
-import { getCartCount } from '@/services/cart';
+import { getCartSummary } from '@/services/cart';
 import { buildMetadata, organizationJsonLd, websiteJsonLd, SITE_TITLE } from '@/lib/seo';
 import { siteUrl } from '@/lib/env';
 
@@ -92,9 +92,9 @@ export default async function RootLayout({
   const repo = getRepository();
   const user = await getSessionUser();
 
-  const [categories, cartCount, wishlistIds] = await Promise.all([
+  const [categories, cart, wishlistIds] = await Promise.all([
     repo.listCategoryTree(),
-    getCartCount(),
+    getCartSummary(),
     user ? repo.listWishlistIds(user.id) : Promise.resolve<string[]>([]),
   ]);
 
@@ -112,7 +112,8 @@ export default async function RootLayout({
         <LocaleProvider locale={locale} dictionary={getDictionary(locale)}>
           <ToastProvider>
             <CartProvider
-              initialCount={cartCount}
+              initialCount={cart.count}
+              initialLines={cart.lines}
               initialWishlistIds={wishlistIds}
               isSignedIn={Boolean(user)}
             >
