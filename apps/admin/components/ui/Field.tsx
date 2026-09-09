@@ -19,11 +19,18 @@ const controlChrome =
   'border-slate-300 hover:border-slate-400 ' +
   'focus:border-brand-500 focus:outline-none focus:ring-3 focus:ring-brand-500/15 ' +
   'aria-[invalid=true]:border-critical-500 aria-[invalid=true]:ring-critical-500/15 ' +
-  'disabled:bg-slate-50 disabled:text-slate-400 read-only:bg-slate-50';
+  'disabled:bg-slate-50 disabled:text-slate-400';
 
 // `min-h-11` keeps every control at a 44px touch target, which is what a
 // thumb needs on the shop counter's phone.
-const control = 'w-full min-h-11 rounded-lg px-3 py-2.5 text-sm ' + controlChrome;
+//
+// `read-only:` belongs here and NOT in the shared chrome above. CSS
+// `:read-only` does not mean "has the readonly attribute" — it matches any
+// element that is not user-editable, which every <select> is. Sharing it put a
+// grey ground under every dropdown in the panel, so a perfectly usable control
+// looked disabled next to the white inputs beside it.
+const control =
+  'w-full min-h-11 rounded-lg px-3 py-2.5 text-sm read-only:bg-slate-50 ' + controlChrome;
 
 interface ShellProps {
   label: string;
@@ -307,24 +314,43 @@ export function TextAreaField({
 export function Select({
   size = 'md',
   invalid,
+  fullWidth,
   className,
   children,
   ...props
 }: Omit<ComponentProps<'select'>, 'size'> & {
   size?: 'md' | 'sm';
   invalid?: boolean;
+  /**
+   * Fill the container rather than sizing to the longest option.
+   *
+   * A native select is as wide as its widest option, so a row of them is as
+   * ragged as whatever happens to be in the data — add one long category name
+   * and the whole filter bar reflows. Filter rows therefore size their own
+   * containers and set this, which is what keeps the row's rhythm a design
+   * decision rather than a consequence of the catalogue.
+   */
+  fullWidth?: boolean;
 }) {
   return (
-    <span className={cn('relative inline-flex', size === 'md' && 'w-full')}>
+    <span
+      className={cn(
+        'relative inline-flex min-w-0',
+        (size === 'md' || fullWidth) && 'w-full',
+      )}
+    >
       <select
         {...props}
         aria-invalid={invalid ? true : props['aria-invalid']}
         className={cn(
-          'cursor-pointer appearance-none',
+          // `truncate` matters once the width is fixed: without it a long
+          // option name is simply clipped mid-letter behind the chevron.
+          'cursor-pointer appearance-none truncate',
           controlChrome,
           size === 'md'
-            ? 'min-h-11 w-full rounded-lg py-2.5 pe-9 ps-3 text-sm'
+            ? 'min-h-11 rounded-lg py-2.5 pe-9 ps-3 text-sm'
             : 'min-h-10 rounded-lg py-1.5 pe-8 ps-3 text-sm font-medium',
+          (size === 'md' || fullWidth) && 'w-full',
           className,
         )}
       >

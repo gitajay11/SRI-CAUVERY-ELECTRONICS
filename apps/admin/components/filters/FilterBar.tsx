@@ -70,13 +70,17 @@ export function FilterBar({
     toggles.filter((toggle) => first(params[toggle.name]) === toggle.value).length;
 
   /**
-   * The empty option carries the filter's name rather than a generic "view
-   * all", so a closed control reads "Status" when unset and "Delivered" when
-   * set — which is what the row has to communicate at a glance.
+   * What the empty option should say depends on whether a label is visible.
+   *
+   * In the compact row there is none — the control is all the shopper sees —
+   * so the empty option carries the filter's own name and a closed control
+   * reads "Status" when unset and "Delivered" when set. Inside the sheet the
+   * name is already printed above the control, so repeating it there just
+   * gives you "Category / Category"; the caller's own wording is used instead.
    */
-  const optionsFor = (select: SelectFilter) =>
+  const optionsFor = (select: SelectFilter, { labelled = false } = {}) =>
     select.options.map((option) =>
-      option.value === ''
+      option.value === '' && !labelled
         ? { ...option, label: select.placeholder ?? select.label }
         : option,
     );
@@ -84,20 +88,27 @@ export function FilterBar({
   const controls = (
     <>
       {selects.map((select) => (
-        <Select
-          key={select.name}
-          size="sm"
-          aria-label={select.label}
-          value={select.value}
-          onChange={(event) => go({ [select.name]: event.target.value || null })}
-          className={cn(select.value !== '' && 'border-brand-500 text-link')}
-        >
-          {optionsFor(select).map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </Select>
+        // A fixed band rather than an intrinsic width: wide enough for a
+        // status or a date range, capped so one long category name cannot
+        // push the rest of the row off the screen.
+        <div key={select.name} className="w-40 shrink-0 lg:w-44">
+          <Select
+            size="sm"
+            fullWidth
+            aria-label={select.label}
+            value={select.value}
+            onChange={(event) => go({ [select.name]: event.target.value || null })}
+            className={cn(
+              select.value !== '' && 'border-brand-500 bg-success-50 text-link',
+            )}
+          >
+            {optionsFor(select).map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </Select>
+        </div>
       ))}
 
       {toggles.map((toggle) => {
@@ -232,13 +243,14 @@ export function FilterBar({
                     {select.label}
                   </span>
                   <Select
+                    fullWidth
                     value={select.value}
                     onChange={(event) => {
                       go({ [select.name]: event.target.value || null });
                       setOpen(false);
                     }}
                   >
-                    {optionsFor(select).map((option) => (
+                    {optionsFor(select, { labelled: true }).map((option) => (
                       <option key={option.value} value={option.value}>
                         {option.label}
                       </option>
