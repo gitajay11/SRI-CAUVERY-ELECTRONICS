@@ -1,0 +1,38 @@
+{
+  "name": "tamizh-electronics",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Sri Cauvery Electronics (ஸ்ரீ காவேரி மின்னணுவியல்) — customer storefront PWA and admin PWA, sharing one PostgreSQL database.",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace @tamizh/storefront",
+    "dev:admin": "npm run dev --workspace @tamizh/admin",
+    "dev:db": "npm run start --workspace @tamizh/db",
+    "build": "npm run build --workspaces --if-present",
+    "build:storefront": "npm run build --workspace @tamizh/storefront",
+    "build:admin": "npm run build --workspace @tamizh/admin",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "check": "npm run typecheck && npm run lint",
+    "db:generate": "npm run generate --workspace @tamizh/db",
+    "db:migrate": "npm run migrate --workspace @tamizh/db",
+    "db:deploy": "npm run deploy --workspace @tamizh/db",
+    "db:seed": "npm run seed --workspace @tamizh/db",
+    "db:reset": "npm run reset --workspace @tamizh/db",
+    "db:studio": "npm run studio --workspace @tamizh/db",
+    "smoke": "npm run smoke --workspace @tamizh/storefront",
+    "smoke:admin": "npm run smoke --workspace @tamizh/admin",
+    "icons": "node scripts/generate-icons.mjs"
+  },
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "allowScripts": {
+    "@prisma/engines@7.10.0": true,
+    "prisma@7.10.0": true,
+    "unrs-resolver@1.12.2": true
+  }
+}

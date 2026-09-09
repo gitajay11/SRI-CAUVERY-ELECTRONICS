@@ -1,0 +1,35 @@
+{
+  "name": "@tamizh/admin",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Sri Cauvery Electronics admin PWA — internal business management for shop staff.",
+  "scripts": {
+    "dev": "next dev --port 3001",
+    "build": "next build",
+    "start": "next start --port 3001",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "smoke": "node scripts/smoke-test.mjs",
+    "vapid": "node scripts/generate-vapid.mjs",
+    "check:push": "node --experimental-strip-types --import ./checks/alias-hook.mjs checks/push-check.mts"
+  },
+  "dependencies": {
+    "@tamizh/core": "1.0.0",
+    "@tamizh/db": "1.0.0",
+    "next": "16.3.4",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "server-only": "^0.0.1",
+    "zod": "4.5.4"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "4.3.3",
+    "@types/node": "^24.10.1",
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.4",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "16.3.4",
+    "tailwindcss": "4.3.3",
+    "typescript": "^5.9.3"
+  }
+}

@@ -1,0 +1,35 @@
+# Written for the workspace: patterns are unanchored so they apply inside
+# apps/* and packages/* as well as at the root.
+
+# dependencies
+node_modules/
+.pnp
+.pnp.*
+
+# next.js
+.next/
+out/
+next-env.d.ts
+*.tsbuildinfo
+
+# prisma — the generated client is rebuilt by `prisma generate` on install
+generated/
+
+# the local development database (PGlite). Real data, and it belongs to the
+# machine it runs on, not to the repository.
+.pglite/
+
+# secrets. Only the .example files are ever committed.
+.env
+.env.local
+.env.*.local
+
+# uploaded product photography — user content, not source
+/apps/storefront/public/uploads/*
+!/apps/storefront/public/uploads/.gitkeep
+
+# misc
+.DS_Store
+*.log
+coverage/
+.tmp/

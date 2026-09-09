@@ -1,0 +1,313 @@
+@import 'tailwindcss';
+
+/* ==========================================================================
+   Sri Cauvery Admin — design tokens
+   --------------------------------------------------------------------------
+   Deliberately not the storefront's palette. The shop is warm paper; this is a
+   tool, so it runs cooler and denser: a dark slate chrome, a white working
+   surface, and the shop's bronze kept only for primary actions so the two apps
+   still read as one company.
+
+   Density is the point. Staff scan tables of orders on a phone between
+   customers, so type is a step smaller and rows are tighter than the shop's —
+   while every touch target stays at 44px.
+   ========================================================================== */
+
+@theme {
+  /* Brand bronze — actions only, inherited from the storefront. Contrast
+     ratios were checked, not guessed: white on brand-600 is 5.05:1. */
+  --color-brand-50: #fdf9f0;
+  --color-brand-100: #f8eed4;
+  --color-brand-200: #eedaa6;
+  --color-brand-300: #e2c477;
+  --color-brand-400: #d0a94e;
+  --color-brand-500: #a9821f;
+  --color-brand-600: #8a6a19;
+  --color-brand-700: #6d5414;
+  --color-brand-800: #513e0f;
+  --color-brand-900: #33270a;
+
+  /* Slate — the chrome: sidebar, headers, dense text */
+  --color-slate-25: #fafbfc;
+  --color-slate-50: #f4f6f8;
+  --color-slate-100: #e8ecf0;
+  --color-slate-200: #d5dce3;
+  --color-slate-300: #b0bcc7;
+  --color-slate-400: #7d8d9c;
+  --color-slate-500: #5a6b7a;
+  --color-slate-600: #435361;
+  --color-slate-700: #2f3d49;
+  --color-slate-800: #1e2a34;
+  --color-slate-900: #132029;
+  --color-slate-950: #0b141b;
+
+  /* Status — used consistently across badges, charts and alerts */
+  --color-positive-50: #e9f7ef;
+  --color-positive-100: #cdeeda;
+  --color-positive-500: #1a7f4b;
+  --color-positive-600: #14653c;
+
+  --color-caution-50: #fff6e5;
+  --color-caution-100: #ffe9bf;
+  --color-caution-500: #b26a00;
+  --color-caution-600: #8c5400;
+
+  --color-critical-50: #fdecea;
+  --color-critical-100: #fbd5d0;
+  --color-critical-500: #c0392b;
+  --color-critical-600: #9c2d21;
+
+  --color-info-50: #eaf1fb;
+  --color-info-100: #d2e0f6;
+  --color-info-500: #2b5fa8;
+  --color-info-600: #224b85;
+
+  --color-gold-100: #fdf1d6;
+  --color-gold-400: #ddb965;
+  --color-gold-500: #cba24a;
+  --color-gold-700: #6d5414;
+
+  --color-surface: #ffffff;
+  --color-canvas: #f4f6f8;
+
+  /* Type — Latin first, Tamil face appended so Tamil codepoints resolve
+     automatically without switching families per string. */
+  --font-sans:
+    var(--font-inter), 'Segoe UI', system-ui, -apple-system, sans-serif,
+    var(--font-tamil), 'Nirmala UI', 'Latha';
+  --font-tamil-stack: var(--font-tamil), 'Nirmala UI', 'Latha', sans-serif;
+  --font-mono: ui-monospace, 'Cascadia Mono', 'Segoe UI Mono', Menlo, monospace;
+
+  --radius-panel: 0.75rem;
+
+  --shadow-panel: 0 1px 2px rgb(19 32 41 / 0.05), 0 1px 3px rgb(19 32 41 / 0.06);
+  --shadow-raised: 0 4px 12px -2px rgb(19 32 41 / 0.12), 0 2px 4px rgb(19 32 41 / 0.06);
+  --shadow-overlay: 0 16px 40px -12px rgb(19 32 41 / 0.35);
+
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* --------------------------------------------------------------------------
+   Base
+   -------------------------------------------------------------------------- */
+
+@layer base {
+  * {
+    border-color: var(--color-slate-200);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-canvas);
+    color: var(--color-slate-800);
+    font-family: var(--font-sans);
+    font-size: 0.9375rem; /* 15px — one step tighter than the storefront */
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-weight: 650;
+    letter-spacing: -0.011em;
+    color: var(--color-slate-900);
+  }
+
+  /* Tamil needs more leading than Latin at the same size, and no negative
+     tracking — descenders collide in dense table rows otherwise. */
+  :lang(ta) {
+    letter-spacing: 0;
+    line-height: 1.7;
+  }
+
+  :lang(ta) h1,
+  :lang(ta) h2,
+  :lang(ta) h3 {
+    letter-spacing: 0;
+    line-height: 1.45;
+  }
+
+  /* Figures line up in columns only if they are tabular. */
+  td,
+  th,
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-brand-500);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  ::selection {
+    background: var(--color-brand-100);
+    color: var(--color-brand-900);
+  }
+
+  input[type='number']::-webkit-outer-spin-button,
+  input[type='number']::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type='number'] {
+    -moz-appearance: textfield;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+    }
+  }
+
+  /* Printing an invoice or packing slip should not print the app chrome. */
+  @media print {
+    .no-print {
+      display: none !important;
+    }
+    body {
+      background: #fff;
+    }
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Utilities
+   -------------------------------------------------------------------------- */
+
+@utility font-tamil {
+  font-family: var(--font-tamil-stack);
+}
+
+/** Page gutter shared by every screen. */
+@utility container-admin {
+  width: 100%;
+  margin-inline: auto;
+  max-width: 96rem;
+  padding-inline: 1rem;
+
+  @media (width >= 40rem) {
+    padding-inline: 1.5rem;
+  }
+}
+
+/** Horizontal snap rail for chip rows and mobile tabs. */
+@utility snap-rail {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  > * {
+    scroll-snap-align: start;
+    flex: 0 0 auto;
+  }
+}
+
+/** A table that scrolls sideways rather than breaking the page layout. */
+@utility table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+@utility line-clamp-* {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: --value(integer);
+  overflow: hidden;
+}
+
+@utility sr-focusable {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+
+  &:focus-visible {
+    position: fixed;
+    top: 0.75rem;
+    left: 0.75rem;
+    z-index: 100;
+    width: auto;
+    height: auto;
+    margin: 0;
+    padding: 0.75rem 1.25rem;
+    clip-path: none;
+    background: var(--color-slate-900);
+    color: white;
+    border-radius: 0.5rem;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Animation
+   -------------------------------------------------------------------------- */
+
+@keyframes admin-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes admin-slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@keyframes admin-shimmer {
+  from {
+    background-position: -200% 0;
+  }
+  to {
+    background-position: 200% 0;
+  }
+}
+
+@utility animate-fade-in {
+  animation: admin-fade-in 0.18s var(--ease-out-soft) both;
+}
+
+@utility animate-slide-up {
+  animation: admin-slide-up 0.22s var(--ease-out-soft) both;
+}
+
+@utility skeleton {
+  background-image: linear-gradient(
+    90deg,
+    var(--color-slate-100) 25%,
+    var(--color-slate-50) 37%,
+    var(--color-slate-100) 63%
+  );
+  background-size: 200% 100%;
+  animation: admin-shimmer 1.4s ease-in-out infinite;
+  border-radius: 0.375rem;
+}

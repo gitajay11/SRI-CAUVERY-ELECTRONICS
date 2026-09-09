@@ -1,0 +1,302 @@
+@import 'tailwindcss';
+
+/* ==========================================================================
+   Sri Cauvery Electronics — design tokens
+   --------------------------------------------------------------------------
+   The shop's crest is gold on black, so the palette is one metal in two
+   halves: `brand` is the deep bronze end, dark enough to carry white text;
+   `gold` is the luminous end, which carries near-black text instead. Gold with
+   white on it is the one pairing this palette never makes — it is the pairing
+   that fails to read.
+
+   Every step below was checked against WCAG rather than picked by eye: white
+   on brand-600 is 5.05:1, brand-700 as a link on white is 7.17:1, and the
+   crest's own gold (brand-400) on near-black is 8.49:1.
+   ========================================================================== */
+
+@theme {
+  /* Brand — bronze, the dark half of the metal */
+  --color-brand-50: #fdf9f0;
+  --color-brand-100: #f8eed4;
+  --color-brand-200: #eedaa6;
+  --color-brand-300: #e2c477;
+  --color-brand-400: #d0a94e; /* the crest's own gold */
+  --color-brand-500: #a9821f;
+  --color-brand-600: #8a6a19; /* primary button ground; white text is AA */
+  --color-brand-700: #6d5414;
+  --color-brand-800: #513e0f;
+  --color-brand-900: #33270a;
+
+  /* Accent — the luminous half, for fills that carry dark text */
+  --color-gold-50: #fffaf0;
+  --color-gold-100: #fdf1d6;
+  --color-gold-200: #f6e0ab;
+  --color-gold-300: #ecd087;
+  --color-gold-400: #ddb965;
+  --color-gold-500: #cba24a;
+  --color-gold-600: #a9821f;
+  --color-gold-700: #6d5414;
+
+  /* Neutrals — warm, not blue-grey */
+  --color-ink-50: #f7f6f3;
+  --color-ink-100: #eeece7;
+  --color-ink-200: #dedad2;
+  --color-ink-300: #c2bcb1;
+  /* Darkened from #8f887c, which was 3.51:1 on white — below AA for the small
+     text it carries (brand names, review counts, struck-through prices). */
+  --color-ink-400: #78715f;
+  --color-ink-500: #6b655b;
+  --color-ink-600: #4d4841;
+  --color-ink-700: #35312c;
+  --color-ink-800: #221f1b;
+  /* The crest's ground: a warm near-black, not the blue-black of a screen. */
+  --color-ink-900: #14110c;
+
+  --color-paper: #faf9f6;
+  --color-surface: #ffffff;
+
+  /* Semantic */
+  --color-success-50: #eaf6ef;
+  --color-success-500: #1f7a45;
+  --color-warning-50: #fff5e6;
+  --color-warning-500: #b56a00;
+  --color-danger-50: #fdeeec;
+  --color-danger-500: #c02f21;
+  --color-danger-600: #9d2418;
+
+  /* Type — Latin first, Tamil face appended so Tamil codepoints resolve to
+     Noto Sans Tamil automatically without switching families per language. */
+  --font-sans:
+    var(--font-manrope), 'Segoe UI', system-ui, -apple-system, sans-serif,
+    var(--font-tamil), 'Nirmala UI', 'Latha';
+  --font-tamil-stack: var(--font-tamil), 'Nirmala UI', 'Latha', sans-serif;
+
+  --radius-card: 1rem;
+  --radius-pill: 999px;
+
+  --shadow-card: 0 1px 2px rgb(20 17 12 / 0.04), 0 6px 20px -8px rgb(20 17 12 / 0.12);
+  --shadow-card-hover: 0 2px 4px rgb(20 17 12 / 0.06), 0 18px 40px -14px rgb(20 17 12 / 0.22);
+  --shadow-header: 0 1px 0 rgb(20 17 12 / 0.06);
+
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* --------------------------------------------------------------------------
+   Base
+   -------------------------------------------------------------------------- */
+
+@layer base {
+  * {
+    border-color: var(--color-ink-200);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+    /* Keeps content clear of the iOS home indicator in standalone mode. */
+    scroll-padding-top: 5rem;
+  }
+
+  body {
+    background-color: var(--color-paper);
+    color: var(--color-ink-900);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    /* Room for the mobile bottom navigation. */
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  /* Tamil needs a touch more line height and slightly looser tracking than
+     Latin at the same size, or descenders collide in dense card layouts. */
+  :lang(ta) {
+    letter-spacing: 0;
+    line-height: 1.65;
+  }
+
+  :lang(ta) h1,
+  :lang(ta) h2,
+  :lang(ta) h3 {
+    letter-spacing: 0;
+    line-height: 1.4;
+  }
+
+  /* Visible, consistent focus for keyboard users on every interactive element. */
+  :focus-visible {
+    outline: 2px solid var(--color-brand-500);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  ::selection {
+    background: var(--color-brand-100);
+    color: var(--color-brand-900);
+  }
+
+  /* Number inputs: hide the spinners, they are useless on touch. */
+  input[type='number']::-webkit-outer-spin-button,
+  input[type='number']::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type='number'] {
+    -moz-appearance: textfield;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Utilities
+   -------------------------------------------------------------------------- */
+
+/** Explicit Tamil face, for the wordmark and other display Tamil. */
+@utility font-tamil {
+  font-family: var(--font-tamil-stack);
+}
+
+/** Page gutter shared by every section, so nothing drifts out of alignment. */
+@utility container-page {
+  width: 100%;
+  margin-inline: auto;
+  max-width: 80rem;
+  padding-inline: 1rem;
+
+  @media (width >= 40rem) {
+    padding-inline: 1.5rem;
+  }
+  @media (width >= 80rem) {
+    padding-inline: 2rem;
+  }
+}
+
+/** Horizontal snap rail used by product carousels and category chips. */
+@utility snap-rail {
+  display: flex;
+  gap: 0.75rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 1rem;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  > * {
+    scroll-snap-align: start;
+    flex: 0 0 auto;
+  }
+}
+
+/** Clamp to N lines without a plugin. */
+@utility line-clamp-* {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: --value(integer);
+  overflow: hidden;
+}
+
+/** Screen-reader-only text that becomes visible on focus. */
+@utility sr-focusable {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+
+  &:focus-visible {
+    position: fixed;
+    top: 0.75rem;
+    left: 0.75rem;
+    z-index: 100;
+    width: auto;
+    height: auto;
+    margin: 0;
+    padding: 0.75rem 1.25rem;
+    clip-path: none;
+    background: var(--color-brand-700);
+    color: white;
+    border-radius: 0.75rem;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Component-level animations
+   -------------------------------------------------------------------------- */
+
+@keyframes te-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes te-shimmer {
+  from {
+    background-position: -200% 0;
+  }
+  to {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes te-slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@utility animate-fade-up {
+  animation: te-fade-up 0.35s var(--ease-out-soft) both;
+}
+
+@utility animate-slide-up {
+  animation: te-slide-up 0.28s var(--ease-out-soft) both;
+}
+
+/** Loading placeholder. */
+@utility skeleton {
+  background-image: linear-gradient(
+    90deg,
+    var(--color-ink-100) 25%,
+    var(--color-ink-50) 37%,
+    var(--color-ink-100) 63%
+  );
+  background-size: 200% 100%;
+  animation: te-shimmer 1.4s ease-in-out infinite;
+  border-radius: 0.5rem;
+}

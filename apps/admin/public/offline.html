@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en-IN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="theme-color" content="#14110c" />
+    <title>Offline — Sri Cauvery Admin</title>
+    <link rel="icon" href="/icons/favicon-32.png" sizes="32x32" />
+    <!--
+      Offline fallback, served by the service worker when a navigation fails
+      and no cached copy of the page exists.
+
+      A plain document rather than an app route, on purpose: the worker returns
+      it for whatever URL was requested, and a React-rendered page would
+      hydrate against a URL it was never rendered for, then get stuck trying to
+      refetch a route that cannot load.
+
+      It states plainly that nothing can be saved while offline. An admin tool
+      must never leave someone unsure whether a refund went through.
+    -->
+    <style>
+      :root {
+        --slate: #132029;
+        --slate-600: #435361;
+        --slate-400: #7d8d9c;
+        --brand: #8a6a19;
+        --gold: #d0a94e;
+        --canvas: #f4f6f8;
+        --line: #d5dce3;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; min-height: 100%; }
+      body {
+        display: grid;
+        place-items: center;
+        padding: 2rem 1.25rem calc(2rem + env(safe-area-inset-bottom));
+        background: var(--canvas);
+        color: var(--slate);
+        font-family: 'Segoe UI', system-ui, -apple-system, 'Noto Sans Tamil',
+          'Nirmala UI', 'Latha', sans-serif;
+        text-align: center;
+        line-height: 1.55;
+      }
+      main { max-width: 26rem; }
+      .mark {
+        width: 3.5rem;
+        height: 3.5rem;
+        margin: 0 auto 1.5rem;
+        display: block;
+        border-radius: 0.9rem;
+      }
+      h1 { margin: 0 0 0.6rem; font-size: 1.4rem; letter-spacing: -0.01em; }
+      p { margin: 0 0 0.5rem; color: var(--slate-600); }
+      .warn {
+        margin: 1.5rem 0 0;
+        padding: 0.75rem 1rem;
+        border: 1px solid #ffe9bf;
+        background: #fff6e5;
+        border-radius: 0.6rem;
+        color: #8c5400;
+        font-size: 0.875rem;
+        font-weight: 600;
+      }
+      .actions {
+        display: flex;
+        flex-direction: column;
+        gap: 0.6rem;
+        margin-top: 1.5rem;
+      }
+      @media (min-width: 26rem) {
+        .actions { flex-direction: row; justify-content: center; }
+      }
+      a, button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 2.75rem;
+        padding: 0 1.5rem;
+        border-radius: 0.5rem;
+        border: 1px solid transparent;
+        font: inherit;
+        font-weight: 600;
+        text-decoration: none;
+        cursor: pointer;
+      }
+      .primary { background: var(--brand); color: #fff; }
+      .secondary { background: transparent; border-color: var(--line); color: var(--slate-600); }
+      :focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+      .status { margin-top: 1rem; min-height: 1.3rem; font-size: 0.875rem; font-weight: 600; color: #1a7f4b; }
+      [hidden] { display: none !important; }
+    </style>
+  </head>
+
+  <body>
+    <main>
+      <!-- The shop's crest; the service worker precaches this icon. -->
+      <img class="mark" src="/icons/icon-192.png" alt="" width="56" height="56" />
+
+      <div data-lang="en">
+        <h1>You are offline</h1>
+        <p>Reconnect to continue working.</p>
+        <p class="warn">Nothing can be saved until the connection returns.</p>
+      </div>
+
+      <div data-lang="ta" lang="ta" hidden>
+        <h1>நீங்கள் ஆஃப்லைனில் இருக்கிறீர்கள்</h1>
+        <p>தொடர்வதற்கு மீண்டும் இணையுங்கள்.</p>
+        <p class="warn">இணைப்பு வரும் வரை எதையும் சேமிக்க முடியாது.</p>
+      </div>
+
+      <div class="actions">
+        <button type="button" class="primary" id="retry">
+          <span data-lang="en">Retry</span>
+          <span data-lang="ta" lang="ta" hidden>மீண்டும் முயற்சி</span>
+        </button>
+        <a class="secondary" href="/">
+          <span data-lang="en">Dashboard</span>
+          <span data-lang="ta" lang="ta" hidden>டாஷ்போர்டு</span>
+        </a>
+      </div>
+
+      <p class="status" id="status" role="status" aria-live="polite"></p>
+    </main>
+
+    <script>
+      (function () {
+        var TAMIL = /(?:^|;\s*)te_admin_locale=ta(?:;|$)/.test(document.cookie);
+
+        if (TAMIL) {
+          document.documentElement.lang = 'ta-IN';
+          document.querySelectorAll('[data-lang="en"]').forEach(function (node) {
+            node.hidden = true;
+          });
+          document.querySelectorAll('[data-lang="ta"]').forEach(function (node) {
+            node.hidden = false;
+          });
+        }
+
+        var status = document.getElementById('status');
+        var back = TAMIL ? 'மீண்டும் ஆன்லைனில்' : 'Back online';
+        var still = TAMIL ? 'இன்னும் இணைப்பு இல்லை.' : 'Still no connection.';
+
+        document.getElementById('retry').addEventListener('click', function () {
+          if (navigator.onLine) window.location.reload();
+          else status.textContent = still;
+        });
+
+        window.addEventListener('online', function () {
+          status.textContent = back;
+          window.setTimeout(function () {
+            window.location.reload();
+          }, 600);
+        });
+      })();
+    </script>
+  </body>
+</html>
