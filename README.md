@@ -358,7 +358,33 @@ subdomain of it — pointing at the same database.
 7. `npm run build && npm start -w @tamizh/storefront` (and `-w @tamizh/admin`).
 
 The build does not need a live database — the sitemap is generated per request
-precisely so a deploy pipeline never has to connect to one.
+precisely so a deploy pipeline never has to connect to one. `prisma generate`
+runs from `postinstall` and again at the start of each app's build, so the
+generated client is never missing on a clean checkout.
 
 Serve both over HTTPS: service workers, installability, Web Push and `Secure`
 cookies all require it.
+
+### On Vercel
+
+**Two projects, not one.** Vercel deploys a single Next.js app per project, and
+this repository holds two. Create both from the same repository and set the
+**Root Directory** for each:
+
+| Project    | Root Directory     | Domain                    |
+| ---------- | ------------------ | ------------------------- |
+| storefront | `apps/storefront`  | your shop domain          |
+| admin      | `apps/admin`       | `admin.` subdomain        |
+
+Leave the build and install commands on their defaults — with the root
+directory set, Vercel installs the workspace from the repository root and runs
+that app's own `build`. Pointing a project at the repository root instead makes
+it try to build both apps into one deployment, which fails.
+
+Add the environment variables from step 2–5 above to each project separately.
+
+**Uploads need object storage.** Vercel's filesystem is read-only apart from a
+per-invocation `/tmp`, so the default `STORAGE_PROVIDER=local` cannot keep an
+uploaded product photo. The panel refuses the upload with a clear message
+rather than accepting a file that will vanish — set `STORAGE_PROVIDER=s3` and
+point it at a bucket before adding real photography.

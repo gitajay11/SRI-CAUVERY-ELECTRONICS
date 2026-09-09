@@ -5,7 +5,7 @@
   "description": "Sri Cauvery Electronics (ஸ்ரீ காவேரி மின்னணுவியல்) — PWA e-commerce storefront for electronics & return gifts.",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "npm run generate --workspace @tamizh/db && next build",
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
@@ -29,7 +29,6 @@
     "@types/react-dom": "^19.2.4",
     "eslint": "^9.39.5",
     "eslint-config-next": "16.3.4",
-    "sharp": "^0.35.4",
     "tailwindcss": "4.3.3",
     "typescript": "^5.9.3"
   },

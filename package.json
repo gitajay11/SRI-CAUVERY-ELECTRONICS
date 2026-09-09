@@ -8,6 +8,7 @@
     "apps/*"
   ],
   "scripts": {
+    "postinstall": "npm run generate --workspace @tamizh/db",
     "dev": "npm run dev --workspace @tamizh/storefront",
     "dev:admin": "npm run dev --workspace @tamizh/admin",
     "dev:db": "npm run start --workspace @tamizh/db",
@@ -34,5 +35,8 @@
     "@prisma/engines@7.10.0": true,
     "prisma@7.10.0": true,
     "unrs-resolver@1.12.2": true
+  },
+  "devDependencies": {
+    "sharp": "^0.35.4"
   }
 }

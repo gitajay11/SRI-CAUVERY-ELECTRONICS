@@ -5,7 +5,7 @@
   "description": "Sri Cauvery Electronics admin PWA — internal business management for shop staff.",
   "scripts": {
     "dev": "next dev --port 3001",
-    "build": "next build",
+    "build": "npm run generate --workspace @tamizh/db && next build",
     "start": "next start --port 3001",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",

@@ -90,9 +90,27 @@ export async function POST(request: Request): Promise<NextResponse> {
     }
 
     const name = `${Date.now().toString(36)}-${randomBytes(6).toString('hex')}.${extension}`;
-    const directory = path.resolve(process.cwd(), storage.localDir());
-    await mkdir(directory, { recursive: true });
-    await writeFile(path.join(directory, name), bytes);
+
+    // `turbopackIgnore` keeps the bundler from tracing the whole project into
+    // the server bundle just because this path is computed at runtime. The
+    // directory is still validated below before anything is written.
+    const directory = path.resolve(/* turbopackIgnore: true */ process.cwd(), storage.localDir());
+
+    try {
+      await mkdir(directory, { recursive: true });
+      await writeFile(path.join(directory, name), bytes);
+    } catch (cause) {
+      // A read-only or ephemeral filesystem — every serverless host has one.
+      // Refusing here is the point: a "saved" image that quietly disappears on
+      // the next deploy is worse than an upload that plainly failed.
+      console.error('[uploads] could not write to local storage', cause);
+      throw new AppError(
+        'This server cannot store uploaded images. Configure object storage (STORAGE_PROVIDER=s3) or a writable STORAGE_LOCAL_DIR.',
+        503,
+        'storage_unwritable',
+        { file: 'The image was not saved.' },
+      );
+    }
 
     const url = `${storage.publicPrefix()}/${name}`;
 
