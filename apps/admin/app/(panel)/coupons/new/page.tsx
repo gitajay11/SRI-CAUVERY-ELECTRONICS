@@ -23,7 +23,7 @@ export default async function NewCouponPage() {
       <PageHeader
         title={t('coupons.new')}
         breadcrumb={
-          <Link href="/coupons" className="text-sm text-slate-500 hover:text-brand-700">
+          <Link href="/coupons" className="text-sm text-slate-500 hover:text-link">
             ← {t('coupons.title')}
           </Link>
         }

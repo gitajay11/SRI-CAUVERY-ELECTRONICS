@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { cn } from '@tamizh/core/utils';
 import { buildQuery, first, type SearchParams } from '@/lib/query';
 import { useAdmin } from '@/components/providers/AdminProviders';
+import { Select } from '@/components/ui/Field';
 import { CloseIcon, FilterIcon, SearchIcon } from '@/components/ui/Icons';
 
 /**
@@ -24,6 +25,13 @@ export interface SelectFilter {
   label: string;
   value: string;
   options: { value: string; label: string }[];
+  /**
+   * What the control reads when nothing is chosen. Defaults to the filter's
+   * own name, because three dropdowns side by side all reading "View all" tell
+   * a member of staff nothing about which is which — the closed control has to
+   * say what it filters.
+   */
+  placeholder?: string;
 }
 
 export interface ToggleFilter {
@@ -61,26 +69,35 @@ export function FilterBar({
     selects.filter((select) => select.value !== '').length +
     toggles.filter((toggle) => first(params[toggle.name]) === toggle.value).length;
 
+  /**
+   * The empty option carries the filter's name rather than a generic "view
+   * all", so a closed control reads "Status" when unset and "Delivered" when
+   * set — which is what the row has to communicate at a glance.
+   */
+  const optionsFor = (select: SelectFilter) =>
+    select.options.map((option) =>
+      option.value === ''
+        ? { ...option, label: select.placeholder ?? select.label }
+        : option,
+    );
+
   const controls = (
     <>
       {selects.map((select) => (
-        <label
+        <Select
           key={select.name}
-          className="flex h-10 items-center rounded-lg border border-slate-300 bg-surface px-3 text-sm"
+          size="sm"
+          aria-label={select.label}
+          value={select.value}
+          onChange={(event) => go({ [select.name]: event.target.value || null })}
+          className={cn(select.value !== '' && 'border-brand-500 text-link')}
         >
-          <span className="sr-only">{select.label}</span>
-          <select
-            value={select.value}
-            onChange={(event) => go({ [select.name]: event.target.value || null })}
-            className="cursor-pointer bg-transparent pr-1 font-medium text-slate-700 outline-none"
-          >
-            {select.options.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
+          {optionsFor(select).map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </Select>
       ))}
 
       {toggles.map((toggle) => {
@@ -94,7 +111,7 @@ export function FilterBar({
             className={cn(
               'h-10 rounded-lg border px-3 text-sm font-medium transition-colors',
               active
-                ? 'border-brand-500 bg-brand-50 text-brand-800'
+                ? 'border-brand-500 bg-success-50 text-link'
                 : 'border-slate-300 bg-surface text-slate-600 hover:border-slate-400',
             )}
           >
@@ -114,7 +131,7 @@ export function FilterBar({
           go({ q: term.trim() || null });
         }}
       >
-        <label className="flex h-10 items-center gap-2 rounded-lg border border-slate-300 bg-surface px-3">
+        <label className="flex h-10 items-center gap-2 rounded-lg border border-slate-300 bg-surface px-3 transition-colors focus-within:border-brand-500 focus-within:ring-3 focus-within:ring-brand-500/15 hover:border-slate-400">
           <SearchIcon className="shrink-0 text-base text-slate-400" />
           <span className="sr-only">{searchPlaceholder}</span>
           <input
@@ -152,7 +169,7 @@ export function FilterBar({
           className={cn(
             'inline-flex h-10 items-center gap-1.5 rounded-lg border px-3 text-sm font-medium md:hidden',
             activeCount > 0
-              ? 'border-brand-500 bg-brand-50 text-brand-800'
+              ? 'border-brand-500 bg-success-50 text-link'
               : 'border-slate-300 bg-surface text-slate-600',
           )}
         >
@@ -169,7 +186,7 @@ export function FilterBar({
       {activeCount > 0 ? (
         <Link
           href={basePath}
-          className="hidden text-sm font-medium text-brand-700 hover:underline md:inline"
+          className="hidden text-sm font-medium text-link hover:underline md:inline"
         >
           {t('common.clearAll')}
         </Link>
@@ -183,7 +200,7 @@ export function FilterBar({
             type="button"
             aria-label={t('common.close')}
             onClick={() => setOpen(false)}
-            className="absolute inset-0 bg-slate-900/50"
+            className="absolute inset-0 bg-carbon-950/60 backdrop-blur-[2px]"
           />
           <div
             role="dialog"
@@ -214,20 +231,19 @@ export function FilterBar({
                   <span className="mb-1 block text-sm font-medium text-slate-700">
                     {select.label}
                   </span>
-                  <select
+                  <Select
                     value={select.value}
                     onChange={(event) => {
                       go({ [select.name]: event.target.value || null });
                       setOpen(false);
                     }}
-                    className="w-full rounded-lg border border-slate-300 bg-surface px-3 py-2.5 text-sm outline-none focus:border-brand-500"
                   >
-                    {select.options.map((option) => (
+                    {optionsFor(select).map((option) => (
                       <option key={option.value} value={option.value}>
                         {option.label}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </label>
               ))}
 
@@ -245,7 +261,7 @@ export function FilterBar({
                     className={cn(
                       'min-h-11 rounded-lg border px-3 text-sm font-medium',
                       active
-                        ? 'border-brand-500 bg-brand-50 text-brand-800'
+                        ? 'border-brand-500 bg-success-50 text-link'
                         : 'border-slate-300 text-slate-600',
                     )}
                   >

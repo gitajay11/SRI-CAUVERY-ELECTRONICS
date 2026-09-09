@@ -6,6 +6,8 @@ import { shopConfig } from '@/lib/site';
 import { BrandMark } from './BrandMark';
 import { SearchBar } from './SearchBar';
 import { LanguageSwitcher } from './LanguageSwitcher';
+import type { Theme } from '@tamizh/core/theme';
+import { ThemeToggle } from './ThemeToggle';
 import { MobileMenu } from './MobileMenu';
 import { HeaderActions } from './HeaderActions';
 import { CategoryIcon } from '@/components/ui/CategoryIcon';
@@ -22,10 +24,12 @@ export async function Header({
   categories,
   user,
   wishlistCount,
+  theme,
 }: {
   categories: CategoryView[];
   user: SessionUser | null;
   wishlistCount: number;
+  theme: Theme;
 }) {
   const { t, locale } = await getI18n();
   const label = (category: CategoryView) =>
@@ -68,6 +72,7 @@ export async function Header({
             categories={categories}
             user={user}
             supportPhone={shopConfig.supportPhone}
+            theme={theme}
           />
           <BrandMark className="shrink-0" />
 
@@ -77,6 +82,7 @@ export async function Header({
 
           <div className="ml-auto flex items-center gap-1 lg:ml-2">
             <LanguageSwitcher className="hidden md:inline-flex" />
+            <ThemeToggle current={theme} className="hidden md:block" />
             <HeaderActions user={user} wishlistCount={wishlistCount} />
           </div>
         </div>
@@ -95,7 +101,7 @@ export async function Header({
         <div className="container-page flex items-stretch gap-1">
           <Link
             href="/shop"
-            className="flex items-center gap-2 px-3 py-2.5 text-sm font-semibold text-ink-700 transition-colors hover:text-brand-700"
+            className="flex items-center gap-2 px-3 py-2.5 text-sm font-semibold text-ink-700 transition-colors hover:text-link"
           >
             {t('nav.shop')}
           </Link>
@@ -104,7 +110,7 @@ export async function Header({
             <div key={category.id} className="group relative">
               <Link
                 href={`/categories/${category.slug}`}
-                className="flex items-center gap-1.5 px-3 py-2.5 text-sm font-semibold text-ink-700 transition-colors hover:text-brand-700 group-focus-within:text-brand-700"
+                className="flex items-center gap-1.5 px-3 py-2.5 text-sm font-semibold text-ink-700 transition-colors hover:text-link group-focus-within:text-link"
               >
                 <CategoryIcon name={category.icon} className="size-4 text-brand-500" />
                 {label(category)}
@@ -120,7 +126,7 @@ export async function Header({
                       <li key={child.id}>
                         <Link
                           href={`/categories/${child.slug}`}
-                          className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm text-ink-700 transition-colors hover:bg-brand-50 hover:text-brand-800"
+                          className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm text-ink-700 transition-colors hover:bg-success-50 hover:text-link"
                         >
                           <CategoryIcon
                             name={child.icon}
@@ -141,7 +147,7 @@ export async function Header({
 
           <Link
             href="/shop?sort=best-selling&minDiscount=30"
-            className="ml-auto flex items-center gap-1.5 px-3 py-2.5 text-sm font-bold text-gold-700 transition-colors hover:text-gold-600"
+            className="ml-auto flex items-center gap-1.5 px-3 py-2.5 text-sm font-bold text-link transition-colors hover:text-gold-600"
           >
             <BoltIcon className="text-base" />
             {t('nav.offers')}

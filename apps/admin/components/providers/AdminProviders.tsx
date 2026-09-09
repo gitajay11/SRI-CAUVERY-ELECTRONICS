@@ -226,13 +226,16 @@ function ToastCard({ toast, onDismiss }: { toast: Toast; onDismiss: (id: number)
     return () => clearTimeout(timer);
   }, [toast.id, onDismiss]);
 
+  // A toast floats over whatever is behind it, so its ground has to be an
+  // absolute one — a theme-relative dark would turn near-white in dark mode and
+  // take the white label with it.
   const tones: Record<ToastTone, string> = {
-    success: 'bg-slate-900 text-white',
-    error: 'bg-critical-600 text-white',
-    info: 'bg-info-600 text-white',
+    success: 'on-carbon bg-carbon-900 text-gold-300 ring-1 ring-brand-700',
+    error: 'bg-danger-solid-hover text-white',
+    info: 'on-carbon bg-carbon-900 text-slate-100 ring-1 ring-carbon-600',
   };
   const icons: Record<ToastTone, React.ReactNode> = {
-    success: <CheckIcon className="text-[1.1em] text-positive-100" />,
+    success: <CheckIcon className="text-[1.1em] text-gold-400" />,
     error: <AlertIcon className="text-[1.1em]" />,
     info: <InfoIcon className="text-[1.1em]" />,
   };
@@ -320,7 +323,7 @@ function ConfirmDialog({
         type="button"
         aria-label={options.cancelLabel ?? t('common.cancel')}
         onClick={() => onResolve(false)}
-        className="absolute inset-0 bg-slate-900/50"
+        className="absolute inset-0 bg-carbon-950/60 backdrop-blur-[2px]"
       />
       <div
         ref={panelRef}

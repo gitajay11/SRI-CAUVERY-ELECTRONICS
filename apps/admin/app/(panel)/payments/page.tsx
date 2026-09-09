@@ -53,7 +53,7 @@ export default async function PaymentsPage({
           {canSeeOrders ? (
             <Link
               href={`/orders/${row.orderNumber}`}
-              className="block font-mono text-sm font-medium text-slate-900 hover:text-brand-700 hover:underline"
+              className="block font-mono text-sm font-medium text-slate-900 hover:text-link hover:underline"
             >
               {row.orderNumber}
             </Link>

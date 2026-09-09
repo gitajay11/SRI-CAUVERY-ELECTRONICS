@@ -47,7 +47,7 @@ export default async function InvoicePage({
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3 print:hidden">
         <Link
           href={`/orders/${order.orderNumber}`}
-          className="text-sm text-slate-500 hover:text-brand-700"
+          className="text-sm text-slate-500 hover:text-link"
         >
           ← {t('orders.title')}
         </Link>

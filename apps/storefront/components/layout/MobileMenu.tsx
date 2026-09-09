@@ -9,6 +9,8 @@ import { cn } from '@tamizh/core/utils';
 import { useLocale } from '@/components/providers/LocaleProvider';
 import { BrandMark } from './BrandMark';
 import { LanguageSwitcher } from './LanguageSwitcher';
+import type { Theme } from '@tamizh/core/theme';
+import { ThemeToggle } from './ThemeToggle';
 import {
   ChevronDownIcon,
   ClipboardIcon,
@@ -31,10 +33,12 @@ export function MobileMenu({
   categories,
   user,
   supportPhone,
+  theme,
 }: {
   categories: CategoryView[];
   user: SessionUser | null;
   supportPhone: string;
+  theme: Theme;
 }) {
   const { t, locale } = useLocale();
   const pathname = usePathname();
@@ -110,7 +114,7 @@ export function MobileMenu({
             type="button"
             aria-label={t('common.close')}
             onClick={() => setOpen(false)}
-            className="absolute inset-0 bg-ink-900/45 backdrop-blur-[2px]"
+            className="absolute inset-0 bg-carbon-900/45 backdrop-blur-[2px]"
           />
           <div
             ref={panelRef}
@@ -153,7 +157,7 @@ export function MobileMenu({
                         >
                           <CategoryIcon
                             name={category.icon}
-                            className="size-5 shrink-0 text-brand-600"
+                            className="size-5 shrink-0 text-link"
                           />
                           <span className="flex-1">{label(category)}</span>
                           <ChevronDownIcon
@@ -193,7 +197,7 @@ export function MobileMenu({
                       <DrawerLink href={`/categories/${category.slug}`}>
                         <CategoryIcon
                           name={category.icon}
-                          className="size-5 shrink-0 text-brand-600"
+                          className="size-5 shrink-0 text-link"
                         />
                         {label(category)}
                       </DrawerLink>
@@ -234,9 +238,10 @@ export function MobileMenu({
 
             <div className="space-y-3 border-t border-ink-100 bg-surface px-4 py-4">
               <LanguageSwitcher className="w-full justify-center" />
+              <ThemeToggle current={theme} />
               <a
                 href={`tel:${supportPhone.replace(/\s/g, '')}`}
-                className="flex items-center justify-center gap-2 rounded-full border border-brand-200 bg-brand-50 py-2.5 text-sm font-semibold text-brand-800"
+                className="flex items-center justify-center gap-2 rounded-full border border-action-edge/40 bg-success-50 py-2.5 text-sm font-semibold text-link"
               >
                 <PhoneIcon className="text-base" />
                 {supportPhone}

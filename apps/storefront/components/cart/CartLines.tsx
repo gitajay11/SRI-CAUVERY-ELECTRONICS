@@ -71,7 +71,7 @@ function CartLine({ item }: { item: CartItemView }) {
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <h3 className="text-sm font-semibold leading-snug text-ink-900 sm:text-[0.95rem]">
-              <Link href={`/product/${item.slug}`} className="hover:text-brand-700">
+              <Link href={`/product/${item.slug}`} className="hover:text-link">
                 {name}
               </Link>
             </h3>

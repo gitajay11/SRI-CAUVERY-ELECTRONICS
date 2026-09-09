@@ -33,3 +33,4 @@ generated/
 *.log
 coverage/
 .tmp/
+.neon

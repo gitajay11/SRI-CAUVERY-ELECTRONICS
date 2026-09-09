@@ -154,7 +154,7 @@ export function StockAdjuster({
             className={cn(
               'min-h-11 rounded-lg border px-2 text-sm font-medium transition-colors',
               mode === value
-                ? 'border-brand-500 bg-brand-50 text-brand-700'
+                ? 'border-brand-500 bg-success-50 text-link'
                 : 'border-slate-300 text-slate-600 hover:border-slate-400',
             )}
           >

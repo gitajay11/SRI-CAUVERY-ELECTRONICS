@@ -102,7 +102,7 @@ export default async function AccountPage() {
           </ul>
           {identity.role !== 'SUPER_ADMIN' ? (
             <p className="mt-3 text-xs text-slate-400">
-              <Link href="/staff" className="hover:text-brand-700 hover:underline">
+              <Link href="/staff" className="hover:text-link hover:underline">
                 {t('staff.rolesHint')}
               </Link>
             </p>

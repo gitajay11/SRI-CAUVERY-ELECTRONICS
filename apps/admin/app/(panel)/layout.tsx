@@ -1,4 +1,6 @@
+import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { THEME_COOKIE, normalizeTheme } from '@tamizh/core/theme';
 import { unreadCount } from '@/services/notifications';
 import { getAdminIdentity } from '@/lib/session';
 import { getI18n } from '@/i18n/server';
@@ -33,6 +35,11 @@ export default async function PanelLayout({
 
   const { locale } = await getI18n();
 
+  // The root layout already read this to stamp the document; the shell needs
+  // it too, so the appearance control is drawn in the right position by the
+  // first paint rather than correcting itself after hydration.
+  const theme = normalizeTheme((await cookies()).get(THEME_COOKIE)?.value);
+
   // Through the service, so the bell badge counts exactly what the
   // notifications page will show — including the role filter.
   const unread = identity.permissions.has('notifications.view')
@@ -51,7 +58,11 @@ export default async function PanelLayout({
         permissions: [...identity.permissions],
       }}
     >
-      <AdminShell storefrontUrl={storefrontUrl()} unreadCount={unread}>
+      <AdminShell
+        storefrontUrl={storefrontUrl()}
+        unreadCount={unread}
+        theme={theme}
+      >
         {children}
       </AdminShell>
       <ServiceWorkerRegistrar />

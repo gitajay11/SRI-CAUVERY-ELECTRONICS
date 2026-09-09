@@ -1,0 +1,372 @@
+/* ==========================================================================
+   Sri Cauvery Electronics — the shared palette
+   --------------------------------------------------------------------------
+   One file, both applications. The shop and the admin tool are the same
+   company, so they are the same three colours: white, black, and gold — with
+   gold carrying the page rather than accenting it.
+
+   The palette is three families, and the difference between them is the whole
+   system:
+
+   1. GOLD (`gold-*`, `brand-*`) — ABSOLUTE. Gold is gold in either theme.
+      `gold-*` is the luminous half and takes dark text on it. `brand-*` is the
+      bronze half and is the only part dark enough to take white text. Gold
+      with white on it is the one pairing this palette never makes: it is the
+      pairing that does not read.
+
+   2. CARBON (`carbon-*`) — ABSOLUTE. The crest's own black, for chrome that
+      stays dark in both themes: the hero band, the logo tile, the admin
+      sidebar, scrims and toasts.
+
+   3. TONE (`ink-*` in the shop, `slate-*` in the admin) — THEME-RELATIVE, and
+      this is the important one. `ink-900` does not mean "near-black", it means
+      "the strongest text colour for this theme". In light it resolves dark on
+      white; in dark it resolves light on black. Both names point at the same
+      ramp, so each app keeps the vocabulary it was written in.
+
+   Only one hue survives outside the metal: a muted red for destructive actions
+   and failed payments. Everything else — success, information, emphasis — is
+   gold, distinguished by form rather than hue. A shopper can afford a
+   monochrome interface; a person looking at a failed payment cannot afford it
+   to look like a successful one.
+
+   Every pairing below was checked against WCAG rather than picked by eye.
+   ========================================================================== */
+
+@theme {
+  /* ---- Bronze. The dark half of the metal; carries white text. ---------- */
+  --color-brand-50: #fdf9f0;
+  --color-brand-100: #f8eed4;
+  --color-brand-200: #eedaa6;
+  --color-brand-300: #e2c477;
+  --color-brand-400: #d0a94e; /* the crest's own gold */
+  --color-brand-500: #a9821f;
+  --color-brand-600: #8a6a19; /* primary ground; white on it is 5.05:1 */
+  --color-brand-700: #6d5414;
+  --color-brand-800: #513e0f;
+  --color-brand-900: #33270a;
+
+  /* ---- Gold. The luminous half; carries carbon text. ------------------- */
+  --color-gold-50: #fffaf0;
+  --color-gold-100: #fdf1d6;
+  --color-gold-200: #f6e0ab;
+  --color-gold-300: #ecd087;
+  --color-gold-400: #ddb965;
+  --color-gold-500: #cba24a;
+  --color-gold-600: #a9821f;
+  --color-gold-700: #6d5414;
+
+  /* ---- Carbon. The crest's ground; dark in both themes. ---------------- */
+  --color-carbon-600: #2a251d;
+  --color-carbon-700: #1f1c17;
+  --color-carbon-800: #14110c;
+  --color-carbon-900: #0b0906;
+  --color-carbon-950: #050403;
+
+  /* ---- The one red, filled. -------------------------------------------
+     Absolute, because white sits on it in both themes: 5.89:1 on the ground,
+     7.63:1 on the hover. `danger-500` below is the theme-relative one, which
+     lightens in dark so it can be read AS TEXT — which is exactly what makes
+     it the wrong thing to fill a button with. */
+  --color-danger-solid: #b23b2c;
+  --color-danger-solid-hover: #94301f;
+
+  --radius-card: 1rem;
+  --radius-panel: 0.75rem;
+  --radius-pill: 999px;
+
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* --------------------------------------------------------------------------
+   Theme-relative tokens.
+
+   `@theme inline` keeps these as live `var()` references rather than baking a
+   value in at build time, so `text-ink-900` resolves through whichever theme
+   is active on the document.
+   -------------------------------------------------------------------------- */
+
+@theme inline {
+  /* The tone ramp, under both apps' names. */
+  --color-ink-25: var(--tone-25);
+  --color-ink-50: var(--tone-50);
+  --color-ink-100: var(--tone-100);
+  --color-ink-200: var(--tone-200);
+  --color-ink-300: var(--tone-300);
+  --color-ink-400: var(--tone-400);
+  --color-ink-500: var(--tone-500);
+  --color-ink-600: var(--tone-600);
+  --color-ink-700: var(--tone-700);
+  --color-ink-800: var(--tone-800);
+  --color-ink-900: var(--tone-900);
+
+  --color-slate-25: var(--tone-25);
+  --color-slate-50: var(--tone-50);
+  --color-slate-100: var(--tone-100);
+  --color-slate-200: var(--tone-200);
+  --color-slate-300: var(--tone-300);
+  --color-slate-400: var(--tone-400);
+  --color-slate-500: var(--tone-500);
+  --color-slate-600: var(--tone-600);
+  --color-slate-700: var(--tone-700);
+  --color-slate-800: var(--tone-800);
+  --color-slate-900: var(--tone-900);
+  --color-slate-950: var(--tone-900);
+
+  /* Grounds. `paper` is the shop's word, `canvas` the admin's. */
+  --color-paper: var(--tone-canvas);
+  --color-canvas: var(--tone-canvas);
+  --color-surface: var(--tone-surface);
+  --color-raised: var(--tone-raised);
+  --color-sunken: var(--tone-sunken);
+
+  /* The primary action stays gold in both themes — it is the most prominent
+     thing on the page, and gold leads. Its label is carbon, never white. */
+  --color-action: var(--tone-action);
+  --color-action-hover: var(--tone-action-hover);
+  --color-on-action: var(--tone-on-action);
+  --color-action-edge: var(--tone-action-edge);
+  /* Interactive text: bronze on a white ground, luminous gold on black. */
+  --color-link: var(--tone-link);
+
+  /* Destructive: the one surviving hue. */
+  --color-danger-50: var(--tone-danger-50);
+  --color-danger-100: var(--tone-danger-100);
+  --color-danger-500: var(--tone-danger-500);
+  --color-danger-600: var(--tone-danger-600);
+  --color-critical-50: var(--tone-danger-50);
+  --color-critical-100: var(--tone-danger-100);
+  --color-critical-500: var(--tone-danger-500);
+  --color-critical-600: var(--tone-danger-600);
+
+  /* Everything affirmative is gold. Badges separate the meanings by form —
+     filled, outlined, soft — not by inventing hues off the palette. */
+  --color-success-50: var(--tone-accent-50);
+  --color-success-100: var(--tone-accent-100);
+  --color-success-500: var(--tone-accent-600);
+  --color-success-600: var(--tone-accent-700);
+  --color-positive-50: var(--tone-accent-50);
+  --color-positive-100: var(--tone-accent-100);
+  --color-positive-500: var(--tone-accent-600);
+  --color-positive-600: var(--tone-accent-700);
+  --color-warning-50: var(--tone-accent-50);
+  --color-warning-100: var(--tone-accent-100);
+  --color-warning-500: var(--tone-accent-600);
+  --color-caution-50: var(--tone-accent-50);
+  --color-caution-100: var(--tone-accent-100);
+  --color-caution-500: var(--tone-accent-600);
+  --color-caution-600: var(--tone-accent-700);
+
+  /* Informational reads as plain type, not a second brand colour. */
+  --color-info-50: var(--tone-100);
+  --color-info-100: var(--tone-200);
+  --color-info-500: var(--tone-600);
+  --color-info-600: var(--tone-700);
+
+  --shadow-card: var(--tone-shadow-card);
+  --shadow-card-hover: var(--tone-shadow-card-hover);
+  --shadow-header: var(--tone-shadow-header);
+  --shadow-panel: var(--tone-shadow-panel);
+  --shadow-raised: var(--tone-shadow-raised);
+  --shadow-overlay: var(--tone-shadow-overlay);
+}
+
+/* --------------------------------------------------------------------------
+   Light — white ground, near-black text, gold carrying the page.
+   -------------------------------------------------------------------------- */
+
+:root {
+  color-scheme: light;
+
+  --tone-25: #fcfbf9;
+  --tone-50: #f8f7f4;
+  --tone-100: #efede7;
+  --tone-200: #ded9cf;
+  --tone-300: #948b79;
+  --tone-400: #78715f;
+  --tone-500: #635d4f;
+  --tone-600: #4a453a;
+  --tone-700: #322e26;
+  --tone-800: #1e1b16;
+  --tone-900: #14110c;
+
+  --tone-canvas: #ffffff;
+  --tone-surface: #ffffff;
+  --tone-raised: #faf8f3;
+  --tone-sunken: #f5f2ea;
+
+  --tone-accent-50: #fffaf0;
+  --tone-accent-100: #f6e0ab;
+  --tone-accent-600: #8a6a19;
+  --tone-accent-700: #6d5414;
+
+  --tone-action: #ddb965;
+  --tone-action-hover: #cba24a;
+  --tone-on-action: #14110c;
+  --tone-action-edge: #a9821f;
+  --tone-link: #8a6a19;
+
+  --tone-danger-50: #fdeeec;
+  --tone-danger-100: #f7d6d1;
+  --tone-danger-500: #b23b2c;
+  --tone-danger-600: #94301f;
+
+  --tone-shadow-card: 0 1px 2px rgb(20 17 12 / 0.05), 0 6px 20px -8px rgb(20 17 12 / 0.12);
+  --tone-shadow-card-hover: 0 2px 4px rgb(20 17 12 / 0.07), 0 18px 40px -14px rgb(20 17 12 / 0.2);
+  --tone-shadow-header: 0 1px 0 rgb(20 17 12 / 0.07);
+  --tone-shadow-panel: 0 1px 2px rgb(20 17 12 / 0.05), 0 1px 3px rgb(20 17 12 / 0.06);
+  --tone-shadow-raised: 0 4px 12px -2px rgb(20 17 12 / 0.12), 0 2px 4px rgb(20 17 12 / 0.06);
+  --tone-shadow-overlay: 0 16px 40px -12px rgb(20 17 12 / 0.35);
+}
+
+/* --------------------------------------------------------------------------
+   Dark.
+
+   Three states, not two: an explicit choice stamps `data-theme` on the root,
+   and the default "system" setting stamps nothing — so the media query is
+   guarded to lose against an explicit light choice, and the attribute rule
+   repeats the set so an explicit dark choice beats a light operating system.
+
+   The blocks are kept identical on purpose rather than collapsed with
+   `light-dark()`: a browser too old for that function resolves every colour to
+   nothing at all, and an unreadable shop is a worse failure than a repeated
+   block.
+   -------------------------------------------------------------------------- */
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+
+    --tone-25: #131009;
+    --tone-50: #1a1713;
+    --tone-100: #232019;
+    --tone-200: #322e26;
+    --tone-300: #6f6858;
+    --tone-400: #9a927f;
+    --tone-500: #b3ab97;
+    --tone-600: #cdc5b1;
+    --tone-700: #e2dbc9;
+    --tone-800: #efe9db;
+    --tone-900: #f7f3e9;
+
+    --tone-canvas: #0b0906;
+    --tone-surface: #14110c;
+    --tone-raised: #1c1913;
+    --tone-sunken: #080604;
+
+    --tone-accent-50: #241d0d;
+    --tone-accent-100: #4a3a12;
+    --tone-accent-600: #e2c477;
+    --tone-accent-700: #ecd087;
+
+    --tone-action: #ddb965;
+    --tone-action-hover: #ecd087;
+    --tone-on-action: #14110c;
+    --tone-action-edge: #ddb965;
+    --tone-link: #e2c477;
+
+    --tone-danger-50: #2c1512;
+    --tone-danger-100: #4a201a;
+    --tone-danger-500: #e08a7c;
+    --tone-danger-600: #eda294;
+
+    --tone-shadow-card: 0 1px 2px rgb(0 0 0 / 0.5), 0 6px 20px -8px rgb(0 0 0 / 0.6);
+    --tone-shadow-card-hover: 0 2px 4px rgb(0 0 0 / 0.6), 0 18px 40px -14px rgb(0 0 0 / 0.75);
+    --tone-shadow-header: 0 1px 0 rgb(255 250 240 / 0.08);
+    --tone-shadow-panel: 0 1px 2px rgb(0 0 0 / 0.5), 0 1px 3px rgb(0 0 0 / 0.4);
+    --tone-shadow-raised: 0 4px 12px -2px rgb(0 0 0 / 0.6), 0 2px 4px rgb(0 0 0 / 0.4);
+    --tone-shadow-overlay: 0 16px 40px -12px rgb(0 0 0 / 0.75);
+  }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --tone-25: #131009;
+  --tone-50: #1a1713;
+  --tone-100: #232019;
+  --tone-200: #322e26;
+  --tone-300: #6f6858;
+  --tone-400: #9a927f;
+  --tone-500: #b3ab97;
+  --tone-600: #cdc5b1;
+  --tone-700: #e2dbc9;
+  --tone-800: #efe9db;
+  --tone-900: #f7f3e9;
+
+  --tone-canvas: #0b0906;
+  --tone-surface: #14110c;
+  --tone-raised: #1c1913;
+  --tone-sunken: #080604;
+
+  --tone-accent-50: #241d0d;
+  --tone-accent-100: #4a3a12;
+  --tone-accent-600: #e2c477;
+  --tone-accent-700: #ecd087;
+
+  --tone-action: #ddb965;
+  --tone-action-hover: #ecd087;
+  --tone-on-action: #14110c;
+  --tone-action-edge: #ddb965;
+  --tone-link: #e2c477;
+
+  --tone-danger-50: #2c1512;
+  --tone-danger-100: #4a201a;
+  --tone-danger-500: #e08a7c;
+  --tone-danger-600: #eda294;
+
+  --tone-shadow-card: 0 1px 2px rgb(0 0 0 / 0.5), 0 6px 20px -8px rgb(0 0 0 / 0.6);
+  --tone-shadow-card-hover: 0 2px 4px rgb(0 0 0 / 0.6), 0 18px 40px -14px rgb(0 0 0 / 0.75);
+  --tone-shadow-header: 0 1px 0 rgb(255 250 240 / 0.08);
+  --tone-shadow-panel: 0 1px 2px rgb(0 0 0 / 0.5), 0 1px 3px rgb(0 0 0 / 0.4);
+  --tone-shadow-raised: 0 4px 12px -2px rgb(0 0 0 / 0.6), 0 2px 4px rgb(0 0 0 / 0.4);
+  --tone-shadow-overlay: 0 16px 40px -12px rgb(0 0 0 / 0.75);
+}
+
+/* --------------------------------------------------------------------------
+   Chrome that is dark in BOTH themes — the admin sidebar, the shop's hero
+   band and footer.
+
+   Those grounds are carbon by design, so their text and borders cannot come
+   from the theme-relative ramp: in light mode `text-ink-900` would resolve
+   near-black on near-black. Marking the subtree `on-carbon` re-points the ramp
+   at its dark values for that subtree only, so ordinary utilities go on
+   working inside it and nothing has to spell out a second set of classes.
+   -------------------------------------------------------------------------- */
+
+@utility on-carbon {
+  color-scheme: dark;
+
+  --tone-25: #131009;
+  --tone-50: #1a1713;
+  --tone-100: #232019;
+  --tone-200: #322e26;
+  --tone-300: #6f6858;
+  --tone-400: #9a927f;
+  --tone-500: #b3ab97;
+  --tone-600: #cdc5b1;
+  --tone-700: #e2dbc9;
+  --tone-800: #efe9db;
+  --tone-900: #f7f3e9;
+
+  --tone-canvas: #0b0906;
+  --tone-surface: #14110c;
+  --tone-raised: #1c1913;
+  --tone-sunken: #080604;
+
+  --tone-accent-50: #241d0d;
+  --tone-accent-100: #4a3a12;
+  --tone-accent-600: #e2c477;
+  --tone-accent-700: #ecd087;
+
+  --tone-action: #ddb965;
+  --tone-action-hover: #ecd087;
+  --tone-on-action: #14110c;
+  --tone-action-edge: #ddb965;
+  --tone-link: #e2c477;
+
+  --tone-danger-50: #2c1512;
+  --tone-danger-100: #4a201a;
+  --tone-danger-500: #e08a7c;
+  --tone-danger-600: #eda294;
+}

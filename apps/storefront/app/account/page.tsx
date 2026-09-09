@@ -100,7 +100,7 @@ function StatCard({
       href={href}
       className="flex items-center gap-3 rounded-card border border-ink-100 bg-surface p-4 transition-shadow hover:shadow-card"
     >
-      <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-brand-50 text-xl text-brand-600">
+      <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-success-50 text-xl text-link">
         {icon}
       </span>
       <span className="min-w-0">

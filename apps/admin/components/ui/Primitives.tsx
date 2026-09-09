@@ -106,14 +106,30 @@ export type BadgeTone =
   | 'info'
   | 'gold';
 
+/**
+ * The palette is one metal plus one red, so these separate by weight rather
+ * than by hue: a settled state is filled gold, a state still waiting on
+ * somebody is outlined gold, and everything routine is plain type. Only a
+ * genuine failure is red.
+ *
+ * Weight is doing the work colour would do elsewhere, which is why the order
+ * below is deliberate — `positive` is the loudest chip on the screen because
+ * "paid" and "delivered" are what staff scan a table for.
+ */
 const badgeTones: Record<BadgeTone, string> = {
+  // Plain type — the routine, unremarkable state.
   neutral: 'bg-slate-100 text-slate-700 ring-slate-200',
-  brand: 'bg-brand-50 text-brand-800 ring-brand-200',
-  positive: 'bg-positive-50 text-positive-600 ring-positive-100',
-  caution: 'bg-caution-50 text-caution-600 ring-caution-100',
+  // Soft gold — this concerns the shop but needs nothing done.
+  brand: 'bg-success-50 text-link ring-action-edge/40',
+  // Filled gold — settled, done, paid. The loudest thing in a table.
+  positive: 'bg-action text-on-action ring-action-edge',
+  // Outlined gold — open, and waiting on somebody.
+  caution: 'bg-transparent text-link ring-action-edge',
+  // The one red. Reserved for failures.
   critical: 'bg-critical-50 text-critical-600 ring-critical-100',
-  info: 'bg-info-50 text-info-600 ring-info-100',
-  gold: 'bg-gold-100 text-gold-700 ring-gold-400/40',
+  // Quiet outline — informational, no action implied.
+  info: 'bg-transparent text-slate-600 ring-slate-300',
+  gold: 'bg-success-100 text-link ring-action-edge/40',
 };
 
 export function Badge({
@@ -140,13 +156,15 @@ export function Badge({
 
 /** A coloured dot plus label — lighter than a badge inside dense tables. */
 export function StatusDot({ tone, children }: { tone: BadgeTone; children: ReactNode }) {
+  // A dot has no room for form, so these lean on value instead: solid gold
+  // for settled, a ring for open, grey for routine, red for failed.
   const dots: Record<BadgeTone, string> = {
     neutral: 'bg-slate-400',
     brand: 'bg-brand-500',
-    positive: 'bg-positive-500',
-    caution: 'bg-caution-500',
+    positive: 'bg-action',
+    caution: 'bg-transparent ring-2 ring-inset ring-action-edge',
     critical: 'bg-critical-500',
-    info: 'bg-info-500',
+    info: 'bg-slate-300',
     gold: 'bg-gold-500',
   };
   return (
@@ -179,12 +197,12 @@ export function StatCard({
 }) {
   const accents: Record<BadgeTone, string> = {
     neutral: 'bg-slate-100 text-slate-600',
-    brand: 'bg-brand-50 text-brand-600',
+    brand: 'bg-success-50 text-link',
     positive: 'bg-positive-50 text-positive-500',
     caution: 'bg-caution-50 text-caution-500',
     critical: 'bg-critical-50 text-critical-500',
     info: 'bg-info-50 text-info-500',
-    gold: 'bg-gold-100 text-gold-700',
+    gold: 'bg-success-100 text-link',
   };
 
   return (
@@ -269,9 +287,9 @@ export function Alert({
   className?: string;
 }) {
   const tones = {
-    info: 'border-info-100 bg-info-50 text-info-600',
-    positive: 'border-positive-100 bg-positive-50 text-positive-600',
-    caution: 'border-caution-100 bg-caution-50 text-caution-600',
+    info: 'border-slate-200 bg-slate-50 text-slate-700',
+    positive: 'border-action-edge bg-success-50 text-success-600',
+    caution: 'border-action-edge bg-transparent text-success-600',
     critical: 'border-critical-100 bg-critical-50 text-critical-600',
   };
   return (

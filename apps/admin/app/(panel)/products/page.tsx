@@ -112,9 +112,14 @@ export default async function ProductsPage({
       mobile: 'meta',
       cell: (row) => (
         <span className="flex flex-wrap justify-center gap-1">
+          {/* Active is the state 24 of 25 rows are in, so it gets the quiet
+              treatment: filling every row with gold would make the column
+              louder than the products themselves and tell staff nothing. The
+              exceptions are what the eye should catch — a draft is unfinished
+              work, an archived product is one the shop has stopped selling. */}
           <Badge
             tone={
-              row.status === 'ACTIVE' ? 'positive' : row.status === 'DRAFT' ? 'caution' : 'neutral'
+              row.status === 'DRAFT' ? 'caution' : row.status === 'ACTIVE' ? 'neutral' : 'info'
             }
           >
             {dict[`productStatus.${row.status}` as 'productStatus.ACTIVE']}
@@ -223,7 +228,7 @@ export default async function ProductsPage({
       </Panel>
 
       <p className="mt-3 text-xs text-slate-400">
-        <Link href="/inventory" className="hover:text-brand-700 hover:underline">
+        <Link href="/inventory" className="hover:text-link hover:underline">
           {t('inventory.title')} →
         </Link>{' '}
         {t('inventory.auditNote')}

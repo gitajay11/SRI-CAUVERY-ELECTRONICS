@@ -67,7 +67,7 @@ export default async function ReturnsPolicyPage() {
                 href={whatsappLink('I would like to return an item. Order number: ')}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="font-semibold text-brand-700 hover:underline"
+                className="font-semibold text-link hover:underline"
               >
                 WhatsApp
               </a>{' '}

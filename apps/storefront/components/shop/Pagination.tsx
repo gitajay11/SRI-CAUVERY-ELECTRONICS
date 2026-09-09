@@ -44,7 +44,7 @@ export function Pagination({
         <Link
           href={href(page - 1)}
           rel="prev"
-          className="flex min-h-11 items-center gap-1 rounded-full border border-ink-200 bg-surface px-3.5 text-sm font-semibold text-ink-700 hover:border-brand-300 hover:text-brand-700"
+          className="flex min-h-11 items-center gap-1 rounded-full border border-ink-200 bg-surface px-3.5 text-sm font-semibold text-ink-700 hover:border-action-edge/60 hover:text-link"
         >
           <ChevronLeftIcon />
           <span className="hidden sm:inline">{t('shop.previous')}</span>
@@ -68,7 +68,7 @@ export function Pagination({
                 'grid size-11 place-items-center rounded-full text-sm font-semibold transition-colors',
                 value === page
                   ? 'bg-brand-600 text-white'
-                  : 'border border-ink-200 bg-surface text-ink-700 hover:border-brand-300 hover:text-brand-700',
+                  : 'border border-ink-200 bg-surface text-ink-700 hover:border-action-edge/60 hover:text-link',
               )}
             >
               {value}
@@ -81,7 +81,7 @@ export function Pagination({
         <Link
           href={href(page + 1)}
           rel="next"
-          className="flex min-h-11 items-center gap-1 rounded-full border border-ink-200 bg-surface px-3.5 text-sm font-semibold text-ink-700 hover:border-brand-300 hover:text-brand-700"
+          className="flex min-h-11 items-center gap-1 rounded-full border border-ink-200 bg-surface px-3.5 text-sm font-semibold text-ink-700 hover:border-action-edge/60 hover:text-link"
         >
           <span className="hidden sm:inline">{t('shop.next')}</span>
           <ChevronRightIcon />

@@ -44,7 +44,7 @@ export default async function ContactPage() {
             <div className="mt-3 space-y-3 text-sm">
               <a
                 href={`tel:${shopConfig.supportPhone.replace(/\s/g, '')}`}
-                className="flex items-center gap-2.5 font-semibold text-brand-700 hover:underline"
+                className="flex items-center gap-2.5 font-semibold text-link hover:underline"
               >
                 <PhoneIcon className="text-base" />
                 {shopConfig.supportPhone}
@@ -53,14 +53,14 @@ export default async function ContactPage() {
                 href={whatsappLink('Hello! I have a question about an order.')}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2.5 font-semibold text-brand-700 hover:underline"
+                className="flex items-center gap-2.5 font-semibold text-link hover:underline"
               >
                 <WhatsAppIcon className="text-base" />
                 {t('contact.whatsapp')}
               </a>
               <a
                 href={`mailto:${shopConfig.supportEmail}`}
-                className="flex items-center gap-2.5 break-all font-semibold text-brand-700 hover:underline"
+                className="flex items-center gap-2.5 break-all font-semibold text-link hover:underline"
               >
                 <MailIcon className="shrink-0 text-base" />
                 {shopConfig.supportEmail}
@@ -70,7 +70,7 @@ export default async function ContactPage() {
 
           <section className="rounded-card border border-ink-100 bg-surface p-5">
             <h2 className="flex items-center gap-2 text-base font-bold text-ink-900">
-              <MapPinIcon className="text-lg text-brand-600" />
+              <MapPinIcon className="text-lg text-link" />
               {t('contact.visit')}
             </h2>
             <address className="mt-2.5 text-sm not-italic leading-relaxed text-ink-600">
@@ -85,8 +85,8 @@ export default async function ContactPage() {
             </div>
           </section>
 
-          <section className="rounded-card border border-brand-200 bg-brand-50 p-5">
-            <h2 className="text-base font-bold text-brand-800">
+          <section className="rounded-card border border-action-edge/40 bg-success-50 p-5">
+            <h2 className="text-base font-bold text-link">
               {t('contact.bulkTitle')}
             </h2>
             <p className="mt-2 text-sm leading-relaxed text-ink-600">

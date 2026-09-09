@@ -59,7 +59,7 @@ export default async function TermsPage() {
           Delivery timelines, charges and coverage are set out in our{' '}
           <Link
             href="/shipping-policy"
-            className="font-semibold text-brand-700 hover:underline"
+            className="font-semibold text-link hover:underline"
           >
             {t('footer.shipping')}
           </Link>
@@ -72,7 +72,7 @@ export default async function TermsPage() {
           Your rights to cancel, return and be refunded are set out in our{' '}
           <Link
             href="/returns-policy"
-            className="font-semibold text-brand-700 hover:underline"
+            className="font-semibold text-link hover:underline"
           >
             {t('footer.returns')}
           </Link>

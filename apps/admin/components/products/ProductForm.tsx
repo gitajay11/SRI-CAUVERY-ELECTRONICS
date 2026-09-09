@@ -333,7 +333,7 @@ export function ProductForm({
                           if (moved) next.unshift(moved);
                           set('images', next);
                         }}
-                        className="absolute left-1 top-1 rounded bg-slate-900/70 px-1.5 py-0.5 text-[0.65rem] font-semibold text-white"
+                        className="absolute left-1 top-1 rounded bg-carbon-950/75 px-1.5 py-0.5 text-[0.65rem] font-semibold text-white"
                       >
                         {t('products.setPrimary')}
                       </button>
@@ -344,7 +344,7 @@ export function ProductForm({
                         set('images', values.images.filter((_, position) => position !== index))
                       }
                       aria-label={`Remove image ${index + 1}`}
-                      className="absolute right-1 top-1 grid size-6 place-items-center rounded-full bg-slate-900/70 text-white hover:bg-critical-500"
+                      className="absolute right-1 top-1 grid size-6 place-items-center rounded-full bg-carbon-950/75 text-white hover:bg-critical-500"
                     >
                       <CloseIcon className="text-xs" />
                     </button>
@@ -474,7 +474,7 @@ export function ProductForm({
                   <strong className="tabular-nums text-slate-900">{values.stock}</strong>
                   <Link
                     href={`/inventory/${initial.id}`}
-                    className="ml-2 font-medium text-brand-700 hover:underline"
+                    className="ml-2 font-medium text-link hover:underline"
                   >
                     {t('inventory.adjust')} →
                   </Link>
@@ -571,7 +571,7 @@ export function ProductForm({
                 href={`${storefrontUrl}/product/${values.slug}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-1.5 text-sm font-medium text-brand-700 hover:underline"
+                className="inline-flex items-center justify-center gap-1.5 text-sm font-medium text-link hover:underline"
               >
                 <ExternalIcon className="text-base" />
                 {t('products.viewInShop')}

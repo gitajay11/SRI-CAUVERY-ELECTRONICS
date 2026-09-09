@@ -8,6 +8,10 @@ export const en = {
   // ---- brand -------------------------------------------------------------
   'brand.name': 'Sri Cauvery Electronics',
   'brand.nameTa': 'ஸ்ரீ காவேரி மின்னணுவியல்',
+  'theme.label': 'Appearance',
+  'theme.system': 'System',
+  'theme.light': 'Light',
+  'theme.dark': 'Dark',
   'brand.tagline': 'Electronics & Gifts for Every Occasion',
   'brand.shortTagline': 'Electronics & Gifts',
 

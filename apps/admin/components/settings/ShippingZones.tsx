@@ -202,7 +202,7 @@ export function ShippingZones({
       </ul>
 
       {draft ? (
-        <div className="space-y-4 rounded-lg border border-brand-200 bg-brand-50/40 p-4">
+        <div className="space-y-4 rounded-lg border border-action-edge/40 bg-success-50/40 p-4">
           <FieldGroup columns={2}>
             <TextField
               label={t('settings.zoneName')}

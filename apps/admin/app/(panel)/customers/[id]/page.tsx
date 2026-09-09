@@ -41,13 +41,13 @@ export default async function CustomerPage({
         title={customer.name}
         description={
           <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <a href={`mailto:${customer.email}`} className="hover:text-brand-700">
+            <a href={`mailto:${customer.email}`} className="hover:text-link">
               {customer.email}
             </a>
             {customer.phone ? (
               <>
                 <span aria-hidden="true">·</span>
-                <a href={`tel:${customer.phone}`} className="tabular-nums hover:text-brand-700">
+                <a href={`tel:${customer.phone}`} className="tabular-nums hover:text-link">
                   {customer.phone}
                 </a>
               </>
@@ -59,7 +59,7 @@ export default async function CustomerPage({
           </span>
         }
         breadcrumb={
-          <Link href="/customers" className="text-sm text-slate-500 hover:text-brand-700">
+          <Link href="/customers" className="text-sm text-slate-500 hover:text-link">
             ← {t('customers.title')}
           </Link>
         }
@@ -130,7 +130,7 @@ export default async function CustomerPage({
                   <li key={review.id} className="px-4 py-3">
                     <div className="flex flex-wrap items-center gap-2">
                       <span
-                        className="text-sm font-semibold text-gold-700"
+                        className="text-sm font-semibold text-link"
                         aria-label={`${review.rating} out of 5`}
                       >
                         {'★'.repeat(review.rating)}

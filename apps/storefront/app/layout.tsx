@@ -7,6 +7,8 @@ import { getDictionary } from '@/i18n';
 import { LOCALE_TAGS } from '@/i18n/config';
 import { getSessionUser } from '@/lib/auth';
 import { getRepository } from '@/services/repository';
+import { cookies } from 'next/headers';
+import { THEME_COOKIE, normalizeTheme, themeAttribute } from '@tamizh/core/theme';
 import { getCartCount } from '@/services/cart';
 import { buildMetadata, organizationJsonLd, websiteJsonLd, SITE_TITLE } from '@/lib/seo';
 import { siteUrl } from '@/lib/env';
@@ -83,6 +85,10 @@ export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   const { locale, t } = await getI18n();
+  // Read the preference here and stamp it on <html> during the server render:
+  // there is no moment where the page has painted in the wrong theme, because
+  // the correct one arrives with the markup.
+  const theme = normalizeTheme((await cookies()).get(THEME_COOKIE)?.value);
   const repo = getRepository();
   const user = await getSessionUser();
 
@@ -95,6 +101,7 @@ export default async function RootLayout({
   return (
     <html
       lang={LOCALE_TAGS[locale]}
+      data-theme={themeAttribute(theme)}
       className={`${manrope.variable} ${notoTamil.variable}`}
       suppressHydrationWarning
     >
@@ -118,6 +125,7 @@ export default async function RootLayout({
                 categories={categories}
                 user={user}
                 wishlistCount={wishlistIds.length}
+                theme={theme}
               />
 
               <main id="main" className="flex-1 pb-20 lg:pb-0">

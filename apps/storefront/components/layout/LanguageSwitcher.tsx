@@ -41,7 +41,7 @@ export function LanguageSwitcher({
               className={cn(
                 'rounded px-1 text-sm transition-colors',
                 locale === code
-                  ? 'font-bold text-brand-700'
+                  ? 'font-bold text-link'
                   : 'text-ink-500 hover:text-ink-800',
                 code === 'ta' && 'font-tamil',
               )}
@@ -76,7 +76,7 @@ export function LanguageSwitcher({
             'min-h-8 rounded-full px-3 text-sm font-semibold transition-all duration-200',
             code === 'ta' && 'font-tamil',
             locale === code
-              ? 'bg-surface text-brand-700 shadow-sm'
+              ? 'bg-surface text-link shadow-sm'
               : 'text-ink-500 hover:text-ink-800',
           )}
         >

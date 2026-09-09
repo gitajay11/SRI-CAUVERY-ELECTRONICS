@@ -90,9 +90,12 @@ function ToastCard({
     return () => clearTimeout(timer);
   }, [toast.id, onDismiss]);
 
+  // Toasts float over the page, so every ground here is an absolute one: a
+  // theme-relative dark would turn near-white in dark mode and take the white
+  // label with it.
   const tones: Record<ToastTone, string> = {
-    success: 'bg-ink-900 text-white',
-    error: 'bg-danger-600 text-white',
+    success: 'bg-carbon-900 text-white',
+    error: 'bg-danger-solid-hover text-white',
     info: 'bg-brand-700 text-white',
   };
 

@@ -52,7 +52,7 @@ export default function RouteError({
         </div>
 
         <p className="mt-5 text-sm text-ink-500">
-          <Link href="/contact" className="font-semibold text-brand-700 hover:underline">
+          <Link href="/contact" className="font-semibold text-link hover:underline">
             {t('footer.contactUs')}
           </Link>
         </p>

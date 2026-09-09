@@ -201,7 +201,7 @@ export default async function InventoryPage({
         {canAdjust ? (
           <>
             {t('inventory.auditNote')}{' '}
-            <Link href="/products" className="hover:text-brand-700 hover:underline">
+            <Link href="/products" className="hover:text-link hover:underline">
               {t('products.title')} →
             </Link>
           </>

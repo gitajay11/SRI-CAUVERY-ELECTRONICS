@@ -1,84 +1,16 @@
 @import 'tailwindcss';
+@import '../../../packages/core/styles/theme.css';
 
-/* ==========================================================================
-   Sri Cauvery Electronics — design tokens
-   --------------------------------------------------------------------------
-   The shop's crest is gold on black, so the palette is one metal in two
-   halves: `brand` is the deep bronze end, dark enough to carry white text;
-   `gold` is the luminous end, which carries near-black text instead. Gold with
-   white on it is the one pairing this palette never makes — it is the pairing
-   that fails to read.
-
-   Every step below was checked against WCAG rather than picked by eye: white
-   on brand-600 is 5.05:1, brand-700 as a link on white is 7.17:1, and the
-   crest's own gold (brand-400) on near-black is 8.49:1.
-   ========================================================================== */
+/* The palette lives in packages/core/styles/theme.css — one source for the
+   shop and the admin tool. Only what is genuinely the shop's own is below. */
 
 @theme {
-  /* Brand — bronze, the dark half of the metal */
-  --color-brand-50: #fdf9f0;
-  --color-brand-100: #f8eed4;
-  --color-brand-200: #eedaa6;
-  --color-brand-300: #e2c477;
-  --color-brand-400: #d0a94e; /* the crest's own gold */
-  --color-brand-500: #a9821f;
-  --color-brand-600: #8a6a19; /* primary button ground; white text is AA */
-  --color-brand-700: #6d5414;
-  --color-brand-800: #513e0f;
-  --color-brand-900: #33270a;
-
-  /* Accent — the luminous half, for fills that carry dark text */
-  --color-gold-50: #fffaf0;
-  --color-gold-100: #fdf1d6;
-  --color-gold-200: #f6e0ab;
-  --color-gold-300: #ecd087;
-  --color-gold-400: #ddb965;
-  --color-gold-500: #cba24a;
-  --color-gold-600: #a9821f;
-  --color-gold-700: #6d5414;
-
-  /* Neutrals — warm, not blue-grey */
-  --color-ink-50: #f7f6f3;
-  --color-ink-100: #eeece7;
-  --color-ink-200: #dedad2;
-  --color-ink-300: #c2bcb1;
-  /* Darkened from #8f887c, which was 3.51:1 on white — below AA for the small
-     text it carries (brand names, review counts, struck-through prices). */
-  --color-ink-400: #78715f;
-  --color-ink-500: #6b655b;
-  --color-ink-600: #4d4841;
-  --color-ink-700: #35312c;
-  --color-ink-800: #221f1b;
-  /* The crest's ground: a warm near-black, not the blue-black of a screen. */
-  --color-ink-900: #14110c;
-
-  --color-paper: #faf9f6;
-  --color-surface: #ffffff;
-
-  /* Semantic */
-  --color-success-50: #eaf6ef;
-  --color-success-500: #1f7a45;
-  --color-warning-50: #fff5e6;
-  --color-warning-500: #b56a00;
-  --color-danger-50: #fdeeec;
-  --color-danger-500: #c02f21;
-  --color-danger-600: #9d2418;
-
   /* Type — Latin first, Tamil face appended so Tamil codepoints resolve to
-     Noto Sans Tamil automatically without switching families per language. */
+     Noto Sans Tamil automatically without switching families per string. */
   --font-sans:
     var(--font-manrope), 'Segoe UI', system-ui, -apple-system, sans-serif,
     var(--font-tamil), 'Nirmala UI', 'Latha';
   --font-tamil-stack: var(--font-tamil), 'Nirmala UI', 'Latha', sans-serif;
-
-  --radius-card: 1rem;
-  --radius-pill: 999px;
-
-  --shadow-card: 0 1px 2px rgb(20 17 12 / 0.04), 0 6px 20px -8px rgb(20 17 12 / 0.12);
-  --shadow-card-hover: 0 2px 4px rgb(20 17 12 / 0.06), 0 18px 40px -14px rgb(20 17 12 / 0.22);
-  --shadow-header: 0 1px 0 rgb(20 17 12 / 0.06);
-
-  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* --------------------------------------------------------------------------

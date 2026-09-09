@@ -11,8 +11,8 @@ import { StarIcon } from './Icons';
 type BadgeTone = 'brand' | 'gold' | 'neutral' | 'success' | 'danger' | 'warning';
 
 const badgeTones: Record<BadgeTone, string> = {
-  brand: 'bg-brand-50 text-brand-800 ring-brand-200',
-  gold: 'bg-gold-100 text-gold-700 ring-gold-200',
+  brand: 'bg-success-50 text-link ring-action-edge/40',
+  gold: 'bg-success-100 text-link ring-action-edge/40',
   neutral: 'bg-ink-100 text-ink-700 ring-ink-200',
   success: 'bg-success-50 text-success-500 ring-success-500/20',
   danger: 'bg-danger-50 text-danger-600 ring-danger-500/20',
@@ -142,7 +142,7 @@ export function EmptyState({
       )}
     >
       {icon ? (
-        <span className="mb-4 grid size-14 place-items-center rounded-full bg-brand-50 text-2xl text-brand-500">
+        <span className="mb-4 grid size-14 place-items-center rounded-full bg-success-50 text-2xl text-brand-500">
           {icon}
         </span>
       ) : null}
@@ -201,7 +201,7 @@ export function Alert({
   className?: string;
 }) {
   const tones = {
-    brand: 'border-brand-200 bg-brand-50 text-brand-800',
+    brand: 'border-action-edge/40 bg-success-50 text-link',
     warning: 'border-warning-500/25 bg-warning-50 text-warning-500',
     danger: 'border-danger-500/25 bg-danger-50 text-danger-600',
     success: 'border-success-500/25 bg-success-50 text-success-500',

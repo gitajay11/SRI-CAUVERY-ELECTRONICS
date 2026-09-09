@@ -84,7 +84,7 @@ export function CartSummary({
       ) : null}
 
       {totals.freeShippingRemaining > 0 ? (
-        <p className="mt-3 flex items-start gap-2 rounded-lg bg-brand-50 px-3 py-2 text-sm text-brand-800">
+        <p className="mt-3 flex items-start gap-2 rounded-lg bg-success-50 px-3 py-2 text-sm text-link">
           <TruckIcon className="mt-0.5 shrink-0 text-base" />
           {t('cart.freeShippingProgress', {
             amount: formatINR(totals.freeShippingRemaining),
@@ -104,7 +104,7 @@ export function CartSummary({
           </ButtonLink>
           <Link
             href="/shop"
-            className="mt-3 block text-center text-sm font-semibold text-brand-700 hover:underline"
+            className="mt-3 block text-center text-sm font-semibold text-link hover:underline"
           >
             {t('cart.continueShopping')}
           </Link>

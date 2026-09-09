@@ -98,6 +98,13 @@ export const ta: Dictionary = {
   'nav.signOut': 'வெளியேறு',
   'nav.myAccount': 'என் கணக்கு',
   'nav.language': 'மொழி',
+  'nav.appearance': 'தோற்றம்',
+
+  'theme.label': 'தோற்றம்',
+  'theme.system': 'கணினி',
+  'theme.light': 'ஒளி',
+  'theme.dark': 'இருள்',
+
 
   // ---- auth --------------------------------------------------------------
   'auth.title': 'ஊழியர் உள்நுழைவு',
@@ -125,6 +132,9 @@ export const ta: Dictionary = {
   'auth.forbidden': 'அந்தப் பக்கத்தைப் பார்க்க உங்களுக்கு அனுமதி இல்லை.',
   'auth.forbiddenBody': 'இது தவறு என நினைத்தால் கடை உரிமையாளரிடம் கேளுங்கள்.',
   'auth.securityNote': 'இது உள்ளக அமைப்பு. அனைத்து செயல்களும் பதிவு செய்யப்படுகின்றன.',
+  'auth.showPassword': 'கடவுச்சொல்லைக் காட்டு',
+  'auth.hidePassword': 'கடவுச்சொல்லை மறை',
+  'auth.capsLock': 'Caps Lock இயக்கத்தில் உள்ளது.',
 
   // ---- dashboard ---------------------------------------------------------
   'dash.title': 'டாஷ்போர்டு',

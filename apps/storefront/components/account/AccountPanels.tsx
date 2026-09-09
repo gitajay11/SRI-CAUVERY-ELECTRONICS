@@ -224,7 +224,7 @@ export function AddressPanel({ addresses }: { addresses: AddressView[] }) {
               key={address.id}
               className={cn(
                 'rounded-xl border p-3.5 text-sm',
-                address.isDefault ? 'border-brand-300 bg-brand-50/60' : 'border-ink-200',
+                address.isDefault ? 'border-action-edge/60 bg-success-50/60' : 'border-ink-200',
               )}
             >
               <div className="flex items-start justify-between gap-2">
@@ -249,7 +249,7 @@ export function AddressPanel({ addresses }: { addresses: AddressView[] }) {
                     type="button"
                     onClick={() => makeDefault(address.id)}
                     disabled={busy}
-                    className="text-brand-700 hover:underline disabled:opacity-50"
+                    className="text-link hover:underline disabled:opacity-50"
                   >
                     {t('account.setDefault')}
                   </button>
@@ -308,7 +308,7 @@ export function AddressPanel({ addresses }: { addresses: AddressView[] }) {
         >
           <div className="sm:col-span-2">
             <p className="flex items-center gap-2 text-sm font-bold text-ink-800">
-              <MapPinIcon className="text-base text-brand-600" />
+              <MapPinIcon className="text-base text-link" />
               {t('account.addAddress')}
             </p>
           </div>

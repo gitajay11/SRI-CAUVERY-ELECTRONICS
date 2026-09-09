@@ -112,7 +112,7 @@ export function DataTable<Row>({
                     {index === 0 && rowHref ? (
                       <Link
                         href={rowHref(row)}
-                        className="block rounded outline-offset-2 hover:text-brand-700"
+                        className="block rounded outline-offset-2 hover:text-link"
                       >
                         {column.cell(row)}
                       </Link>

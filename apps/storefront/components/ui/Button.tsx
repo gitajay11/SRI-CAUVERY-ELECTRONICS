@@ -25,16 +25,24 @@ const base =
   'active:scale-[0.985] disabled:pointer-events-none disabled:opacity-55 ' +
   'select-none whitespace-nowrap';
 
+/**
+ * The hierarchy is gold, then bronze, then outline, then nothing — and only
+ * the first is filled with the metal, so a screen has one obvious next step.
+ *
+ * The primary label is carbon, never white: gold with white on it is the one
+ * pairing this palette does not make, because it is the one that fails to
+ * read.
+ */
 const variants: Record<ButtonVariant, string> = {
   primary:
-    'bg-brand-600 text-white shadow-sm hover:bg-brand-700 hover:shadow-md focus-visible:outline-brand-700',
+    'bg-action text-on-action shadow-sm hover:bg-action-hover hover:shadow-md focus-visible:outline-action-edge',
   secondary:
-    'bg-brand-50 text-brand-800 hover:bg-brand-100 border border-brand-100',
+    'border border-action-edge/35 bg-success-50 text-success-600 hover:border-action-edge/60',
   ghost: 'text-ink-700 hover:bg-ink-100/80',
   outline:
-    'border border-ink-300 bg-surface text-ink-800 hover:border-brand-400 hover:text-brand-700',
-  gold: 'bg-gold-500 text-ink-900 shadow-sm hover:bg-gold-400 hover:shadow-md',
-  danger: 'bg-danger-500 text-white hover:bg-danger-600',
+    'border border-ink-300 bg-surface text-ink-800 hover:border-action-edge hover:text-link',
+  gold: 'bg-action text-on-action shadow-sm hover:bg-action-hover hover:shadow-md',
+  danger: 'bg-danger-solid text-white hover:bg-danger-solid-hover',
 };
 
 const sizes: Record<ButtonSize, string> = {

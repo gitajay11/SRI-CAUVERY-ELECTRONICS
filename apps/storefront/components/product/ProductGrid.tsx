@@ -68,7 +68,7 @@ export function ProductRail({
           <li className="flex w-40 items-stretch">
             <Link
               href={seeAllHref}
-              className="flex w-full flex-col items-center justify-center gap-2 rounded-card border border-dashed border-brand-200 bg-brand-50/60 px-4 text-center text-sm font-semibold text-brand-700 transition-colors hover:bg-brand-50"
+              className="flex w-full flex-col items-center justify-center gap-2 rounded-card border border-dashed border-action-edge/40 bg-success-50/60 px-4 text-center text-sm font-semibold text-link transition-colors hover:bg-success-50"
             >
               <span className="grid size-10 place-items-center rounded-full bg-surface text-lg shadow-sm">
                 →

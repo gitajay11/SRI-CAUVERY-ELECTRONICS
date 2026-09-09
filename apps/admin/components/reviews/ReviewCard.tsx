@@ -140,7 +140,7 @@ export function ReviewCard({
             {canSeeCustomer ? (
               <Link
                 href={`/customers/${review.customerId}`}
-                className="hover:text-brand-700 hover:underline"
+                className="hover:text-link hover:underline"
               >
                 {review.customerName}
               </Link>
@@ -162,8 +162,8 @@ export function ReviewCard({
           </p>
 
           {review.reply && !replying ? (
-            <div className="mt-3 rounded-lg border-s-[3px] border-brand-300 bg-brand-50/60 px-3 py-2">
-              <p className="text-xs font-semibold text-brand-700">{t('app.shopName')}</p>
+            <div className="mt-3 rounded-lg border-s-[3px] border-action-edge/60 bg-success-50/60 px-3 py-2">
+              <p className="text-xs font-semibold text-link">{t('app.shopName')}</p>
               <p className="mt-0.5 text-sm text-slate-700">{review.reply}</p>
             </div>
           ) : null}

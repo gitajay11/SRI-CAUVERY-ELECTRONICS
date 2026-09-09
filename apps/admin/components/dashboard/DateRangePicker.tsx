@@ -64,7 +64,7 @@ export function DateRangePicker({
             className={cn(
               'min-h-9 rounded-lg border px-3 text-sm font-medium transition-colors',
               current === preset.key
-                ? 'border-brand-500 bg-brand-50 text-brand-800'
+                ? 'border-brand-500 bg-success-50 text-link'
                 : 'border-slate-300 bg-surface text-slate-600 hover:border-slate-400',
             )}
           >
@@ -78,7 +78,7 @@ export function DateRangePicker({
           className={cn(
             'inline-flex min-h-9 items-center gap-1.5 rounded-lg border px-3 text-sm font-medium transition-colors',
             current === 'custom'
-              ? 'border-brand-500 bg-brand-50 text-brand-800'
+              ? 'border-brand-500 bg-success-50 text-link'
               : 'border-slate-300 bg-surface text-slate-600 hover:border-slate-400',
           )}
         >

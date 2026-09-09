@@ -59,7 +59,7 @@ export default async function EditCouponPage({
         title={coupon.code}
         description={coupon.description}
         breadcrumb={
-          <Link href="/coupons" className="text-sm text-slate-500 hover:text-brand-700">
+          <Link href="/coupons" className="text-sm text-slate-500 hover:text-link">
             ← {t('coupons.title')}
           </Link>
         }

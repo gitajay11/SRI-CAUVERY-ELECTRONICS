@@ -11,7 +11,7 @@
   "display_override": ["standalone", "minimal-ui"],
   "orientation": "any",
   "theme_color": "#14110c",
-  "background_color": "#f4f6f8",
+  "background_color": "#f5f2ea",
   "categories": ["business", "productivity"],
   "prefer_related_applications": false,
   "icons": [

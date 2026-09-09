@@ -318,7 +318,7 @@ export function BannerManager({
                 href={storefrontUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 self-center text-sm font-medium text-brand-700 hover:underline"
+                className="inline-flex items-center gap-1.5 self-center text-sm font-medium text-link hover:underline"
               >
                 <ExternalIcon className="text-base" />
                 {t('content.preview')}

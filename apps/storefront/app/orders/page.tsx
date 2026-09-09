@@ -115,7 +115,7 @@ export default async function OrdersPage() {
 
                 <Link
                   href={`/order/${order.orderNumber}`}
-                  className="shrink-0 rounded-full border border-ink-200 px-4 py-2.5 text-sm font-semibold text-ink-700 transition-colors hover:border-brand-300 hover:text-brand-700"
+                  className="shrink-0 rounded-full border border-ink-200 px-4 py-2.5 text-sm font-semibold text-ink-700 transition-colors hover:border-action-edge/60 hover:text-link"
                 >
                   {t('order.viewOrder')}
                 </Link>

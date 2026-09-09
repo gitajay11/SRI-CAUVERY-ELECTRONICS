@@ -46,7 +46,7 @@ export default async function ChangePasswordPage({
       {!isForced ? (
         <Link
           href="/account"
-          className="mt-4 text-center text-sm font-medium text-slate-500 hover:text-brand-700"
+          className="mt-4 text-center text-sm font-medium text-slate-500 hover:text-link"
         >
           ← {t('account.title')}
         </Link>

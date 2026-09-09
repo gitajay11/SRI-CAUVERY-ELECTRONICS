@@ -16,7 +16,8 @@
     "./types": "./src/types.ts",
     "./api": "./src/api.ts",
     "./rate-limit": "./src/rate-limit.ts",
-    "./load-env": "./src/load-env.ts"
+    "./load-env": "./src/load-env.ts",
+    "./theme": "./src/theme.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

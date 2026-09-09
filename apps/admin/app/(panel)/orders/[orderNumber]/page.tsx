@@ -55,7 +55,7 @@ export default async function OrderDetailPage({
         breadcrumb={
           <Link
             href="/orders"
-            className="inline-flex items-center gap-1 text-sm font-medium text-brand-700 hover:underline"
+            className="inline-flex items-center gap-1 text-sm font-medium text-link hover:underline"
           >
             <ChevronLeftIcon className="text-sm" />
             {t('orders.title')}
@@ -117,7 +117,7 @@ export default async function OrderDetailPage({
                             href={`${storefrontUrl()}/product/${item.product.slug}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="font-medium text-slate-900 hover:text-brand-700"
+                            className="font-medium text-slate-900 hover:text-link"
                           >
                             {item.name}
                           </a>
@@ -251,7 +251,7 @@ export default async function OrderDetailPage({
                 {order.user ? (
                   <Link
                     href={`/customers/${order.user.id}`}
-                    className="text-brand-700 hover:underline"
+                    className="text-link hover:underline"
                   >
                     {order.customerName}
                   </Link>
@@ -260,14 +260,14 @@ export default async function OrderDetailPage({
                 )}
               </DescriptionRow>
               <DescriptionRow label={t('common.phone')}>
-                <a href={`tel:${order.customerPhone}`} className="text-brand-700">
+                <a href={`tel:${order.customerPhone}`} className="text-link">
                   {order.customerPhone}
                 </a>
               </DescriptionRow>
               <DescriptionRow label={t('common.email')}>
                 <a
                   href={`mailto:${order.customerEmail}`}
-                  className="break-all text-brand-700"
+                  className="break-all text-link"
                 >
                   {order.customerEmail}
                 </a>

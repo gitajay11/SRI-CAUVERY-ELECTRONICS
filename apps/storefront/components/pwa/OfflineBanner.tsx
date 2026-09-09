@@ -46,7 +46,9 @@ export function OfflineBanner() {
       aria-live="polite"
       className={cn(
         'sticky top-0 z-[70] flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold',
-        online ? 'bg-success-500 text-white' : 'bg-ink-900 text-white',
+        // Gold with carbon on it, not white: `success-500` lightens in dark mode
+        // so it can be read as text, which makes white on it unreadable.
+        online ? 'bg-action text-on-action' : 'bg-carbon-900 text-white',
       )}
     >
       {online ? (

@@ -6,7 +6,7 @@ import { ApiError, api } from '@/lib/http';
 import { translate } from '@/i18n';
 import { en } from '@/i18n/en';
 import { Button } from '@/components/ui/Button';
-import { FormError, TextField } from '@/components/ui/Field';
+import { FormError, PasswordField, TextField } from '@/components/ui/Field';
 import { Alert } from '@/components/ui/Primitives';
 import { InfoIcon } from '@/components/ui/Icons';
 
@@ -86,14 +86,16 @@ export function LoginForm() {
           required
           error={fields.email}
         />
-        <TextField
+        <PasswordField
           label={t('auth.password')}
-          type="password"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
           autoComplete="current-password"
           required
           error={fields.password}
+          revealLabel={t('auth.showPassword')}
+          hideLabel={t('auth.hidePassword')}
+          capsLockLabel={t('auth.capsLock')}
         />
 
         {error ? <FormError>{error}</FormError> : null}

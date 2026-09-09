@@ -100,7 +100,7 @@ export function ActiveFilterChips({
           <Link
             href={chip.href}
             scroll={false}
-            className="inline-flex items-center gap-1.5 rounded-full bg-brand-50 py-1.5 pl-3 pr-2 text-sm font-medium text-brand-800 ring-1 ring-inset ring-brand-200 transition-colors hover:bg-brand-100"
+            className="inline-flex items-center gap-1.5 rounded-full bg-success-50 py-1.5 pl-3 pr-2 text-sm font-medium text-link ring-1 ring-inset ring-action-edge/40 transition-colors hover:bg-success-100"
           >
             {chip.label}
             <span className="grid size-5 place-items-center rounded-full bg-brand-200/70 text-xs">
@@ -114,7 +114,7 @@ export function ActiveFilterChips({
         <Link
           href={basePath}
           scroll={false}
-          className="rounded-full px-2 py-1.5 text-sm font-semibold text-ink-500 hover:text-brand-700"
+          className="rounded-full px-2 py-1.5 text-sm font-semibold text-ink-500 hover:text-link"
         >
           {t('common.clearAll')}
         </Link>

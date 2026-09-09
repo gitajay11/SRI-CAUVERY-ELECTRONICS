@@ -99,7 +99,7 @@ export default async function RefundsPage({
                     <p className="mt-1 flex flex-wrap items-center gap-x-3 text-xs text-slate-400">
                       <Link
                         href={`/orders/${refund.orderNumber}`}
-                        className="font-mono hover:text-brand-700 hover:underline"
+                        className="font-mono hover:text-link hover:underline"
                       >
                         {refund.orderNumber}
                       </Link>
@@ -107,7 +107,7 @@ export default async function RefundsPage({
                       {refund.returnNumber ? (
                         <Link
                           href={`/returns/${refund.returnNumber}`}
-                          className="font-mono hover:text-brand-700 hover:underline"
+                          className="font-mono hover:text-link hover:underline"
                         >
                           {refund.returnNumber}
                         </Link>

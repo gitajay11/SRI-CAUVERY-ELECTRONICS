@@ -92,8 +92,8 @@ export async function Hero({
               </div>
             </div>
 
-            <div className="absolute -bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full bg-surface px-4 py-2.5 text-sm font-bold text-brand-800 shadow-lg">
-              <span className="grid size-7 place-items-center rounded-full bg-gold-400 text-ink-900">
+            <div className="absolute -bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full bg-surface px-4 py-2.5 text-sm font-bold text-link shadow-lg">
+              <span className="grid size-7 place-items-center rounded-full bg-gold-400 text-on-action">
                 <BoltIcon className="text-sm" />
               </span>
               {t('brand.shortTagline')}

@@ -145,7 +145,7 @@ export function AuthForm({ mode }: { mode: 'signin' | 'register' }) {
               ? `/signin?next=${encodeURIComponent(next)}`
               : `/register?next=${encodeURIComponent(next)}`
           }
-          className="font-semibold text-brand-700 hover:underline"
+          className="font-semibold text-link hover:underline"
         >
           {isRegister ? t('auth.submitSignIn') : t('nav.register')}
         </Link>

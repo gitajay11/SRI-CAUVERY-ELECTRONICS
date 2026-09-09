@@ -22,7 +22,7 @@ export function BrandGlyph({ className }: { className?: string }) {
   return (
     <span
       className={cn(
-        'relative grid shrink-0 place-items-center overflow-hidden rounded-xl bg-ink-900 shadow-sm',
+        'relative grid shrink-0 place-items-center overflow-hidden rounded-xl bg-carbon-900 shadow-sm',
         className,
       )}
       aria-hidden="true"
@@ -68,7 +68,7 @@ export function BrandMark({
         <span
           lang="ta"
           className={cn(
-            'font-tamil font-bold tracking-normal text-brand-800',
+            'font-tamil font-bold tracking-normal text-link',
             tamilSize,
           )}
         >

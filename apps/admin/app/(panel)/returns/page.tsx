@@ -47,7 +47,7 @@ export default async function ReturnsPage({
           </span>
           <Link
             href={`/orders/${row.orderNumber}`}
-            className="block font-mono text-xs text-slate-500 hover:text-brand-700 hover:underline"
+            className="block font-mono text-xs text-slate-500 hover:text-link hover:underline"
           >
             {row.orderNumber}
           </Link>

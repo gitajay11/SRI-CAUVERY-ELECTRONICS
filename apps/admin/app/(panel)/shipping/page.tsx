@@ -37,7 +37,7 @@ export default async function ShippingPage() {
           </DescriptionList>
           <Link
             href="/settings"
-            className="mt-2 inline-block text-sm font-medium text-brand-700 hover:underline"
+            className="mt-2 inline-block text-sm font-medium text-link hover:underline"
           >
             {t('settings.title')} →
           </Link>

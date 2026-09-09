@@ -85,7 +85,7 @@ export function ProductRowActions({
     <span className="flex items-center justify-end gap-0.5">
       <Link
         href={`/products/${id}`}
-        className="rounded-md px-2 py-1.5 text-sm font-medium text-brand-700 hover:bg-brand-50"
+        className="rounded-md px-2 py-1.5 text-sm font-medium text-link hover:bg-success-50"
       >
         {t('common.edit')}
       </Link>

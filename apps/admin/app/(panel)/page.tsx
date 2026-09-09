@@ -146,7 +146,7 @@ export default async function DashboardPage({
           action={
             <Link
               href="/reports/products"
-              className="text-sm font-medium text-brand-700 hover:underline"
+              className="text-sm font-medium text-link hover:underline"
             >
               {t('common.viewAll')}
             </Link>
@@ -182,7 +182,7 @@ export default async function DashboardPage({
           action={
             <Link
               href="/orders"
-              className="text-sm font-medium text-brand-700 hover:underline"
+              className="text-sm font-medium text-link hover:underline"
             >
               {t('common.viewAll')}
             </Link>

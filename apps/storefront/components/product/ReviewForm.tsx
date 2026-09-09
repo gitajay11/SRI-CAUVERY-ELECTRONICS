@@ -42,7 +42,7 @@ export function ReviewForm({
   if (!isSignedIn) {
     return (
       <p className="rounded-card border border-ink-200 bg-surface p-4 text-sm text-ink-600">
-        <Link href="/signin" className="font-semibold text-brand-700 hover:underline">
+        <Link href="/signin" className="font-semibold text-link hover:underline">
           {t('product.reviewSignIn')}
         </Link>
       </p>

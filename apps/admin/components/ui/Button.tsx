@@ -25,13 +25,24 @@ const base =
   'transition-[background-color,color,border-color,box-shadow] duration-150 ' +
   'disabled:pointer-events-none disabled:opacity-50 select-none whitespace-nowrap';
 
+/**
+ * Gold, then bronze, then outline, then nothing — the same hierarchy as the
+ * shop, so a member of staff who uses both is never guessing which control is
+ * the one that commits.
+ *
+ * `secondary` was a filled slate; it could not stay, because slate is now the
+ * theme-relative ramp and a dark fill becomes a near-white one when the panel
+ * goes dark. Bronze is absolute and carries white in both.
+ */
 const variants: Record<ButtonVariant, string> = {
-  primary: 'bg-brand-600 text-white shadow-sm hover:bg-brand-700',
-  secondary: 'bg-slate-800 text-white hover:bg-slate-900',
+  primary: 'bg-action text-on-action shadow-sm hover:bg-action-hover',
+  secondary: 'bg-brand-600 text-white shadow-sm hover:bg-brand-700',
   outline:
     'border border-slate-300 bg-surface text-slate-700 hover:border-slate-400 hover:bg-slate-50',
   ghost: 'text-slate-600 hover:bg-slate-100 hover:text-slate-900',
-  danger: 'bg-critical-500 text-white hover:bg-critical-600',
+  // Filled red must be the absolute one: `critical-500` lightens in dark so it
+  // can be read as text, which makes it the wrong ground for white.
+  danger: 'bg-danger-solid text-white hover:bg-danger-solid-hover',
   dangerGhost:
     'border border-critical-500/30 bg-critical-50 text-critical-600 hover:bg-critical-100',
 };

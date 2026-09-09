@@ -51,7 +51,7 @@ export function ServiceWorkerRegistrar() {
   if (!waiting) return null;
 
   return (
-    <div className="fixed inset-x-3 bottom-20 z-50 mx-auto max-w-md animate-fade-up rounded-2xl bg-ink-900 px-4 py-3 text-white shadow-lg sm:bottom-6">
+    <div className="fixed inset-x-3 bottom-20 z-50 mx-auto max-w-md animate-fade-up rounded-2xl bg-carbon-900 px-4 py-3 text-white shadow-lg sm:bottom-6">
       <div className="flex items-center gap-3">
         <RefreshIcon className="shrink-0 text-lg text-gold-300" />
         <p className="flex-1 text-sm font-medium">{t('pwa.updateAvailable')}</p>
@@ -62,7 +62,7 @@ export function ServiceWorkerRegistrar() {
             // The new worker takes control on the next navigation.
             window.location.reload();
           }}
-          className="shrink-0 rounded-full bg-gold-500 px-4 py-2 text-sm font-bold text-ink-900"
+          className="shrink-0 rounded-full bg-gold-500 px-4 py-2 text-sm font-bold text-on-action"
         >
           {t('pwa.refresh')}
         </button>

@@ -32,7 +32,7 @@ export default async function NotFound() {
 
         <p className="mt-5 text-sm text-ink-500">
           {t('order.needHelp')}{' '}
-          <Link href="/contact" className="font-semibold text-brand-700 hover:underline">
+          <Link href="/contact" className="font-semibold text-link hover:underline">
             {t('footer.contactUs')}
           </Link>
         </p>

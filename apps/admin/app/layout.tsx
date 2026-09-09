@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from 'next';
 import { Inter, Noto_Sans_Tamil } from 'next/font/google';
 import './globals.css';
 
+import { cookies } from 'next/headers';
+import { THEME_COOKIE, normalizeTheme, themeAttribute } from '@tamizh/core/theme';
 import { getI18n } from '@/i18n/server';
 import { LOCALE_TAGS } from '@/i18n/config';
 import { getDictionary } from '@/i18n';
@@ -57,6 +59,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
+  // Carbon in both themes: the browser chrome matches the crest, not the page.
   themeColor: '#14110c',
   width: 'device-width',
   initialScale: 1,
@@ -75,9 +78,15 @@ export default async function RootLayout({
   const { locale } = await getI18n();
   void getDictionary(locale);
 
+  // Read the preference here and stamp it during the server render, so there
+  // is no moment where the panel has painted in the wrong theme: the correct
+  // one arrives with the markup rather than with a script.
+  const theme = normalizeTheme((await cookies()).get(THEME_COOKIE)?.value);
+
   return (
     <html
       lang={LOCALE_TAGS[locale]}
+      data-theme={themeAttribute(theme)}
       className={`${inter.variable} ${notoTamil.variable}`}
       suppressHydrationWarning
     >

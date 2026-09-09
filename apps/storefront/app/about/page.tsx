@@ -86,7 +86,7 @@ export default async function AboutPage() {
 
           <div className="rounded-card border border-ink-100 bg-surface p-5">
             <h3 className="flex items-center gap-2 text-base font-bold text-ink-900">
-              <MapPinIcon className="text-lg text-brand-600" />
+              <MapPinIcon className="text-lg text-link" />
               {t('contact.visit')}
             </h3>
             <address className="mt-2.5 text-sm not-italic leading-relaxed text-ink-600">
@@ -97,7 +97,7 @@ export default async function AboutPage() {
             </p>
             <a
               href={`tel:${shopConfig.supportPhone.replace(/\s/g, '')}`}
-              className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-brand-700 hover:underline"
+              className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-link hover:underline"
             >
               <PhoneIcon className="text-base" />
               {shopConfig.supportPhone}

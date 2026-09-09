@@ -71,7 +71,7 @@ function FilterBody({
           <Link
             href={basePath}
             onClick={onNavigate}
-            className="text-sm font-semibold text-brand-700 hover:underline"
+            className="text-sm font-semibold text-link hover:underline"
           >
             {t('common.clearAll')}
           </Link>
@@ -211,7 +211,7 @@ function FilterCheckbox({
       aria-pressed={checked}
       className={cn(
         'flex min-h-10 items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm transition-colors',
-        checked ? 'font-semibold text-brand-800' : 'text-ink-700 hover:bg-ink-100',
+        checked ? 'font-semibold text-link' : 'text-ink-700 hover:bg-ink-100',
       )}
     >
       <span
@@ -321,7 +321,7 @@ function PriceFilter({
         </label>
         <button
           type="submit"
-          className="min-h-10 shrink-0 rounded-lg bg-ink-900 px-3 text-sm font-semibold text-white"
+          className="min-h-10 shrink-0 rounded-lg bg-action px-3 text-sm font-semibold text-on-action transition-colors hover:bg-action-hover"
         >
           {t('common.apply')}
         </button>
@@ -358,7 +358,7 @@ function MobileFilterSheet(props: FilterProps) {
             type="button"
             aria-label={t('common.close')}
             onClick={() => setOpen(false)}
-            className="absolute inset-0 bg-ink-900/45"
+            className="absolute inset-0 bg-carbon-900/45"
           />
           <div
             role="dialog"

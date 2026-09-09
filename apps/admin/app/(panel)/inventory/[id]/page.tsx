@@ -73,7 +73,7 @@ export default async function InventoryDetailPage({
           </span>
         }
         breadcrumb={
-          <Link href="/inventory" className="text-sm text-slate-500 hover:text-brand-700">
+          <Link href="/inventory" className="text-sm text-slate-500 hover:text-link">
             ← {t('inventory.title')}
           </Link>
         }
@@ -135,7 +135,7 @@ export default async function InventoryDetailPage({
                 </DescriptionList>
                 <Link
                   href={`/products/${product.id}`}
-                  className="mt-2 inline-block text-sm font-medium text-brand-700 hover:underline"
+                  className="mt-2 inline-block text-sm font-medium text-link hover:underline"
                 >
                   {t('products.edit')} →
                 </Link>
@@ -186,7 +186,7 @@ export default async function InventoryDetailPage({
                               </span>
                               <Link
                                 href={`/orders/${entry.orderNumber}`}
-                                className="font-mono hover:text-brand-700 hover:underline"
+                                className="font-mono hover:text-link hover:underline"
                               >
                                 {entry.orderNumber}
                               </Link>

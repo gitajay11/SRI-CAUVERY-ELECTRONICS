@@ -46,7 +46,7 @@ export function ContactForm() {
           <button
             type="button"
             onClick={() => setSent(false)}
-            className="mt-2 text-sm font-semibold text-brand-700 hover:underline"
+            className="mt-2 text-sm font-semibold text-link hover:underline"
           >
             {t('contact.send')} →
           </button>

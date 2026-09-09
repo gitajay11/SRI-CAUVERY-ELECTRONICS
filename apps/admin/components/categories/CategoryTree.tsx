@@ -128,7 +128,7 @@ export function CategoryTree({ tree, canManage }: Props) {
             {canManage ? (
               <Link
                 href={`/categories/${node.id}`}
-                className="truncate font-medium text-slate-900 hover:text-brand-700 hover:underline"
+                className="truncate font-medium text-slate-900 hover:text-link hover:underline"
               >
                 {node.name}
               </Link>

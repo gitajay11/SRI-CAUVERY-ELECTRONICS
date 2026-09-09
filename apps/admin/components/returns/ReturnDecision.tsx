@@ -131,7 +131,7 @@ export function ReturnDecision({
                 target === status
                   ? status === 'REJECTED'
                     ? 'border-critical-500 bg-critical-50 text-critical-600'
-                    : 'border-brand-500 bg-brand-50 text-brand-700'
+                    : 'border-brand-500 bg-success-50 text-link'
                   : 'border-slate-300 text-slate-600 hover:border-slate-400',
               )}
             >

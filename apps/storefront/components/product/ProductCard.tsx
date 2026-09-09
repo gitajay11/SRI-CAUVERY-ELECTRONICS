@@ -66,7 +66,7 @@ export function ProductCard({
         <div className="pointer-events-none absolute inset-x-2 top-2 flex items-start justify-between gap-2">
           <div className="flex flex-col gap-1.5">
             {product.discountPercent > 0 ? (
-              <span className="rounded-full bg-gold-500 px-2 py-1 text-[0.68rem] font-bold leading-none text-ink-900 shadow-sm">
+              <span className="rounded-full bg-gold-500 px-2 py-1 text-[0.68rem] font-bold leading-none text-on-action shadow-sm">
                 {t('product.off', { percent: product.discountPercent })}
               </span>
             ) : null}
@@ -75,7 +75,7 @@ export function ProductCard({
         </div>
 
         {outOfStock ? (
-          <span className="absolute inset-x-0 bottom-0 bg-ink-900/85 py-1.5 text-center text-xs font-bold text-white">
+          <span className="absolute inset-x-0 bottom-0 bg-carbon-900/85 py-1.5 text-center text-xs font-bold text-white">
             {t('product.outOfStock')}
           </span>
         ) : null}
@@ -89,7 +89,7 @@ export function ProductCard({
         <h3 className="text-sm font-semibold leading-snug text-ink-900 sm:text-[0.95rem]">
           <Link
             href={`/product/${product.slug}`}
-            className="line-clamp-2 after:absolute after:inset-0 after:content-[''] hover:text-brand-700"
+            className="line-clamp-2 after:absolute after:inset-0 after:content-[''] hover:text-link"
           >
             {name}
           </Link>

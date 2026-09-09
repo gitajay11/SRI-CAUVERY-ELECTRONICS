@@ -19,7 +19,7 @@ export default async function RolesPage() {
         title={t('roles.title')}
         description={t('roles.subtitle')}
         action={
-          <Link href="/staff" className="text-sm font-medium text-brand-700 hover:underline">
+          <Link href="/staff" className="text-sm font-medium text-link hover:underline">
             {t('staff.title')} →
           </Link>
         }

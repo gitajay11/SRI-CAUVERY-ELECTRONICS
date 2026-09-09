@@ -207,7 +207,7 @@ export function SearchBar({
                       setTerm(suggestion);
                       submit(suggestion);
                     }}
-                    className="rounded-full bg-ink-100 px-3 py-1.5 text-sm text-ink-700 transition-colors hover:bg-brand-50 hover:text-brand-700"
+                    className="rounded-full bg-ink-100 px-3 py-1.5 text-sm text-ink-700 transition-colors hover:bg-success-50 hover:text-link"
                   >
                     {suggestion}
                   </button>
@@ -238,7 +238,7 @@ export function SearchBar({
                     onMouseEnter={() => setActiveIndex(index)}
                     className={cn(
                       'flex items-center gap-3 px-3 py-2.5 transition-colors',
-                      index === activeIndex ? 'bg-brand-50' : 'hover:bg-ink-50',
+                      index === activeIndex ? 'bg-success-50' : 'hover:bg-ink-50',
                     )}
                   >
                     {product.image ? (
@@ -258,7 +258,7 @@ export function SearchBar({
                         {product.categoryName}
                       </span>
                     </span>
-                    <span className="shrink-0 text-sm font-bold text-brand-700">
+                    <span className="shrink-0 text-sm font-bold text-link">
                       {formatINR(product.price)}
                     </span>
                   </Link>
@@ -268,7 +268,7 @@ export function SearchBar({
                 <button
                   type="button"
                   onClick={() => submit(term)}
-                  className="w-full px-4 py-3 text-left text-sm font-semibold text-brand-700 hover:bg-brand-50"
+                  className="w-full px-4 py-3 text-left text-sm font-semibold text-link hover:bg-success-50"
                 >
                   {t('search.viewAllResults', { query: trimmed })}
                 </button>

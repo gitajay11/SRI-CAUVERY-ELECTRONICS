@@ -27,7 +27,7 @@ export default async function NewProductPage() {
         title={t('products.new')}
         description={t('products.newHint')}
         breadcrumb={
-          <Link href="/products" className="text-sm text-slate-500 hover:text-brand-700">
+          <Link href="/products" className="text-sm text-slate-500 hover:text-link">
             ← {t('products.title')}
           </Link>
         }

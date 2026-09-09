@@ -74,7 +74,7 @@ export default async function ProductPage({ params }: { params: Params }) {
           productName={product.name}
           badge={
             product.discountPercent > 0 ? (
-              <span className="rounded-full bg-gold-500 px-3 py-1.5 text-sm font-bold text-ink-900 shadow-sm">
+              <span className="rounded-full bg-gold-500 px-3 py-1.5 text-sm font-bold text-on-action shadow-sm">
                 {t('product.off', { percent: product.discountPercent })}
               </span>
             ) : null
@@ -82,7 +82,7 @@ export default async function ProductPage({ params }: { params: Params }) {
         />
 
         <div className="min-w-0">
-          <p className="text-sm font-semibold uppercase tracking-wide text-brand-600">
+          <p className="text-sm font-semibold uppercase tracking-wide text-link">
             {product.brand}
           </p>
 
@@ -160,25 +160,25 @@ export default async function ProductPage({ params }: { params: Params }) {
           </div>
 
           {/* Delivery reassurance */}
-          <section className="mt-6 rounded-card border border-ink-100 bg-brand-50/50 p-4">
+          <section className="mt-6 rounded-card border border-ink-100 bg-success-50/50 p-4">
             <h2 className="text-sm font-bold text-ink-800">
               {t('product.deliveryTitle')}
             </h2>
             <ul className="mt-2.5 space-y-2 text-sm text-ink-600">
               <li className="flex items-center gap-2.5">
-                <TruckIcon className="shrink-0 text-base text-brand-600" />
+                <TruckIcon className="shrink-0 text-base text-link" />
                 {t('product.deliveryFree')}
               </li>
               <li className="flex items-center gap-2.5">
-                <TruckIcon className="shrink-0 text-base text-brand-600" />
+                <TruckIcon className="shrink-0 text-base text-link" />
                 {t('product.deliveryEta')}
               </li>
               <li className="flex items-center gap-2.5">
-                <ShieldIcon className="shrink-0 text-base text-brand-600" />
+                <ShieldIcon className="shrink-0 text-base text-link" />
                 {t('product.deliveryReturns')}
               </li>
               <li className="flex items-center gap-2.5">
-                <ShieldIcon className="shrink-0 text-base text-brand-600" />
+                <ShieldIcon className="shrink-0 text-base text-link" />
                 {t('product.deliveryCod')}
               </li>
             </ul>

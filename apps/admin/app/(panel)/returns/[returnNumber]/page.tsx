@@ -44,7 +44,7 @@ export default async function ReturnDetailPage({
           <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <Link
               href={`/orders/${request.order.orderNumber}`}
-              className="font-mono hover:text-brand-700 hover:underline"
+              className="font-mono hover:text-link hover:underline"
             >
               {request.order.orderNumber}
             </Link>
@@ -57,7 +57,7 @@ export default async function ReturnDetailPage({
           </span>
         }
         breadcrumb={
-          <Link href="/returns" className="text-sm text-slate-500 hover:text-brand-700">
+          <Link href="/returns" className="text-sm text-slate-500 hover:text-link">
             ← {t('returns.title')}
           </Link>
         }
@@ -74,8 +74,8 @@ export default async function ReturnDetailPage({
               </p>
             ) : null}
             {request.decisionNote ? (
-              <p className="mt-3 border-s-[3px] border-brand-300 bg-brand-50/60 px-3 py-2 text-sm text-slate-700">
-                <span className="block text-xs font-semibold text-brand-700">
+              <p className="mt-3 border-s-[3px] border-action-edge/60 bg-success-50/60 px-3 py-2 text-sm text-slate-700">
+                <span className="block text-xs font-semibold text-link">
                   {t('returns.decisionNote')}
                   {request.handledBy ? ` · ${request.handledBy.name}` : ''}
                 </span>

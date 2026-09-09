@@ -33,7 +33,7 @@ export function CategoryShowcase({
         >
           <Link
             href={`/categories/${category.slug}`}
-            className="group relative flex items-center gap-4 bg-brand-50/70 p-4 sm:p-5"
+            className="group relative flex items-center gap-4 bg-success-50/70 p-4 sm:p-5"
           >
             {category.imageUrl ? (
               <Image
@@ -44,18 +44,18 @@ export function CategoryShowcase({
                 className="size-16 shrink-0 rounded-xl object-cover shadow-sm sm:size-20"
               />
             ) : (
-              <span className="grid size-16 shrink-0 place-items-center rounded-xl bg-surface text-brand-600 shadow-sm sm:size-20">
+              <span className="grid size-16 shrink-0 place-items-center rounded-xl bg-surface text-link shadow-sm sm:size-20">
                 <CategoryIcon name={category.icon} className="size-8" />
               </span>
             )}
             <span className="min-w-0 flex-1">
-              <span className="block text-lg font-bold text-ink-900 group-hover:text-brand-700">
+              <span className="block text-lg font-bold text-ink-900 group-hover:text-link">
                 {label(category)}
               </span>
               <span className="mt-0.5 line-clamp-2 block text-sm text-ink-500">
                 {description(category)}
               </span>
-              <span className="mt-1.5 block text-xs font-semibold text-brand-600">
+              <span className="mt-1.5 block text-xs font-semibold text-link">
                 {category.productCount ?? 0} products →
               </span>
             </span>
@@ -67,7 +67,7 @@ export function CategoryShowcase({
                 <li key={child.id}>
                   <Link
                     href={`/categories/${child.slug}`}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-ink-200 px-3 py-1.5 text-sm text-ink-700 transition-colors hover:border-brand-300 hover:bg-brand-50 hover:text-brand-800"
+                    className="inline-flex items-center gap-1.5 rounded-full border border-ink-200 px-3 py-1.5 text-sm text-ink-700 transition-colors hover:border-action-edge/60 hover:bg-success-50 hover:text-link"
                   >
                     <CategoryIcon
                       name={child.icon}

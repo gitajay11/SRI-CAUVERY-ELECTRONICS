@@ -7,7 +7,7 @@ import { ApiError, api } from '@/lib/http';
 import { useLocale } from '@/components/providers/LocaleProvider';
 import { useToast } from '@/components/providers/ToastProvider';
 import { Button } from '@/components/ui/Button';
-import { TextAreaField, FormError } from '@/components/ui/Field';
+import { TextAreaField, FormError, Select } from '@/components/ui/Field';
 
 /**
  * Customer-initiated return.
@@ -105,7 +105,7 @@ export function RequestReturnForm({
           return (
             <li
               key={item.id}
-              className="flex items-center gap-3 rounded-lg border border-ink-100 bg-white px-3 py-2.5"
+              className="flex items-center gap-3 rounded-lg border border-ink-100 bg-surface px-3 py-2.5"
             >
               <input
                 type="checkbox"
@@ -130,7 +130,8 @@ export function RequestReturnForm({
               {quantity > 0 && item.quantity > 1 ? (
                 <label className="flex items-center gap-1.5 text-xs text-ink-500">
                   <span className="sr-only sm:not-sr-only">{t('order.returnQuantity')}</span>
-                  <select
+                  <Select
+                    size="xs"
                     value={quantity}
                     onChange={(event) =>
                       setChosen((current) => ({
@@ -138,7 +139,6 @@ export function RequestReturnForm({
                         [item.id]: Number(event.target.value),
                       }))
                     }
-                    className="min-h-9 rounded-lg border border-ink-200 px-2 text-sm"
                   >
                     {Array.from({ length: item.quantity }, (_, index) => index + 1).map(
                       (value) => (
@@ -147,7 +147,7 @@ export function RequestReturnForm({
                         </option>
                       ),
                     )}
-                  </select>
+                  </Select>
                 </label>
               ) : null}
             </li>

@@ -50,7 +50,7 @@ export default async function NotificationsPage() {
                   <Link
                     href={DESTINATIONS[item.type] ?? '/'}
                     className={`flex gap-3 px-4 py-3 hover:bg-slate-50 ${
-                      item.read ? '' : 'bg-brand-50/40'
+                      item.read ? '' : 'bg-success-50/40'
                     }`}
                   >
                     <span

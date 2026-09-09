@@ -35,7 +35,7 @@ export async function WhyChooseUs() {
           key={reason.title}
           className="rounded-card border border-ink-100 bg-surface p-4 shadow-card transition-shadow hover:shadow-card-hover sm:p-5"
         >
-          <span className="grid size-11 place-items-center rounded-xl bg-brand-50 text-xl text-brand-600">
+          <span className="grid size-11 place-items-center rounded-xl bg-success-50 text-xl text-link">
             {reason.icon}
           </span>
           <h3 className="mt-3.5 text-[0.95rem] font-bold text-ink-900">{reason.title}</h3>
@@ -82,7 +82,7 @@ export async function BulkEnquiryBanner() {
   const { t } = await getI18n();
 
   return (
-    <section className="overflow-hidden rounded-card bg-ink-900 text-white">
+    <section className="overflow-hidden rounded-card bg-carbon-900 text-white">
       <div className="grid gap-6 p-6 sm:p-8 lg:grid-cols-[1.4fr_1fr] lg:items-center lg:p-10">
         <div>
           <p className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold text-gold-300">
@@ -141,13 +141,13 @@ export function OfferStrip({
     <Link
       href={href}
       lang={locale}
-      className="group flex items-center justify-between gap-4 rounded-card border border-gold-200 bg-gold-50 p-5 transition-colors hover:bg-gold-100 sm:p-6"
+      className="group flex items-center justify-between gap-4 rounded-card border border-action-edge/40 bg-success-50 p-5 transition-colors hover:bg-success-100 sm:p-6"
     >
       <div className="min-w-0">
-        <p className="text-lg font-extrabold text-gold-700 sm:text-xl">{title}</p>
+        <p className="text-lg font-extrabold text-link sm:text-xl">{title}</p>
         <p className="mt-1 text-sm text-ink-600">{body}</p>
       </div>
-      <span className="shrink-0 rounded-full bg-gold-500 px-4 py-2.5 text-sm font-bold text-ink-900 transition-transform group-hover:translate-x-0.5">
+      <span className="shrink-0 rounded-full bg-gold-500 px-4 py-2.5 text-sm font-bold text-on-action transition-transform group-hover:translate-x-0.5">
         {cta} →
       </span>
     </Link>

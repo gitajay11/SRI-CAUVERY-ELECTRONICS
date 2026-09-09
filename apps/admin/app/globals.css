@@ -1,75 +1,20 @@
 @import 'tailwindcss';
+@import '../../../packages/core/styles/theme.css';
 
 /* ==========================================================================
-   Sri Cauvery Admin — design tokens
+   Sri Cauvery Admin
    --------------------------------------------------------------------------
-   Deliberately not the storefront's palette. The shop is warm paper; this is a
-   tool, so it runs cooler and denser: a dark slate chrome, a white working
-   surface, and the shop's bronze kept only for primary actions so the two apps
-   still read as one company.
-
-   Density is the point. Staff scan tables of orders on a phone between
-   customers, so type is a step smaller and rows are tighter than the shop's —
+   The palette is the storefront's, from packages/core/styles/theme.css: the
+   shop and the tool are the same company and now read as it. What differs is
+   density, not colour — staff scan tables of orders on a phone between
+   customers, so type is a step smaller and rows are tighter than the shop's,
    while every touch target stays at 44px.
+
+   `slate-*` in this app and `ink-*` in the shop are the same theme-relative
+   ramp under two names, so neither app had to be rewritten to gain a theme.
    ========================================================================== */
 
 @theme {
-  /* Brand bronze — actions only, inherited from the storefront. Contrast
-     ratios were checked, not guessed: white on brand-600 is 5.05:1. */
-  --color-brand-50: #fdf9f0;
-  --color-brand-100: #f8eed4;
-  --color-brand-200: #eedaa6;
-  --color-brand-300: #e2c477;
-  --color-brand-400: #d0a94e;
-  --color-brand-500: #a9821f;
-  --color-brand-600: #8a6a19;
-  --color-brand-700: #6d5414;
-  --color-brand-800: #513e0f;
-  --color-brand-900: #33270a;
-
-  /* Slate — the chrome: sidebar, headers, dense text */
-  --color-slate-25: #fafbfc;
-  --color-slate-50: #f4f6f8;
-  --color-slate-100: #e8ecf0;
-  --color-slate-200: #d5dce3;
-  --color-slate-300: #b0bcc7;
-  --color-slate-400: #7d8d9c;
-  --color-slate-500: #5a6b7a;
-  --color-slate-600: #435361;
-  --color-slate-700: #2f3d49;
-  --color-slate-800: #1e2a34;
-  --color-slate-900: #132029;
-  --color-slate-950: #0b141b;
-
-  /* Status — used consistently across badges, charts and alerts */
-  --color-positive-50: #e9f7ef;
-  --color-positive-100: #cdeeda;
-  --color-positive-500: #1a7f4b;
-  --color-positive-600: #14653c;
-
-  --color-caution-50: #fff6e5;
-  --color-caution-100: #ffe9bf;
-  --color-caution-500: #b26a00;
-  --color-caution-600: #8c5400;
-
-  --color-critical-50: #fdecea;
-  --color-critical-100: #fbd5d0;
-  --color-critical-500: #c0392b;
-  --color-critical-600: #9c2d21;
-
-  --color-info-50: #eaf1fb;
-  --color-info-100: #d2e0f6;
-  --color-info-500: #2b5fa8;
-  --color-info-600: #224b85;
-
-  --color-gold-100: #fdf1d6;
-  --color-gold-400: #ddb965;
-  --color-gold-500: #cba24a;
-  --color-gold-700: #6d5414;
-
-  --color-surface: #ffffff;
-  --color-canvas: #f4f6f8;
-
   /* Type — Latin first, Tamil face appended so Tamil codepoints resolve
      automatically without switching families per string. */
   --font-sans:
@@ -77,14 +22,6 @@
     var(--font-tamil), 'Nirmala UI', 'Latha';
   --font-tamil-stack: var(--font-tamil), 'Nirmala UI', 'Latha', sans-serif;
   --font-mono: ui-monospace, 'Cascadia Mono', 'Segoe UI Mono', Menlo, monospace;
-
-  --radius-panel: 0.75rem;
-
-  --shadow-panel: 0 1px 2px rgb(19 32 41 / 0.05), 0 1px 3px rgb(19 32 41 / 0.06);
-  --shadow-raised: 0 4px 12px -2px rgb(19 32 41 / 0.12), 0 2px 4px rgb(19 32 41 / 0.06);
-  --shadow-overlay: 0 16px 40px -12px rgb(19 32 41 / 0.35);
-
-  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* --------------------------------------------------------------------------
@@ -101,7 +38,7 @@
   }
 
   body {
-    background-color: var(--color-canvas);
+    background-color: var(--color-sunken);
     color: var(--color-slate-800);
     font-family: var(--font-sans);
     font-size: 0.9375rem; /* 15px — one step tighter than the storefront */
@@ -174,8 +111,29 @@
     .no-print {
       display: none !important;
     }
+    /* Paper is white whatever the screen is set to, so the print sheet
+       forces the light ramp rather than printing pale type onto white. */
+    :root {
+      color-scheme: light;
+      --tone-25: #fcfbf9;
+      --tone-50: #f8f7f4;
+      --tone-100: #efede7;
+      --tone-200: #ded9cf;
+      --tone-300: #948b79;
+      --tone-400: #78715f;
+      --tone-500: #635d4f;
+      --tone-600: #4a453a;
+      --tone-700: #322e26;
+      --tone-800: #1e1b16;
+      --tone-900: #14110c;
+      --tone-canvas: #ffffff;
+      --tone-surface: #ffffff;
+      --tone-raised: #ffffff;
+      --tone-sunken: #ffffff;
+    }
     body {
       background: #fff;
+      color: #14110c;
     }
   }
 }
@@ -253,8 +211,8 @@
     margin: 0;
     padding: 0.75rem 1.25rem;
     clip-path: none;
-    background: var(--color-slate-900);
-    color: white;
+    background: var(--color-carbon-900);
+    color: var(--color-gold-300);
     border-radius: 0.5rem;
   }
 }

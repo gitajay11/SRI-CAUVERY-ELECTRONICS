@@ -1,8 +1,8 @@
 'use client';
 
-import { useId, type ComponentProps, type ReactNode } from 'react';
+import { useId, useState, type ComponentProps, type ReactNode } from 'react';
 import { cn } from '@tamizh/core/utils';
-import { AlertIcon } from './Icons';
+import { AlertIcon, ChevronDownIcon, EyeIcon, EyeOffIcon } from './Icons';
 
 /**
  * Form controls.
@@ -12,15 +12,18 @@ import { AlertIcon } from './Icons';
  * state rather than a separate prop that can drift out of sync with it.
  */
 
-// `min-h-11` keeps every control at a 44px touch target, which is what a
-// thumb needs on the shop counter's phone.
-const control =
-  'w-full min-h-11 rounded-lg border bg-surface px-3 py-2.5 text-sm text-slate-900 ' +
+// Chrome only — no sizing, so the compact select below can borrow it.
+const controlChrome =
+  'border bg-surface text-slate-900 ' +
   'placeholder:text-slate-400 transition-colors duration-150 ' +
   'border-slate-300 hover:border-slate-400 ' +
   'focus:border-brand-500 focus:outline-none focus:ring-3 focus:ring-brand-500/15 ' +
   'aria-[invalid=true]:border-critical-500 aria-[invalid=true]:ring-critical-500/15 ' +
   'disabled:bg-slate-50 disabled:text-slate-400 read-only:bg-slate-50';
+
+// `min-h-11` keeps every control at a 44px touch target, which is what a
+// thumb needs on the shop counter's phone.
+const control = 'w-full min-h-11 rounded-lg px-3 py-2.5 text-sm ' + controlChrome;
 
 interface ShellProps {
   label: string;
@@ -124,6 +127,91 @@ export function TextField({
   );
 }
 
+/**
+ * A password field that can be read back.
+ *
+ * Two small things, both of which exist because of how sign-in actually fails:
+ * a reveal toggle, because a mistyped password on a phone keyboard is the
+ * commonest reason staff cannot get in; and a Caps Lock warning, because the
+ * second commonest reason is invisible until it has already failed. The toggle
+ * defaults to hidden and never persists — it is for checking, not for leaving
+ * a password on screen at the counter.
+ */
+export function PasswordField({
+  label,
+  hint,
+  error,
+  aside,
+  className,
+  required,
+  revealLabel,
+  hideLabel,
+  capsLockLabel,
+  ...props
+}: FieldExtras &
+  Omit<ComponentProps<'input'>, 'id' | 'type'> & {
+    revealLabel: string;
+    hideLabel: string;
+    capsLockLabel: string;
+  }) {
+  const [revealed, setRevealed] = useState(false);
+  const [capsLock, setCapsLock] = useState(false);
+
+  const noteCapsLock = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    // `getModifierState` is undefined on some soft keyboards; treat that as
+    // "cannot tell" and say nothing rather than guessing wrong.
+    setCapsLock(event.getModifierState?.('CapsLock') ?? false);
+  };
+
+  return (
+    <FieldShell
+      label={label}
+      hint={hint}
+      error={error}
+      required={required}
+      aside={aside}
+    >
+      {({ id, describedBy }) => (
+        <div className="flex flex-col gap-1.5">
+          <div className="relative">
+            <input
+              {...props}
+              id={id}
+              type={revealed ? 'text' : 'password'}
+              required={required}
+              onKeyUp={noteCapsLock}
+              onKeyDown={noteCapsLock}
+              onBlur={(event) => {
+                setCapsLock(false);
+                props.onBlur?.(event);
+              }}
+              aria-invalid={error ? true : undefined}
+              aria-describedby={describedBy}
+              className={cn(control, 'pe-12', className)}
+            />
+            <button
+              type="button"
+              onClick={() => setRevealed((value) => !value)}
+              aria-label={revealed ? hideLabel : revealLabel}
+              aria-pressed={revealed}
+              className="absolute inset-y-0 end-1 my-auto grid size-9 place-items-center rounded-md text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+            >
+              {revealed ? <EyeOffIcon className="text-lg" /> : <EyeIcon className="text-lg" />}
+            </button>
+          </div>
+
+          {capsLock ? (
+            <p role="status" className="flex items-center gap-1.5 text-xs font-medium text-link">
+              <AlertIcon className="shrink-0 text-[1.05em]" />
+              {capsLockLabel}
+            </p>
+          ) : null}
+        </div>
+      )}
+    </FieldShell>
+  );
+}
+
 /** A money input that shows the rupee sign and keeps the numeric keypad. */
 export function MoneyField({
   label,
@@ -202,6 +290,57 @@ export function TextAreaField({
   );
 }
 
+/**
+ * The one dropdown.
+ *
+ * A native `<select>`, because on a phone the platform picker beats anything
+ * that could be built out of divs — it is scrollable with one thumb, it types
+ * ahead, and it never traps focus. What is styled is only the closed control:
+ * the chevron is a real element inheriting `currentColor` rather than a
+ * hard-coded SVG in a background image, so it follows the theme instead of
+ * staying grey when the panel goes dark.
+ *
+ * The open option list is drawn by the operating system and cannot be styled
+ * at all; it follows `color-scheme`, which the theme sets on the document —
+ * which is why a dark panel gets a dark option list for free.
+ */
+export function Select({
+  size = 'md',
+  invalid,
+  className,
+  children,
+  ...props
+}: Omit<ComponentProps<'select'>, 'size'> & {
+  size?: 'md' | 'sm';
+  invalid?: boolean;
+}) {
+  return (
+    <span className={cn('relative inline-flex', size === 'md' && 'w-full')}>
+      <select
+        {...props}
+        aria-invalid={invalid ? true : props['aria-invalid']}
+        className={cn(
+          'cursor-pointer appearance-none',
+          controlChrome,
+          size === 'md'
+            ? 'min-h-11 w-full rounded-lg py-2.5 pe-9 ps-3 text-sm'
+            : 'min-h-10 rounded-lg py-1.5 pe-8 ps-3 text-sm font-medium',
+          className,
+        )}
+      >
+        {children}
+      </select>
+      <ChevronDownIcon
+        aria-hidden="true"
+        className={cn(
+          'pointer-events-none absolute inset-y-0 my-auto text-slate-400',
+          size === 'md' ? 'end-3 text-base' : 'end-2.5 text-sm',
+        )}
+      />
+    </span>
+  );
+}
+
 export function SelectField({
   label,
   hint,
@@ -211,7 +350,7 @@ export function SelectField({
   required,
   children,
   ...props
-}: FieldExtras & Omit<ComponentProps<'select'>, 'id'>) {
+}: FieldExtras & Omit<ComponentProps<'select'>, 'id' | 'size'>) {
   return (
     <FieldShell
       label={label}
@@ -221,23 +360,16 @@ export function SelectField({
       optionalLabel={optionalLabel}
     >
       {({ id, describedBy }) => (
-        <select
+        <Select
           {...props}
           id={id}
           required={required}
-          aria-invalid={error ? true : undefined}
+          invalid={Boolean(error)}
           aria-describedby={describedBy}
-          className={cn(control, 'appearance-none pr-9', className)}
-          style={{
-            backgroundImage:
-              "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237d8d9c' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='m5 9 7 7 7-7'/%3E%3C/svg%3E\")",
-            backgroundRepeat: 'no-repeat',
-            backgroundPosition: 'right 0.7rem center',
-            backgroundSize: '1rem',
-          }}
+          className={className}
         >
           {children}
-        </select>
+        </Select>
       )}
     </FieldShell>
   );
@@ -301,7 +433,7 @@ export function RadioCards<T extends string>({
             className={cn(
               'flex cursor-pointer items-start gap-2.5 rounded-lg border p-3 text-sm transition-colors',
               value === option.value
-                ? 'border-brand-500 bg-brand-50'
+                ? 'border-brand-500 bg-success-50'
                 : 'border-slate-300 hover:border-slate-400',
             )}
           >

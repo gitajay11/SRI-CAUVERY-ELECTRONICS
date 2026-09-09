@@ -131,7 +131,7 @@ export async function OrderDetail({
         )}
 
         {order.trackingNumber ? (
-          <p className="mt-4 flex items-center gap-2 rounded-lg bg-brand-50 px-3 py-2.5 text-sm text-brand-800">
+          <p className="mt-4 flex items-center gap-2 rounded-lg bg-success-50 px-3 py-2.5 text-sm text-link">
             <PackageIcon className="shrink-0 text-base" />
             {t('order.trackingNumber')}:{' '}
             <span className="font-mono font-bold">{order.trackingNumber}</span>
@@ -162,7 +162,7 @@ export async function OrderDetail({
                 <div className="min-w-0 flex-1">
                   <h3 className="text-sm font-semibold text-ink-900">
                     {item.slug ? (
-                      <Link href={`/product/${item.slug}`} className="hover:text-brand-700">
+                      <Link href={`/product/${item.slug}`} className="hover:text-link">
                         {locale === 'ta' && item.nameTa ? item.nameTa : item.name}
                       </Link>
                     ) : (
@@ -267,12 +267,12 @@ export async function OrderDetail({
             )
           ) : null}
 
-          <section className="rounded-card border border-ink-100 bg-brand-50/60 p-4 sm:p-5">
+          <section className="rounded-card border border-ink-100 bg-success-50/60 p-4 sm:p-5">
             <h2 className="text-sm font-bold text-ink-800">{t('order.needHelp')}</h2>
             <div className="mt-3 space-y-2">
               <a
                 href={`tel:${shopConfig.supportPhone.replace(/\s/g, '')}`}
-                className="flex items-center gap-2 text-sm font-semibold text-brand-700 hover:underline"
+                className="flex items-center gap-2 text-sm font-semibold text-link hover:underline"
               >
                 <PhoneIcon className="text-base" />
                 {shopConfig.supportPhone}
@@ -281,7 +281,7 @@ export async function OrderDetail({
                 href={whatsappLink(`Hello, I need help with order ${order.orderNumber}.`)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 text-sm font-semibold text-brand-700 hover:underline"
+                className="flex items-center gap-2 text-sm font-semibold text-link hover:underline"
               >
                 <WhatsAppIcon className="text-base" />
                 {t('contact.whatsapp')}

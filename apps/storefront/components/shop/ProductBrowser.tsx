@@ -101,7 +101,7 @@ export async function ProductBrowser({
                 <li key={facet.value}>
                   <Link
                     href={`/categories/${facet.value}`}
-                    className="inline-flex rounded-full border border-ink-200 bg-surface px-3 py-1.5 text-sm text-ink-700 hover:border-brand-300 hover:text-brand-700"
+                    className="inline-flex rounded-full border border-ink-200 bg-surface px-3 py-1.5 text-sm text-ink-700 hover:border-action-edge/60 hover:text-link"
                   >
                     {facet.label}
                     <span className="ml-1.5 text-ink-400">{facet.count}</span>

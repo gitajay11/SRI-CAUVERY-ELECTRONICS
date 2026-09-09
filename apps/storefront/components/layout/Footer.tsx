@@ -27,7 +27,7 @@ export async function Footer({ categories }: { categories: CategoryView[] }) {
   return (
     <footer className="mt-16 border-t border-ink-200 bg-surface">
       {/* Reassurance strip */}
-      <div className="border-b border-ink-100 bg-brand-50/60">
+      <div className="border-b border-ink-100 bg-success-50/60">
         <div className="container-page grid gap-4 py-6 sm:grid-cols-3">
           <FooterAssurance
             icon={<TruckIcon />}
@@ -63,14 +63,14 @@ export async function Footer({ categories }: { categories: CategoryView[] }) {
               </span>
               <a
                 href={`tel:${shopConfig.supportPhone.replace(/\s/g, '')}`}
-                className="flex items-center gap-2.5 hover:text-brand-700"
+                className="flex items-center gap-2.5 hover:text-link"
               >
                 <PhoneIcon className="shrink-0 text-base text-brand-500" />
                 {shopConfig.supportPhone}
               </a>
               <a
                 href={`mailto:${shopConfig.supportEmail}`}
-                className="flex items-center gap-2.5 hover:text-brand-700"
+                className="flex items-center gap-2.5 hover:text-link"
               >
                 <MailIcon className="shrink-0 text-base text-brand-500" />
                 {shopConfig.supportEmail}
@@ -79,7 +79,7 @@ export async function Footer({ categories }: { categories: CategoryView[] }) {
                 href={whatsappLink('Hello! I would like to know more about your products.')}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2.5 hover:text-brand-700"
+                className="flex items-center gap-2.5 hover:text-link"
               >
                 <WhatsAppIcon className="shrink-0 text-base text-brand-500" />
                 {t('contact.whatsapp')}
@@ -155,7 +155,7 @@ function FooterAssurance({
 }) {
   return (
     <div className="flex items-start gap-3">
-      <span className="grid size-10 shrink-0 place-items-center rounded-full bg-surface text-lg text-brand-600 shadow-sm">
+      <span className="grid size-10 shrink-0 place-items-center rounded-full bg-surface text-lg text-link shadow-sm">
         {icon}
       </span>
       <div>
@@ -180,7 +180,7 @@ function FooterLink({ href, children }: { href: string; children: React.ReactNod
     <li>
       <Link
         href={href}
-        className="text-sm text-ink-600 transition-colors hover:text-brand-700"
+        className="text-sm text-ink-600 transition-colors hover:text-link"
       >
         {children}
       </Link>

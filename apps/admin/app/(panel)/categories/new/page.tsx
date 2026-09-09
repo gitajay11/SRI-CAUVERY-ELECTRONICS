@@ -23,7 +23,7 @@ export default async function NewCategoryPage() {
       <PageHeader
         title={t('categories.new')}
         breadcrumb={
-          <Link href="/categories" className="text-sm text-slate-500 hover:text-brand-700">
+          <Link href="/categories" className="text-sm text-slate-500 hover:text-link">
             ← {t('categories.title')}
           </Link>
         }

@@ -90,6 +90,14 @@ export const en = {
   'nav.signOut': 'Sign out',
   'nav.myAccount': 'My account',
   'nav.language': 'Language',
+  'nav.appearance': 'Appearance',
+
+  // ---- theme --------------------------------------------------------------
+  'theme.label': 'Appearance',
+  'theme.system': 'System',
+  'theme.light': 'Light',
+  'theme.dark': 'Dark',
+
 
   // ---- auth --------------------------------------------------------------
   'auth.title': 'Staff sign in',
@@ -117,6 +125,9 @@ export const en = {
   'auth.forbidden': 'You do not have permission to view that page.',
   'auth.forbiddenBody': 'If you think this is a mistake, ask the shop owner.',
   'auth.securityNote': 'This is an internal system. All activity is recorded.',
+  'auth.showPassword': 'Show password',
+  'auth.hidePassword': 'Hide password',
+  'auth.capsLock': 'Caps Lock is on.',
 
   // ---- dashboard ---------------------------------------------------------
   'dash.title': 'Dashboard',

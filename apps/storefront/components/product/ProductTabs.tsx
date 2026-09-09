@@ -68,7 +68,7 @@ export function ProductTabs({
             className={cn(
               'relative min-h-12 whitespace-nowrap px-4 text-sm font-semibold transition-colors',
               active === tab.id
-                ? 'text-brand-700'
+                ? 'text-link'
                 : 'text-ink-500 hover:text-ink-800',
             )}
           >
@@ -218,7 +218,7 @@ export function ProductTabs({
                   >
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div className="flex items-center gap-2.5">
-                        <span className="grid size-9 place-items-center rounded-full bg-brand-100 text-sm font-bold text-brand-800">
+                        <span className="grid size-9 place-items-center rounded-full bg-success-100 text-sm font-bold text-link">
                           {review.authorName.charAt(0).toUpperCase()}
                         </span>
                         <div>

@@ -153,7 +153,7 @@ export default async function AuditPage({
                     {entry.actor ? (
                       <Link
                         href={buildQuery('/audit', params, { actor: entry.actor.id, page: 1 })}
-                        className="hover:text-brand-700 hover:underline"
+                        className="hover:text-link hover:underline"
                       >
                         {entry.actor.name}
                       </Link>

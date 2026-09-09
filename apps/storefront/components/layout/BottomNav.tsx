@@ -52,13 +52,13 @@ export function BottomNav() {
                 aria-current={active ? 'page' : undefined}
                 className={cn(
                   'relative flex min-h-14 flex-col items-center justify-center gap-0.5 px-1 py-1.5 text-[0.68rem] font-medium transition-colors',
-                  active ? 'text-brand-700' : 'text-ink-500',
+                  active ? 'text-link' : 'text-ink-500',
                 )}
               >
                 <span className="relative text-[1.35rem]">
                   {item.icon}
                   {item.badge && item.badge > 0 ? (
-                    <span className="absolute -right-2 -top-1 grid min-w-[1.05rem] place-items-center rounded-full bg-gold-500 px-1 text-[0.62rem] font-bold leading-[1.05rem] text-ink-900">
+                    <span className="absolute -right-2 -top-1 grid min-w-[1.05rem] place-items-center rounded-full bg-gold-500 px-1 text-[0.62rem] font-bold leading-[1.05rem] text-on-action">
                       {item.badge > 99 ? '99+' : item.badge}
                     </span>
                   ) : null}

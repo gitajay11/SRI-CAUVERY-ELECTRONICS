@@ -208,7 +208,7 @@ export function CheckoutForm({
                   className={cn(
                     'flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition-colors',
                     selectedAddressId === address.id
-                      ? 'border-brand-500 bg-brand-50'
+                      ? 'border-brand-500 bg-success-50'
                       : 'border-ink-200 hover:border-ink-300',
                   )}
                 >
@@ -235,7 +235,7 @@ export function CheckoutForm({
                 className={cn(
                   'flex cursor-pointer items-center gap-3 rounded-xl border p-3 text-sm font-semibold transition-colors',
                   selectedAddressId === 'new'
-                    ? 'border-brand-500 bg-brand-50'
+                    ? 'border-brand-500 bg-success-50'
                     : 'border-ink-200 hover:border-ink-300',
                 )}
               >
@@ -418,7 +418,7 @@ function PaymentOption({
       className={cn(
         'flex cursor-pointer items-start gap-3 rounded-xl border p-3.5 transition-colors',
         disabled && 'cursor-not-allowed opacity-60',
-        checked ? 'border-brand-500 bg-brand-50' : 'border-ink-200 hover:border-ink-300',
+        checked ? 'border-brand-500 bg-success-50' : 'border-ink-200 hover:border-ink-300',
       )}
     >
       <input
@@ -429,14 +429,14 @@ function PaymentOption({
         onChange={onSelect}
         className="mt-1 size-4 accent-brand-600"
       />
-      <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-surface text-lg text-brand-600">
+      <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-surface text-lg text-link">
         {icon}
       </span>
       <span className="min-w-0">
         <span className="block text-sm font-bold text-ink-900">{title}</span>
         <span className="mt-0.5 block text-sm text-ink-500">{body}</span>
       </span>
-      {checked ? <CheckIcon className="ml-auto text-lg text-brand-600" /> : null}
+      {checked ? <CheckIcon className="ml-auto text-lg text-link" /> : null}
     </label>
   );
 }
@@ -461,7 +461,7 @@ function OrderItems({ cart }: { cart: CartView }) {
                   className="object-cover"
                 />
               ) : null}
-              <span className="absolute -right-1 -top-1 grid size-5 place-items-center rounded-full bg-ink-900 text-[0.65rem] font-bold text-white">
+              <span className="absolute -right-1 -top-1 grid size-5 place-items-center rounded-full bg-carbon-900 text-[0.65rem] font-bold text-white">
                 {item.quantity}
               </span>
             </span>

@@ -59,7 +59,7 @@ export default async function OrderPage({
       {justPlaced ? (
         <section className="mb-6 overflow-hidden rounded-card border border-success-500/25 bg-success-50 p-5 sm:p-7">
           <div className="flex items-start gap-4">
-            <span className="grid size-12 shrink-0 place-items-center rounded-full bg-success-500 text-2xl text-white">
+            <span className="grid size-12 shrink-0 place-items-center rounded-full bg-action text-2xl text-on-action">
               <CheckIcon />
             </span>
             <div className="min-w-0">
@@ -87,7 +87,7 @@ export default async function OrderPage({
           </h1>
           <Link
             href="/orders"
-            className="text-sm font-semibold text-brand-700 hover:underline"
+            className="text-sm font-semibold text-link hover:underline"
           >
             ← {t('order.myOrders')}
           </Link>

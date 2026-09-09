@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { cn } from '@tamizh/core/utils';
 import { ROLE_LABELS } from '@tamizh/core/permissions';
+import type { Theme } from '@tamizh/core/theme';
 import { api } from '@/lib/http';
 import {
   isActive,
@@ -16,6 +17,7 @@ import { LOCALE_LABELS, LOCALES } from '@/i18n/config';
 import { useAdmin } from '@/components/providers/AdminProviders';
 import { NavIcon } from './NavIcon';
 import { AdminMark } from './AdminMark';
+import { ThemeControl } from './ThemeControl';
 import {
   BellIcon,
   CloseIcon,
@@ -39,10 +41,12 @@ export function AdminShell({
   children,
   storefrontUrl,
   unreadCount,
+  theme,
 }: {
   children: React.ReactNode;
   storefrontUrl: string;
   unreadCount: number;
+  theme: Theme;
 }) {
   const { t, session, online } = useAdmin();
   const pathname = usePathname();
@@ -66,23 +70,35 @@ export function AdminShell({
         {t('common.skipToContent')}
       </a>
 
-      {/* Desktop sidebar */}
-      <aside className="no-print sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-r border-slate-800 bg-slate-900 lg:flex">
-        <div className="flex items-center gap-2.5 px-4 py-4">
-          <AdminMark className="size-9" />
-          <div className="min-w-0">
-            <p className="truncate text-sm font-bold text-white">{t('app.name')}</p>
-            <p className="truncate text-xs text-slate-400">{t('app.shopName')}</p>
-          </div>
-        </div>
+      {/* Desktop sidebar.
 
-        <nav aria-label={t('nav.menu')} className="flex-1 overflow-y-auto px-2 pb-4">
+          Carbon and gold in both themes — it is the crest, not a panel, so it
+          does not follow the light/dark ramp. `on-carbon` re-points the tone
+          ramp at its dark values for this subtree, which is why ordinary
+          `text-slate-*` utilities keep reading correctly inside it. */}
+      <aside className="no-print on-carbon sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r border-carbon-700 bg-carbon-900 lg:flex">
+        <Link
+          href="/"
+          className="flex items-center gap-3 border-b border-carbon-700 px-4 py-4 transition-colors hover:bg-carbon-800"
+        >
+          <AdminMark className="size-9 shrink-0" />
+          <span className="min-w-0">
+            <span className="block truncate text-sm font-bold text-gold-300">
+              {t('app.name')}
+            </span>
+            <span className="block truncate text-xs text-slate-500">
+              {t('app.shopName')}
+            </span>
+          </span>
+        </Link>
+
+        <nav aria-label={t('nav.menu')} className="flex-1 overflow-y-auto px-2.5 py-3">
           {sections.map((section) => (
-            <div key={section.labelKey} className="mb-4">
-              <p className="px-3 py-1.5 text-[0.68rem] font-semibold uppercase tracking-wider text-slate-400">
+            <div key={section.labelKey} className="mb-5 last:mb-0">
+              <p className="mb-1 px-2.5 text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-slate-500">
                 {t(section.labelKey)}
               </p>
-              <ul className="space-y-0.5">
+              <ul className="space-y-px">
                 {section.items.map((item) => (
                   <li key={item.href}>
                     <SidebarLink item={item} active={isActive(pathname, item)} />
@@ -93,26 +109,29 @@ export function AdminShell({
           ))}
         </nav>
 
-        <div className="border-t border-slate-800 p-3">
+        <div className="border-t border-carbon-700 p-2.5">
           <a
             href={storefrontUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-400 transition-colors hover:bg-slate-800 hover:text-white"
+            className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-slate-600 transition-colors hover:bg-carbon-700 hover:text-slate-900"
           >
             <ExternalIcon className="text-base" />
             {t('nav.viewShop')}
+            <span className="ms-auto text-slate-400" aria-hidden="true">
+              ↗
+            </span>
           </a>
         </div>
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <TopBar unreadCount={unreadCount} onOpenDrawer={openDrawer} />
+        <TopBar unreadCount={unreadCount} theme={theme} onOpenDrawer={openDrawer} />
 
         {!online ? (
           <div
             role="status"
-            className="no-print flex items-center justify-center gap-2 bg-slate-900 px-4 py-2 text-sm font-medium text-white"
+            className="no-print flex items-center justify-center gap-2 bg-carbon-900 px-4 py-2 text-sm font-medium text-gold-300"
           >
             <WifiOffIcon className="text-base" />
             {t('offline.banner')}
@@ -140,7 +159,7 @@ export function AdminShell({
                   aria-current={active ? 'page' : undefined}
                   className={cn(
                     'relative flex min-h-14 flex-col items-center justify-center gap-0.5 px-1 py-1.5 text-[0.65rem] font-medium',
-                    active ? 'text-brand-700' : 'text-slate-500',
+                    active ? 'text-link' : 'text-slate-500',
                   )}
                 >
                   <NavIcon name={item.icon} className="size-5" />
@@ -186,13 +205,22 @@ function SidebarLink({ item, active }: { item: NavItem; active: boolean }) {
       href={item.href}
       aria-current={active ? 'page' : undefined}
       className={cn(
-        'flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors',
+        'group flex min-h-10 items-center gap-2.5 rounded-lg px-2.5 text-sm transition-colors',
+        // Gold leads: the page you are on is the one gold thing in the column,
+        // which makes the current position readable at a glance rather than
+        // requiring the label to be read.
         active
-          ? 'bg-brand-600 font-semibold text-white'
-          : 'text-slate-300 hover:bg-slate-800 hover:text-white',
+          ? 'bg-action font-semibold text-on-action'
+          : 'text-slate-600 hover:bg-carbon-700 hover:text-slate-900',
       )}
     >
-      <NavIcon name={item.icon} className="size-4.5 shrink-0" />
+      <NavIcon
+        name={item.icon}
+        className={cn(
+          'size-4.5 shrink-0 transition-colors',
+          !active && 'text-slate-400 group-hover:text-gold-400',
+        )}
+      />
       <span className="truncate">{t(item.labelKey)}</span>
     </Link>
   );
@@ -200,9 +228,11 @@ function SidebarLink({ item, active }: { item: NavItem; active: boolean }) {
 
 function TopBar({
   unreadCount,
+  theme,
   onOpenDrawer,
 }: {
   unreadCount: number;
+  theme: Theme;
   onOpenDrawer: () => void;
 }) {
   const { t, session, can } = useAdmin();
@@ -235,14 +265,19 @@ function TopBar({
             >
               <BellIcon className="text-xl" />
               {unreadCount > 0 ? (
-                <span className="absolute right-1.5 top-1.5 grid min-w-[1.1rem] place-items-center rounded-full bg-critical-500 px-1 text-[0.65rem] font-bold leading-[1.1rem] text-white">
+                <span className="absolute right-1.5 top-1.5 grid min-w-[1.1rem] place-items-center rounded-full bg-action px-1 text-[0.65rem] font-bold leading-[1.1rem] text-on-action ring-2 ring-surface">
                   {unreadCount > 99 ? '99+' : unreadCount}
                 </span>
               ) : null}
             </Link>
           ) : null}
 
-          <AccountMenu name={session.name} email={session.email} role={session.role} />
+          <AccountMenu
+            name={session.name}
+            email={session.email}
+            role={session.role}
+            theme={theme}
+          />
         </div>
       </div>
     </header>
@@ -284,10 +319,12 @@ function AccountMenu({
   name,
   email,
   role,
+  theme,
 }: {
   name: string;
   email: string;
   role: keyof typeof ROLE_LABELS;
+  theme: Theme;
 }) {
   const { t, locale, setLocale } = useAdmin();
   const [open, setOpen] = useState(false);
@@ -350,9 +387,24 @@ function AccountMenu({
           <div className="border-b border-slate-100 px-4 pb-2.5 pt-2">
             <p className="truncate text-sm font-semibold text-slate-900">{name}</p>
             <p className="truncate text-xs text-slate-500">{email}</p>
-            <p className="mt-1 text-xs font-medium text-brand-700">
+            <p className="mt-1 text-xs font-medium text-link">
               {ROLE_LABELS[role][locale]}
             </p>
+          </div>
+
+          <div className="border-b border-slate-100 px-4 py-2.5">
+            <p className="mb-1.5 text-xs font-medium text-slate-500">
+              {t('theme.label')}
+            </p>
+            <ThemeControl
+              current={theme}
+              label={t('theme.label')}
+              labels={{
+                system: t('theme.system'),
+                light: t('theme.light'),
+                dark: t('theme.dark'),
+              }}
+            />
           </div>
 
           <div className="border-b border-slate-100 px-4 py-2.5">
@@ -371,7 +423,7 @@ function AccountMenu({
                     'min-h-8 rounded-md px-3 text-xs font-semibold transition-colors',
                     code === 'ta' && 'font-tamil',
                     locale === code
-                      ? 'bg-surface text-brand-700 shadow-sm'
+                      ? 'bg-surface text-link shadow-sm'
                       : 'text-slate-500 hover:text-slate-800',
                   )}
                 >
@@ -440,7 +492,7 @@ function MoreDrawer({
         type="button"
         aria-label={t('common.close')}
         onClick={onClose}
-        className="absolute inset-0 bg-slate-900/50"
+        className="absolute inset-0 bg-carbon-950/60 backdrop-blur-[2px]"
       />
       <div
         ref={panelRef}
@@ -478,7 +530,7 @@ function MoreDrawer({
                         className={cn(
                           'flex min-h-12 items-center gap-2.5 rounded-lg px-3 text-sm font-medium',
                           active
-                            ? 'bg-brand-50 text-brand-800'
+                            ? 'bg-success-50 text-link'
                             : 'text-slate-700 hover:bg-slate-100',
                         )}
                       >

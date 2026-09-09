@@ -31,7 +31,7 @@ export function Breadcrumbs({
                     {crumb.name}
                   </span>
                 ) : (
-                  <Link href={crumb.path} className="hover:text-brand-700 hover:underline">
+                  <Link href={crumb.path} className="hover:text-link hover:underline">
                     {crumb.name}
                   </Link>
                 )}

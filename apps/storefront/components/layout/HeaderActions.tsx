@@ -56,7 +56,7 @@ export function HeaderActions({
 function Dot({ children }: { children: number }) {
   return (
     <span
-      className="absolute right-1 top-1 grid min-w-[1.15rem] place-items-center rounded-full bg-gold-500 px-1 text-[0.68rem] font-bold leading-[1.15rem] text-ink-900"
+      className="absolute right-1 top-1 grid min-w-[1.15rem] place-items-center rounded-full bg-gold-500 px-1 text-[0.68rem] font-bold leading-[1.15rem] text-on-action"
       aria-hidden="true"
     >
       {children > 99 ? '99+' : children}
@@ -185,7 +185,7 @@ function MenuLink({
       href={href}
       role="menuitem"
       onClick={onClick}
-      className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-ink-700 hover:bg-brand-50 hover:text-brand-800"
+      className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-ink-700 hover:bg-success-50 hover:text-link"
     >
       <span className="text-base text-ink-400">{icon}</span>
       {children}

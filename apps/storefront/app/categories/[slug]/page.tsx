@@ -65,7 +65,7 @@ export default async function CategoryPage({
       />
 
       <header className="mb-6 flex items-start gap-4">
-        <span className="grid size-14 shrink-0 place-items-center rounded-2xl bg-brand-50 text-brand-600 sm:size-16">
+        <span className="grid size-14 shrink-0 place-items-center rounded-2xl bg-success-50 text-link sm:size-16">
           <CategoryIcon name={category.icon} className="size-7 sm:size-8" />
         </span>
         <div className="min-w-0">
@@ -87,7 +87,7 @@ export default async function CategoryPage({
               <li key={child.id}>
                 <Link
                   href={`/categories/${child.slug}`}
-                  className="inline-flex items-center gap-2 rounded-full border border-ink-200 bg-surface px-3.5 py-2 text-sm font-medium text-ink-700 transition-colors hover:border-brand-300 hover:bg-brand-50 hover:text-brand-800"
+                  className="inline-flex items-center gap-2 rounded-full border border-ink-200 bg-surface px-3.5 py-2 text-sm font-medium text-ink-700 transition-colors hover:border-action-edge/60 hover:bg-success-50 hover:text-link"
                 >
                   <CategoryIcon name={child.icon} className="size-4 text-ink-400" />
                   {locale === 'ta' ? child.nameTa : child.name}

@@ -48,7 +48,7 @@ export function ServiceWorkerRegistrar() {
   if (!waiting) return null;
 
   return (
-    <div className="no-print fixed inset-x-3 bottom-20 z-50 mx-auto max-w-md animate-fade-in rounded-lg bg-slate-900 px-4 py-3 text-white shadow-overlay lg:bottom-6">
+    <div className="no-print fixed inset-x-3 bottom-20 z-50 mx-auto max-w-md animate-fade-in rounded-lg bg-carbon-900 px-4 py-3 text-slate-100 ring-1 ring-carbon-600 shadow-overlay lg:bottom-6">
       <div className="flex items-center gap-3">
         <RefreshIcon className="shrink-0 text-lg text-brand-300" />
         <p className="flex-1 text-sm font-medium">{t('pwa.updateAvailable')}</p>

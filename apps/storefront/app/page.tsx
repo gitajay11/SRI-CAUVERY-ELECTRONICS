@@ -125,7 +125,7 @@ export default async function HomePage() {
 
       {/* Return gifts */}
       {returnGifts.length > 0 ? (
-        <section className="bg-brand-50/60 py-10 lg:py-14">
+        <section className="bg-success-50/60 py-10 lg:py-14">
           <div className="container-page">
             <SectionHeading
               title={t('home.returnGifts.title')}

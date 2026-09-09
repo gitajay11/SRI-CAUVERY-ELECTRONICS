@@ -2,7 +2,7 @@
 
 import { useId, type ComponentProps, type ReactNode } from 'react';
 import { cn } from '@tamizh/core/utils';
-import { AlertIcon } from './Icons';
+import { AlertIcon, ChevronDownIcon } from './Icons';
 
 /**
  * Accessible form controls.
@@ -12,13 +12,18 @@ import { AlertIcon } from './Icons';
  * a separate prop that can drift out of sync.
  */
 
-const controlBase =
-  'w-full rounded-xl border bg-surface px-3.5 py-3 text-base text-ink-900 ' +
+// Chrome only — no sizing, so the compact select below can borrow it. `cn`
+// is a plain join rather than a Tailwind merger, so conflicting utilities both
+// apply instead of resolving; sizes are composed, never overridden.
+const controlChrome =
+  'border bg-surface text-ink-900 ' +
   'placeholder:text-ink-400 transition-colors duration-150 ' +
   'border-ink-200 hover:border-ink-300 ' +
   'focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-500/12 ' +
   'aria-[invalid=true]:border-danger-500 aria-[invalid=true]:ring-danger-500/12 ' +
   'disabled:bg-ink-50 disabled:text-ink-400';
+
+const controlBase = 'w-full rounded-xl px-3.5 py-3 text-base ' + controlChrome;
 
 interface FieldShellProps {
   label: string;
@@ -152,11 +157,85 @@ export function TextAreaField({
   );
 }
 
-type SelectProps = Omit<ComponentProps<'select'>, 'id'> & {
+type SelectProps = Omit<ComponentProps<'select'>, 'id' | 'size'> & {
   label: string;
   hint?: string;
   error?: string;
 };
+
+/**
+ * The one dropdown.
+ *
+ * A native `<select>`, because on a phone the platform picker beats anything
+ * built out of divs — it scrolls under one thumb, it types ahead, and it never
+ * traps focus. Only the closed control is styled: the chevron is a real
+ * element inheriting `currentColor` rather than an SVG baked into a
+ * background image, so it follows the theme instead of staying grey when the
+ * shop goes dark.
+ *
+ * The open option list is drawn by the operating system and cannot be styled;
+ * it follows `color-scheme`, which the theme sets on the document — which is
+ * why a dark shop gets a dark option list for free.
+ */
+export function Select({
+  size = 'md',
+  invalid,
+  leadingIcon,
+  className,
+  children,
+  ...props
+}: Omit<ComponentProps<'select'>, 'size'> & {
+  size?: 'md' | 'sm' | 'xs';
+  invalid?: boolean;
+  /** Sits in the start gutter; the component reserves the room for it. */
+  leadingIcon?: ReactNode;
+}) {
+  const leading = leadingIcon
+    ? { md: 'ps-11', sm: 'ps-10', xs: 'ps-8' }[size]
+    : { md: 'ps-3.5', sm: 'ps-4', xs: 'ps-2.5' }[size];
+
+  return (
+    <span className={cn('relative inline-flex', size === 'md' && 'w-full')}>
+      {leadingIcon ? (
+        <span
+          aria-hidden="true"
+          className={cn(
+            'pointer-events-none absolute inset-y-0 my-auto flex items-center text-ink-400',
+            size === 'xs' ? 'start-2 text-sm' : size === 'md' ? 'start-3.5 text-lg' : 'start-3.5 text-base',
+          )}
+        >
+          {leadingIcon}
+        </span>
+      ) : null}
+
+      <select
+        {...props}
+        aria-invalid={invalid ? true : props['aria-invalid']}
+        className={cn(
+          'cursor-pointer appearance-none',
+          controlChrome,
+          {
+            md: 'w-full rounded-xl py-3 pe-11 text-base',
+            sm: 'min-h-11 rounded-full py-2 pe-9 text-sm font-semibold',
+            xs: 'min-h-9 rounded-lg py-1 pe-7 text-sm',
+          }[size],
+          leading,
+          className,
+        )}
+      >
+        {children}
+      </select>
+
+      <ChevronDownIcon
+        aria-hidden="true"
+        className={cn(
+          'pointer-events-none absolute inset-y-0 my-auto text-ink-400',
+          size === 'xs' ? 'end-1.5 text-sm' : size === 'md' ? 'end-3.5 text-lg' : 'end-3 text-base',
+        )}
+      />
+    </span>
+  );
+}
 
 export function SelectField({
   label,
@@ -170,23 +249,16 @@ export function SelectField({
   return (
     <FieldShell label={label} hint={hint} error={error} required={required}>
       {({ id, describedBy }) => (
-        <select
+        <Select
           {...props}
           id={id}
           required={required}
-          aria-invalid={error ? true : undefined}
+          invalid={Boolean(error)}
           aria-describedby={describedBy}
-          className={cn(controlBase, 'appearance-none pr-10', className)}
-          style={{
-            backgroundImage:
-              "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b655b' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='m5 9 7 7 7-7'/%3E%3C/svg%3E\")",
-            backgroundRepeat: 'no-repeat',
-            backgroundPosition: 'right 0.85rem center',
-            backgroundSize: '1.1rem',
-          }}
+          className={className}
         >
           {children}
-        </select>
+        </Select>
       )}
     </FieldShell>
   );
@@ -206,7 +278,7 @@ export function CheckboxField({
         id={id}
         type="checkbox"
         className={cn(
-          'mt-0.5 size-5 shrink-0 cursor-pointer rounded-md border-ink-300 text-brand-600',
+          'mt-0.5 size-5 shrink-0 cursor-pointer rounded-md border-ink-300 text-link',
           'accent-brand-600 focus-visible:outline-brand-600',
           className,
         )}

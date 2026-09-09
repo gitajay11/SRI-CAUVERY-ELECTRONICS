@@ -33,7 +33,7 @@ export default async function PrivacyPolicyPage() {
           {formattedAddress()}. For any privacy question, write to{' '}
           <a
             href={`mailto:${shopConfig.supportEmail}`}
-            className="font-semibold text-brand-700 hover:underline"
+            className="font-semibold text-link hover:underline"
           >
             {shopConfig.supportEmail}
           </a>{' '}
@@ -124,7 +124,7 @@ export default async function PrivacyPolicyPage() {
           If this policy changes materially, we will update the date at the top of this page
           and, where the change affects existing orders or accounts, tell you directly. See
           also our{' '}
-          <Link href="/terms" className="font-semibold text-brand-700 hover:underline">
+          <Link href="/terms" className="font-semibold text-link hover:underline">
             {t('footer.terms')}
           </Link>
           .
