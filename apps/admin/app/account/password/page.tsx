@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { getAdminIdentity } from '@/lib/session';
+import { getAdminIdentity, signedOutReason } from '@/lib/session';
 import { getI18n } from '@/i18n/server';
 import { getDictionary } from '@/i18n';
 import { AdminMark } from '@/components/layout/AdminMark';
@@ -21,7 +21,9 @@ export default async function ChangePasswordPage({
   searchParams: Promise<{ forced?: string }>;
 }) {
   const identity = await getAdminIdentity();
-  if (!identity) redirect('/login?reason=expired');
+  if (!identity) {
+    redirect((await signedOutReason()) === 'ended' ? '/login?reason=expired' : '/login');
+  }
 
   const { forced } = await searchParams;
   const { t, locale } = await getI18n();

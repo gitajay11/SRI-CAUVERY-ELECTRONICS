@@ -147,6 +147,23 @@ export async function getAdminIdentity(): Promise<AdminIdentity | null> {
 }
 
 /**
+ * Why the viewer is not signed in.
+ *
+ * `none` means no session cookie reached us at all — a first visit to this
+ * hostname, a new browser, a cleared profile. `ended` means a cookie arrived
+ * and was rejected: expired, idle too long, or revoked.
+ *
+ * Worth separating because cookies are host-scoped, so the very first visit to
+ * a new domain is indistinguishable from a dead session unless it is asked
+ * about explicitly — and telling someone their session expired when they have
+ * never signed in sends them looking for a fault that is not there.
+ */
+export async function signedOutReason(): Promise<'none' | 'ended'> {
+  const store = await cookies();
+  return store.get(ADMIN_SESSION_COOKIE)?.value ? 'ended' : 'none';
+}
+
+/**
  * Resolves a session cookie to an identity, memoised **per request**.
  *
  * `cache()` from React is what makes that per-request rather than per-process:

@@ -2,7 +2,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { THEME_COOKIE, normalizeTheme } from '@tamizh/core/theme';
 import { unreadCount } from '@/services/notifications';
-import { getAdminIdentity } from '@/lib/session';
+import { getAdminIdentity, signedOutReason } from '@/lib/session';
 import { getI18n } from '@/i18n/server';
 import { getDictionary } from '@/i18n';
 import { storefrontUrl } from '@/lib/env';
@@ -28,7 +28,11 @@ export default async function PanelLayout({
   children: React.ReactNode;
 }) {
   const identity = await getAdminIdentity();
-  if (!identity) redirect('/login?reason=expired');
+  // Only claim the session expired when a cookie actually arrived and was
+  // rejected; a first visit to this hostname gets the plain sign-in page.
+  if (!identity) {
+    redirect((await signedOutReason()) === 'ended' ? '/login?reason=expired' : '/login');
+  }
 
   // A forced password reset blocks everything except the change-password page.
   if (identity.mustChangePassword) redirect('/account/password?forced=1');
