@@ -29,7 +29,22 @@ export const ADMIN_SESSION_COOKIE = 'te_admin_session';
 
 const cookieOptions = {
   httpOnly: true,
-  sameSite: 'strict', // an admin action should never ride on a cross-site request
+  /**
+   * Lax, not Strict.
+   *
+   * Strict withholds the cookie on *every* cross-site request including a
+   * plain top-level navigation, so arriving from a bookmark, an email or a
+   * link in a chat presented no session at all — the panel then redirected to
+   * "your session has expired" while the session was in fact alive and
+   * untouched on the server.
+   *
+   * The security intent is preserved. Lax still withholds the cookie from
+   * cross-site POST, PATCH and DELETE, which is where CSRF actually lives, and
+   * every one of this app's 34 mutating routes is one of those verbs — no GET
+   * handler writes to the database. What Lax now allows is a cross-site GET
+   * navigation, which only renders a page.
+   */
+  sameSite: 'lax',
   secure: isProduction,
   path: '/',
 } as const;
