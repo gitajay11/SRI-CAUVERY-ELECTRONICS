@@ -13,14 +13,37 @@ loadWorkspaceEnv(import.meta.dirname);
  * for the JSON-LD blocks; `'unsafe-eval'` is only allowed in development for
  * React Refresh.
  */
+/**
+ * Razorpay Checkout needs four separate permissions, and it fails at the
+ * first: the script is fetched from checkout.razorpay.com, the modal itself
+ * is an iframe, and the widget talks to Razorpay's API and telemetry hosts
+ * while the shopper is paying.
+ *
+ * Listed as named hosts rather than a wildcard, and unconditionally rather
+ * than only when PAYMENT_PROVIDER says razorpay — a CSP assembled from
+ * build-time environment is exactly the kind of thing that silently differs
+ * between a build and the deployment it lands in.
+ */
+const RAZORPAY = {
+  script: 'https://checkout.razorpay.com https://cdn.razorpay.com',
+  frame: 'https://api.razorpay.com https://checkout.razorpay.com',
+  connect:
+    'https://api.razorpay.com https://lumberjack.razorpay.com https://lumberjack-cx.razorpay.com',
+  img: 'https://cdn.razorpay.com https://*.rzp.io',
+};
+
 const csp = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ''}`,
+  `script-src 'self' 'unsafe-inline' ${RAZORPAY.script}${process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ''}`,
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com data:",
-  "img-src 'self' data: blob: https://*.public.blob.vercel-storage.com",
-  "connect-src 'self'",
+  `img-src 'self' data: blob: https://*.public.blob.vercel-storage.com ${RAZORPAY.img}`,
+  `connect-src 'self' ${RAZORPAY.connect}`,
+  // The payment modal is an iframe. Without this the script loads and then
+  // opens nothing, which looks like a hang rather than a blocked frame.
+  `frame-src 'self' ${RAZORPAY.frame}`,
   "form-action 'self'",
+  // Still nobody may frame the shop; this governs what the shop may frame.
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "object-src 'none'",
