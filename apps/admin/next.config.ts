@@ -28,7 +28,10 @@ const csp = [
   `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ''}`,
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com data:",
-  `img-src 'self' data: blob: ${shopOrigin}`,
+  // `blob:` is the URI scheme for object URLs. Vercel Blob is a different
+  // thing entirely and needs its own host, or the browser silently refuses
+  // to paint every uploaded product image.
+  `img-src 'self' data: blob: https://*.public.blob.vercel-storage.com ${shopOrigin}`,
   "connect-src 'self'",
   "form-action 'self'",
   "frame-ancestors 'none'",
