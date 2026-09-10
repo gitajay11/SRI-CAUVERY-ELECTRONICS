@@ -51,6 +51,23 @@ const nextConfig: NextConfig = {
     formats: ['image/avif', 'image/webp'],
     deviceSizes: [360, 414, 640, 750, 828, 1080, 1200, 1920],
     imageSizes: [64, 96, 128, 200, 256, 320, 384],
+    /**
+     * Product images uploaded from the admin live in Vercel Blob, and
+     * `next/image` refuses any host it has not been told about — a good
+     * default, since the optimiser would otherwise fetch and cache whatever
+     * URL a database row happened to contain.
+     *
+     * The hostname is a per-store subdomain of blob.vercel-storage.com, so the
+     * wildcard covers whichever store this project is connected to without
+     * pinning the config to one account.
+     */
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '*.public.blob.vercel-storage.com',
+        pathname: '/**',
+      },
+    ],
   },
 
   experimental: {

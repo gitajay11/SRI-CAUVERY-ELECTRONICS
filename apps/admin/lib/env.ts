@@ -69,13 +69,30 @@ export const push = {
     Boolean(process.env.VAPID_PUBLIC_KEY?.trim() && process.env.VAPID_PRIVATE_KEY?.trim()),
 };
 
-/** Product image uploads. "local" writes into the storefront's public folder. */
+export type StorageProvider = 'local' | 'blob';
+
+/**
+ * Where product images go.
+ *
+ * `local` writes into the storefront's public folder, which is right for
+ * development: one repository, one disk, and the shop serves the file with no
+ * further configuration. It cannot work once deployed — a serverless
+ * filesystem is read-only, and the two applications are separate deployments,
+ * so the admin has no storefront folder to write into.
+ *
+ * `blob` is Vercel Blob. The default below picks it automatically whenever
+ * its token is present, so connecting a store in the Vercel dashboard is the
+ * whole of the setup; nothing has to be set by hand.
+ */
 export const storage = {
-  provider: (process.env.STORAGE_PROVIDER?.trim() || 'local') as 'local' | 's3',
+  provider: ((process.env.STORAGE_PROVIDER?.trim() ||
+    (process.env.BLOB_READ_WRITE_TOKEN ? 'blob' : 'local')) as StorageProvider),
   localDir: () =>
     process.env.STORAGE_LOCAL_DIR?.trim() || '../storefront/public/uploads',
   publicPrefix: () => process.env.STORAGE_PUBLIC_PREFIX?.trim() || '/uploads',
   maxBytes: Number(process.env.STORAGE_MAX_BYTES ?? 5 * 1024 * 1024),
+  /** Present only when a Blob store is connected. */
+  blobToken: () => process.env.BLOB_READ_WRITE_TOKEN?.trim() || '',
 };
 
 /**
