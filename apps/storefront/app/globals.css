@@ -203,6 +203,16 @@
   }
 }
 
+/** The drawer enters from the edge it is anchored to, not from below. */
+@keyframes te-slide-in {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: none;
+  }
+}
+
 @keyframes te-slide-up {
   from {
     transform: translateY(100%);

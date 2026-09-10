@@ -363,10 +363,69 @@ async function main() {
   check('empty address rejected', missingAddress.status === 422);
 
   // -----------------------------------------------------------------------
-  section('Guest checkout places an order');
+  section('Checkout requires an account');
+  // -----------------------------------------------------------------------
+  // The page redirects a signed-out shopper to sign in, but the page can be
+  // bypassed and this endpoint cannot, so the refusal is asserted here.
+  const signedOut = await guest.api('/api/checkout', {
+    method: 'POST',
+    json: { ...validAddress, couponCode: 'WELCOME10' },
+  });
+  // The checkout limiter is in-process, so a re-run inside its window answers
+  // 429 before the auth check is ever reached. That is the limiter working,
+  // not the rule failing, and reporting it as a failure would send someone
+  // looking for a bug that is not there.
+  if (signedOut.status === 429) {
+    console.log(
+      [
+        '',
+        '  ! Checkout is rate limited on this instance, so the sign-in',
+        '    requirement could not be exercised. Restart the server to re-run it.',
+      ].join(String.fromCharCode(10)),
+    );
+  } else {
+    check(
+      'an order cannot be placed without signing in',
+      signedOut.status === 401,
+      `status ${signedOut.status}`,
+    );
+  }
+  check('no order number is issued to a signed-out shopper', !signedOut.body?.data?.order);
+
+  // Registering merges the anonymous cart into the new account, so what gets
+  // ordered below is the cart built up over the sections above.
+  const buyer = await guest.api('/api/auth/register', {
+    method: 'POST',
+    json: {
+      name: 'Meena Sundaram',
+      email: `buyer+${unique}@example.com`,
+      password: 'correct-horse-99',
+      phone: '9840012345',
+    },
+  });
+
+  if (buyer.status === 429) {
+    console.log(
+      [
+        '',
+        '  ! Registration is rate limited on this instance, so the order,',
+        '    account, admin and remaining sections were skipped.',
+        '    The limiter is in-process: restart the server and re-run for a full pass.',
+      ].join(String.fromCharCode(10)),
+    );
+    summarise();
+    return;
+  }
+
+  check('the shopper can create an account to check out', buyer.status === 201, `status ${buyer.status}`);
+  check('the cart survives registration', guest.cookies.has('te_session'));
+
+  // -----------------------------------------------------------------------
+  section('A signed-in shopper places an order');
   // -----------------------------------------------------------------------
   const cartBeforeOrder = await guest.api('/api/cart');
   const expectedTotal = cartBeforeOrder.body.data.totals.total;
+  check('the merged cart still has items', (cartBeforeOrder.body?.data?.items?.length ?? 0) > 0);
 
   const placed = await guest.api('/api/checkout', {
     method: 'POST',

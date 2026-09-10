@@ -4,19 +4,17 @@ import { useEffect, useState } from 'react';
 import { useLocale } from '@/components/providers/LocaleProvider';
 import { BrandGlyph } from '@/components/layout/BrandMark';
 import { CloseIcon, DownloadIcon } from '@/components/ui/Icons';
+import { useInstall } from './InstallProvider';
 
 /**
  * "Add to home screen" prompt.
  *
- * Chromium fires `beforeinstallprompt`, which we capture and re-offer at a
- * calmer moment instead of letting the browser mini-infobar interrupt
- * browsing. Dismissal is remembered for 30 days so the shop never nags.
+ * The event itself is captured by InstallProvider, because it fires once and
+ * whoever listens at that instant owns the only chance to install — the menu
+ * needs to be able to offer the same thing. This is the unprompted half: it
+ * waits for a calmer moment than the browser's own mini-infobar, and a
+ * dismissal is remembered for 30 days so the shop never nags.
  */
-
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
-}
 
 const DISMISS_KEY = 'te_install_dismissed_at';
 const DISMISS_DAYS = 30;
@@ -24,40 +22,26 @@ const SHOW_AFTER_MS = 12_000;
 
 export function InstallPrompt() {
   const { t } = useLocale();
-  const [event, setEvent] = useState<BeforeInstallPromptEvent | null>(null);
+  const { platform, install } = useInstall();
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    const recentlyDismissed = () => {
-      try {
-        const raw = localStorage.getItem(DISMISS_KEY);
-        if (!raw) return false;
-        return Date.now() - Number(raw) < DISMISS_DAYS * 86_400_000;
-      } catch {
-        return false;
-      }
-    };
+    // Only the browser-prompt path is offered unasked. On iOS the menu's
+    // explicit "Install app" is the right place for instructions; a banner of
+    // steps nobody requested is just an advertisement.
+    if (platform !== 'prompt') return;
 
-    const onPrompt = (nativeEvent: Event) => {
-      nativeEvent.preventDefault();
-      if (recentlyDismissed()) return;
-      setEvent(nativeEvent as BeforeInstallPromptEvent);
-      // Let the shopper look around first; a prompt on arrival gets dismissed.
-      setTimeout(() => setVisible(true), SHOW_AFTER_MS);
-    };
+    try {
+      const raw = localStorage.getItem(DISMISS_KEY);
+      if (raw && Date.now() - Number(raw) < DISMISS_DAYS * 86_400_000) return;
+    } catch {
+      // Storage unavailable — offer it; the worst case is one extra prompt.
+    }
 
-    const onInstalled = () => {
-      setVisible(false);
-      setEvent(null);
-    };
-
-    window.addEventListener('beforeinstallprompt', onPrompt);
-    window.addEventListener('appinstalled', onInstalled);
-    return () => {
-      window.removeEventListener('beforeinstallprompt', onPrompt);
-      window.removeEventListener('appinstalled', onInstalled);
-    };
-  }, []);
+    // Let the shopper look around first; a prompt on arrival gets dismissed.
+    const timer = setTimeout(() => setVisible(true), SHOW_AFTER_MS);
+    return () => clearTimeout(timer);
+  }, [platform]);
 
   const dismiss = () => {
     setVisible(false);
@@ -68,7 +52,7 @@ export function InstallPrompt() {
     }
   };
 
-  if (!visible || !event) return null;
+  if (!visible || platform !== 'prompt') return null;
 
   return (
     <div
@@ -104,11 +88,9 @@ export function InstallPrompt() {
         <button
           type="button"
           onClick={async () => {
-            await event.prompt();
-            const choice = await event.userChoice;
-            if (choice.outcome === 'dismissed') dismiss();
+            const outcome = await install();
+            if (outcome === 'dismissed') dismiss();
             else setVisible(false);
-            setEvent(null);
           }}
           className="inline-flex min-h-10 flex-1 items-center justify-center gap-2 rounded-full bg-brand-600 px-4 text-sm font-bold text-white"
         >

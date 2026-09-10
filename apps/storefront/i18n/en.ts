@@ -61,6 +61,7 @@ export const en = {
   'nav.admin': 'Admin',
   'nav.language': 'Language',
   'nav.signIn': 'Sign in',
+  'nav.signInSubtitle': 'Orders, wishlist and faster checkout',
   'nav.signOut': 'Sign out',
   'nav.register': 'Create account',
 
@@ -398,6 +399,8 @@ export const en = {
   'pwa.installTitle': 'Install Sri Cauvery Electronics',
   'pwa.installBody': 'Add the shop to your home screen for faster access.',
   'pwa.install': 'Install',
+  'pwa.installApp': 'Install app',
+  'pwa.iosHint': 'Tap Share, then "Add to Home Screen".',
   'pwa.notNow': 'Not now',
   'pwa.updateAvailable': 'A new version is available.',
   'pwa.refresh': 'Refresh',

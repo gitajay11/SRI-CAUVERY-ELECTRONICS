@@ -22,6 +22,7 @@ import { Footer } from '@/components/layout/Footer';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { ServiceWorkerRegistrar } from '@/components/pwa/ServiceWorkerRegistrar';
 import { InstallPrompt } from '@/components/pwa/InstallPrompt';
+import { InstallProvider } from '@/components/pwa/InstallProvider';
 import { OfflineBanner } from '@/components/pwa/OfflineBanner';
 
 /**
@@ -111,6 +112,7 @@ export default async function RootLayout({
 
         <LocaleProvider locale={locale} dictionary={getDictionary(locale)}>
           <ToastProvider>
+            <InstallProvider>
             <CartProvider
               initialCount={cart.count}
               initialLines={cart.lines}
@@ -139,6 +141,7 @@ export default async function RootLayout({
               <ServiceWorkerRegistrar />
               <InstallPrompt />
             </CartProvider>
+            </InstallProvider>
           </ToastProvider>
         </LocaleProvider>
       </body>

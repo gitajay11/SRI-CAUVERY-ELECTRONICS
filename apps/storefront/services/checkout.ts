@@ -33,19 +33,28 @@ export async function placeOrder(input: CheckoutInput): Promise<PlaceOrderResult
     throw new AppError('Your cart is empty.', 409, 'empty_cart');
   }
 
+  // Orders belong to an account. The checkout page redirects a signed-out
+  // shopper to sign in, but that is a convenience — this is the check that
+  // decides, because the page can be bypassed and this endpoint cannot.
+  const sessionUser = await getSessionUser();
+  if (!sessionUser) {
+    throw new AppError(
+      'Please sign in to place your order.',
+      401,
+      'sign_in_required',
+    );
+  }
+
   // A session cookie is signed, not looked up, so it keeps working after shop
   // staff block an account. Placing an order is the point where that has to be
   // checked against the database rather than trusted from the cookie.
-  const sessionUser = await getSessionUser();
-  if (sessionUser) {
-    const account = await repo.findUserById(sessionUser.id);
-    if (!account || !account.isActive) {
-      throw new AppError(
-        'This account cannot place orders. Please contact the shop.',
-        403,
-        'account_blocked',
-      );
-    }
+  const account = await repo.findUserById(sessionUser.id);
+  if (!account || !account.isActive) {
+    throw new AppError(
+      'This account cannot place orders. Please contact the shop.',
+      403,
+      'account_blocked',
+    );
   }
 
   const { items } = await repo.getCart(owner);
@@ -104,7 +113,6 @@ export async function placeOrder(input: CheckoutInput): Promise<PlaceOrderResult
     );
   }
 
-  const user = await getSessionUser();
   const orderNumber = generateOrderNumber();
   const provider = providerFor(input.paymentMethod);
   const intent = await provider.createIntent({
@@ -115,7 +123,7 @@ export async function placeOrder(input: CheckoutInput): Promise<PlaceOrderResult
   });
 
   const order = await repo.placeOrder({
-    userId: user?.id ?? null,
+    userId: sessionUser.id,
     customerName: input.customerName,
     customerEmail: input.customerEmail,
     customerPhone: input.customerPhone,
@@ -142,11 +150,11 @@ export async function placeOrder(input: CheckoutInput): Promise<PlaceOrderResult
   await repo.clearCart(owner);
   await setCouponCookie(null);
 
-  if (user && input.saveAddress) {
+  if (input.saveAddress) {
     // Best effort — a failure to save the address book entry must never lose
     // an order that has already been placed.
     try {
-      await repo.createAddress(user.id, {
+      await repo.createAddress(sessionUser.id, {
         fullName: input.customerName,
         phone: input.customerPhone,
         line1: input.addressLine1,

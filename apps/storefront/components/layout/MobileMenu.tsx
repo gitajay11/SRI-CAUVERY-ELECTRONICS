@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { CategoryView } from '@tamizh/core/types';
@@ -13,14 +14,18 @@ import type { Theme } from '@tamizh/core/theme';
 import { ThemeToggle } from './ThemeToggle';
 import {
   ChevronDownIcon,
+  ChevronRightIcon,
   ClipboardIcon,
   CloseIcon,
+  DownloadIcon,
   HeartIcon,
   MenuIcon,
   PhoneIcon,
   UserIcon,
 } from '@/components/ui/Icons';
 import { CategoryIcon } from '@/components/ui/CategoryIcon';
+import { useInstall } from '@/components/pwa/InstallProvider';
+import { useToast } from '@/components/providers/ToastProvider';
 
 /**
  * Slide-in navigation drawer for phones and tablets.
@@ -28,6 +33,14 @@ import { CategoryIcon } from '@/components/ui/CategoryIcon';
  * Traps focus while open, closes on Escape and on route change, and locks
  * background scrolling — the three things that make a drawer feel native
  * rather than like a page that moved sideways.
+ *
+ * It is rendered through a portal onto `document.body`, and that is not a
+ * stylistic choice. This component lives inside the header, and the header
+ * carries `backdrop-blur` — which, like `transform` and `filter`, makes an
+ * element the containing block for any `position: fixed` descendant. Left in
+ * place the drawer resolved `inset-0` against the header's own box, so a
+ * full-screen menu rendered 375×120 with nine navigation items crushed into
+ * thirty-two pixels. The portal moves it out from under that.
  */
 export function MobileMenu({
   categories,
@@ -54,6 +67,10 @@ export function MobileMenu({
   const [expanded, setExpanded] = useState<string | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+
+
+  const { canInstall, install } = useInstall();
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!open) return;
@@ -108,33 +125,63 @@ export function MobileMenu({
         <MenuIcon className="text-2xl" />
       </button>
 
-      {open ? (
+      {/* The drawer only opens from a click, so by the time this runs the
+          document exists — no mounted flag needed to make the portal safe. */}
+      {open
+        ? createPortal(
         <div className="fixed inset-0 z-[60] lg:hidden">
           <button
             type="button"
             aria-label={t('common.close')}
             onClick={() => setOpen(false)}
-            className="absolute inset-0 bg-carbon-900/45 backdrop-blur-[2px]"
+            className="absolute inset-0 bg-carbon-950/55 backdrop-blur-[2px]"
+            style={{ animation: 'te-fade-up 0.2s var(--ease-out-soft) both' }}
           />
           <div
             ref={panelRef}
             role="dialog"
             aria-modal="true"
             aria-label={t('nav.menu')}
-            className="absolute inset-y-0 left-0 flex w-[86%] max-w-sm flex-col bg-paper shadow-2xl"
-            style={{ animation: 'te-fade-up 0.25s var(--ease-out-soft) both' }}
+            className="absolute inset-y-0 left-0 flex w-[88%] max-w-sm flex-col bg-paper shadow-2xl"
+            style={{
+              animation: 'te-slide-in 0.26s var(--ease-out-soft) both',
+              // Notched phones: the drawer runs edge to edge, so its own
+              // padding has to clear the cutout and the home indicator.
+              paddingTop: 'env(safe-area-inset-top)',
+              paddingBottom: 'env(safe-area-inset-bottom)',
+            }}
           >
-            <div className="flex items-center justify-between border-b border-ink-100 bg-surface px-4 py-3">
+            <div className="flex items-center justify-between gap-2 border-b border-ink-100 bg-surface px-4 py-3">
               <BrandMark size="sm" />
               <button
                 type="button"
                 onClick={() => setOpen(false)}
                 aria-label={t('common.close')}
-                className="grid size-10 place-items-center rounded-full text-ink-600 hover:bg-ink-100"
+                className="grid size-11 shrink-0 place-items-center rounded-full text-ink-600 transition-colors hover:bg-ink-100"
               >
                 <CloseIcon className="text-xl" />
               </button>
             </div>
+
+            {/* Who you are, before what you can do. Signed out, this is the
+                one thing most worth offering. */}
+            <Link
+              href={user ? '/account' : '/signin'}
+              className="flex items-center gap-3 border-b border-ink-100 bg-success-50 px-4 py-3.5 transition-colors active:bg-success-100"
+            >
+              <span className="grid size-10 shrink-0 place-items-center rounded-full bg-action text-sm font-bold text-on-action">
+                {user ? user.name.charAt(0).toUpperCase() : <UserIcon className="text-lg" />}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-bold text-ink-900">
+                  {user ? user.name : t('nav.signIn')}
+                </span>
+                <span className="block truncate text-xs text-ink-500">
+                  {user ? user.email : t('nav.signInSubtitle')}
+                </span>
+              </span>
+              <ChevronRightIcon className="shrink-0 text-base text-ink-400" />
+            </Link>
 
             <nav className="flex-1 overflow-y-auto overscroll-contain px-3 py-4">
               <ul className="space-y-1">
@@ -210,12 +257,6 @@ export function MobileMenu({
 
               <ul className="space-y-1">
                 <li>
-                  <DrawerLink href={user ? '/account' : '/signin'}>
-                    <UserIcon className="size-5 text-ink-400" />
-                    {user ? t('account.title') : t('nav.signIn')}
-                  </DrawerLink>
-                </li>
-                <li>
                   <DrawerLink href="/orders">
                     <ClipboardIcon className="size-5 text-ink-400" />
                     {t('order.myOrders')}
@@ -237,19 +278,43 @@ export function MobileMenu({
             </nav>
 
             <div className="space-y-3 border-t border-ink-100 bg-surface px-4 py-4">
-              <LanguageSwitcher className="w-full justify-center" />
-              <ThemeToggle current={theme} />
+              {canInstall ? (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const outcome = await install();
+                    if (outcome === 'ios') {
+                      // Safari offers no API, so the only honest thing is to
+                      // say where the button is.
+                      toast(t('pwa.iosHint'), { tone: 'info' });
+                    }
+                    if (outcome === 'accepted') setOpen(false);
+                  }}
+                  className="flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-action text-sm font-bold text-on-action transition-colors hover:bg-action-hover"
+                >
+                  <DownloadIcon className="text-base" />
+                  {t('pwa.installApp')}
+                </button>
+              ) : null}
+
+              <div className="flex items-center justify-between gap-2">
+                <LanguageSwitcher />
+                <ThemeToggle current={theme} />
+              </div>
+
               <a
                 href={`tel:${supportPhone.replace(/\s/g, '')}`}
-                className="flex items-center justify-center gap-2 rounded-full border border-action-edge/40 bg-success-50 py-2.5 text-sm font-semibold text-link"
+                className="flex min-h-11 items-center justify-center gap-2 rounded-full border border-action-edge/40 bg-success-50 text-sm font-semibold text-link"
               >
                 <PhoneIcon className="text-base" />
                 {supportPhone}
               </a>
             </div>
           </div>
-        </div>
-      ) : null}
+        </div>,
+        document.body,
+      )
+        : null}
     </>
   );
 }

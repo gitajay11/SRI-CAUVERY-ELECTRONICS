@@ -25,7 +25,11 @@ export default async function CheckoutPage() {
   // unsubmittable form.
   if (cart.items.length === 0) redirect('/cart');
 
+  // Sending them here before they fill anything in beats collecting an
+  // address and a phone number and then refusing the order. `next` brings
+  // them straight back to the checkout once they are in.
   const user = await getSessionUser();
+  if (!user) redirect('/signin?next=/checkout');
   const addresses = user ? await getRepository().listAddresses(user.id) : [];
 
   return (

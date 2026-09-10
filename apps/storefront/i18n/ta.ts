@@ -61,6 +61,7 @@ export const ta: Dictionary = {
   'nav.admin': 'நிர்வாகம்',
   'nav.language': 'மொழி',
   'nav.signIn': 'உள்நுழை',
+  'nav.signInSubtitle': 'ஆர்டர்கள், விருப்பப் பட்டியல், விரைவான செக்அவுட்',
   'nav.signOut': 'வெளியேறு',
   'nav.register': 'கணக்கை உருவாக்கு',
 
@@ -394,9 +395,11 @@ export const ta: Dictionary = {
   'footer.payments': 'UPI, முக்கிய கார்டுகள், நெட் பேங்கிங் மற்றும் COD ஏற்கப்படுகிறது.',
 
   // ---- pwa / network -----------------------------------------------------
-  'pwa.installTitle': 'தமிழ் மின்னணுவியலை நிறுவுங்கள்',
+  'pwa.installTitle': 'ஸ்ரீ காவேரி மின்னணுவியலை நிறுவுங்கள்',
   'pwa.installBody': 'விரைவான அணுகலுக்காக கடையை முகப்புத் திரையில் சேருங்கள்.',
   'pwa.install': 'நிறுவு',
+  'pwa.installApp': 'செயலியை நிறுவு',
+  'pwa.iosHint': 'Share தட்டி, "Add to Home Screen" தேர்ந்தெடுக்கவும்.',
   'pwa.notNow': 'இப்போது வேண்டாம்',
   'pwa.updateAvailable': 'புதிய பதிப்பு கிடைக்கிறது.',
   'pwa.refresh': 'புதுப்பி',
