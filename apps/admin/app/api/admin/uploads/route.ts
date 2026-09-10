@@ -135,8 +135,18 @@ export async function POST(request: Request): Promise<NextResponse> {
         url = result.url;
       } catch (cause) {
         console.error('[uploads] blob upload failed', cause);
+
+        // Say what actually went wrong. "Try again in a moment" is the right
+        // message for a transient fault and a useless one for a
+        // misconfiguration, and only the error itself knows which this is.
+        // The SDK's messages describe the request, never the token.
+        const detail =
+          cause instanceof Error
+            ? `${cause.name}: ${cause.message}`
+            : String(cause);
+
         throw new AppError(
-          'The image could not be stored. Try again in a moment.',
+          `The image could not be stored — ${detail}`,
           502,
           'storage_failed',
           { file: 'The image was not saved.' },
