@@ -76,9 +76,13 @@ export async function POST(request: Request): Promise<NextResponse> {
     if (file.size === 0) {
       throw new AppError('That file is empty.', 422, 'empty_file');
     }
-    if (file.size > storage.maxBytes) {
+    const maxBytes = storage.maxBytes();
+    if (file.size > maxBytes) {
+      // One decimal, because the real ceiling on Blob is 4.5 MB and rounding
+      // it to "5 MB" would tell someone their 4.8 MB photo is under the limit.
+      const limit = (maxBytes / 1024 / 1024).toFixed(1).replace(/.0$/, '');
       throw new AppError(
-        `Images must be under ${Math.round(storage.maxBytes / 1024 / 1024)} MB.`,
+        `Images must be under ${limit} MB.`,
         413,
         'file_too_large',
         { file: 'This image is too large.' },

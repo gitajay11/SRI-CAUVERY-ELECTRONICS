@@ -90,7 +90,21 @@ export const storage = {
   localDir: () =>
     process.env.STORAGE_LOCAL_DIR?.trim() || '../storefront/public/uploads',
   publicPrefix: () => process.env.STORAGE_PUBLIC_PREFIX?.trim() || '/uploads',
-  maxBytes: Number(process.env.STORAGE_MAX_BYTES ?? 5 * 1024 * 1024),
+  /**
+   * The largest image the panel will accept.
+   *
+   * Uploads to Blob go through this function, and Vercel caps a function's
+   * request body at 4.5 MB — so on that provider the ceiling is not ours to
+   * choose. Enforcing it here means a 5 MB photo is refused by us, with a
+   * message naming the real limit, instead of being accepted and then dying at
+   * the platform boundary with nothing useful to show for it.
+   */
+  maxBytes(): number {
+    const configured = Number(process.env.STORAGE_MAX_BYTES ?? 5 * 1024 * 1024);
+    return this.provider === 'blob'
+      ? Math.min(configured, 4.5 * 1024 * 1024)
+      : configured;
+  },
   /** Present only when a Blob store is connected. */
   blobToken: () => process.env.BLOB_READ_WRITE_TOKEN?.trim() || '',
 };
