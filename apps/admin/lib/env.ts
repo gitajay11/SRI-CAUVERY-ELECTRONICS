@@ -85,8 +85,38 @@ export type StorageProvider = 'local' | 'blob';
  * whole of the setup; nothing has to be set by hand.
  */
 export const storage = {
-  provider: ((process.env.STORAGE_PROVIDER?.trim() ||
-    (process.env.BLOB_READ_WRITE_TOKEN ? 'blob' : 'local')) as StorageProvider),
+  /**
+   * A getter, not a captured constant.
+   *
+   * As a constant this was evaluated the first time the module was imported,
+   * which risks baking in whatever the environment looked like at build time —
+   * and a Blob store connected after that build would never be noticed. Read
+   * per access, connecting the store and redeploying is enough.
+   *
+   * An unrecognised STORAGE_PROVIDER falls through to detection rather than
+   * being cast to a provider that does not exist, which previously turned a
+   * typo into an unexplained failure.
+   */
+  get provider(): StorageProvider {
+    const explicit = process.env.STORAGE_PROVIDER?.trim().toLowerCase();
+    if (explicit === 'local' || explicit === 'blob') return explicit;
+    return process.env.BLOB_READ_WRITE_TOKEN?.trim() ? 'blob' : 'local';
+  },
+
+  /**
+   * Why the provider is what it is, in words an operator can act on.
+   *
+   * An upload that fails on configuration should say which configuration, not
+   * leave somebody guessing between "did the store attach", "did it redeploy"
+   * and "is something overriding it".
+   */
+  describe(): string {
+    const explicit = process.env.STORAGE_PROVIDER?.trim();
+    const token = process.env.BLOB_READ_WRITE_TOKEN?.trim() ? 'present' : 'missing';
+    const override = explicit ? `STORAGE_PROVIDER="${explicit}"` : 'STORAGE_PROVIDER unset';
+    return `provider=${this.provider}, ${override}, BLOB_READ_WRITE_TOKEN ${token}`;
+  },
+
   localDir: () =>
     process.env.STORAGE_LOCAL_DIR?.trim() || '../storefront/public/uploads',
   publicPrefix: () => process.env.STORAGE_PUBLIC_PREFIX?.trim() || '/uploads',

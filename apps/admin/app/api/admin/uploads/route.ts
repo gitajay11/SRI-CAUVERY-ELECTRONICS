@@ -5,7 +5,7 @@ import { NextResponse } from 'next/server';
 import { put } from '@vercel/blob';
 import { AppError, created, handleRouteError } from '@tamizh/core/api';
 import { requireAnyPermission } from '@/lib/session';
-import { storage } from '@/lib/env';
+import { isProduction, storage } from '@/lib/env';
 import { recordAudit } from '@/lib/audit';
 
 /**
@@ -60,6 +60,22 @@ export async function POST(request: Request): Promise<NextResponse> {
     if (storage.provider === 'blob' && !storage.blobToken()) {
       throw new AppError(
         'Image storage is not connected. Add a Vercel Blob store to this project.',
+        503,
+        'storage_unconfigured',
+        { file: 'The image was not saved.' },
+      );
+    }
+
+    // Writing to disk cannot work on a serverless host: the filesystem is
+    // read-only, and the storefront's public folder belongs to a different
+    // deployment entirely. Saying so here — with what the configuration
+    // actually looks like — beats attempting the write and reporting a generic
+    // filesystem failure that names none of the three likely causes.
+    if (storage.provider === 'local' && isProduction) {
+      console.error('[uploads] local storage selected in production —', storage.describe());
+      throw new AppError(
+        `Image storage is not configured for this deployment (${storage.describe()}). ` +
+          'Connect a Vercel Blob store to this project, then redeploy.',
         503,
         'storage_unconfigured',
         { file: 'The image was not saved.' },
