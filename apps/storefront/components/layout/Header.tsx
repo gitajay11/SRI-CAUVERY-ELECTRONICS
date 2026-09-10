@@ -8,6 +8,7 @@ import { SearchBar } from './SearchBar';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import type { Theme } from '@tamizh/core/theme';
 import { ThemeToggle } from './ThemeToggle';
+import { InstallButton } from '@/components/pwa/InstallButton';
 import { CategoryMenu } from './CategoryMenu';
 import { MobileMenu } from './MobileMenu';
 import { HeaderActions } from './HeaderActions';
@@ -59,6 +60,8 @@ export async function Header({
             <Link href="/orders" className="hover:text-white">
               {t('order.myOrders')}
             </Link>
+            {/* Renders nothing unless the browser can actually install. */}
+            <InstallButton className="flex items-center gap-1.5 hover:text-white" />
           </p>
         </div>
       </div>
