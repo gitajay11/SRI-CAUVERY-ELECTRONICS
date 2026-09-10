@@ -78,6 +78,7 @@ export async function getCartView(): Promise<CartView> {
 
   let applied: AppliedCoupon | null = null;
   let discount = 0;
+  let waiveShipping = false;
   const code = await readCouponCode();
   if (code && items.length > 0) {
     const subtotal = items.reduce((sum, item) => sum + item.lineTotal, 0);
@@ -85,6 +86,7 @@ export async function getCartView(): Promise<CartView> {
     const result = evaluateCoupon(coupon, subtotal);
     if (result.valid) {
       discount = result.discount;
+      waiveShipping = result.waivesShipping;
       applied = {
         code: result.coupon.code,
         description: result.coupon.description,
@@ -99,7 +101,7 @@ export async function getCartView(): Promise<CartView> {
 
   return {
     items,
-    totals: calculateTotals(items, discount, await getShippingRules()),
+    totals: calculateTotals(items, discount, await getShippingRules(), { waiveShipping }),
     coupon: applied,
     itemCount: items.reduce((sum, item) => sum + item.quantity, 0),
     notices,

@@ -28,7 +28,7 @@ export interface CouponRow {
   id: string;
   code: string;
   description: string;
-  type: 'PERCENT' | 'FLAT';
+  type: 'PERCENT' | 'FLAT' | 'FREE_SHIPPING';
   /** Basis points for PERCENT, paise for FLAT. */
   value: number;
   minOrder: number;
@@ -175,7 +175,7 @@ export async function getCoupon(id: string) {
 export interface CouponInput {
   code: string;
   description: string;
-  type: 'PERCENT' | 'FLAT';
+  type: 'PERCENT' | 'FLAT' | 'FREE_SHIPPING';
   /** Already converted: basis points for PERCENT, paise for FLAT. */
   value: number;
   minOrder: number;

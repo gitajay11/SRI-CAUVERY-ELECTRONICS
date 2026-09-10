@@ -76,7 +76,12 @@ export async function placeOrder(input: CheckoutInput): Promise<PlaceOrderResult
 
   const subtotal = items.reduce((sum, item) => sum + item.lineTotal, 0);
 
-  let coupon: { id: string; code: string; discount: number } | null = null;
+  let coupon: {
+    id: string;
+    code: string;
+    discount: number;
+    waivesShipping: boolean;
+  } | null = null;
   if (input.couponCode) {
     const record = await repo.findCoupon(input.couponCode);
     const result = evaluateCoupon(record, subtotal);
@@ -89,11 +94,14 @@ export async function placeOrder(input: CheckoutInput): Promise<PlaceOrderResult
       id: result.coupon.id,
       code: result.coupon.code,
       discount: result.discount,
+      waivesShipping: result.waivesShipping,
     };
   }
 
   const settings = await getShopSettings();
-  const totals = calculateTotals(items, coupon?.discount ?? 0, settings);
+  const totals = calculateTotals(items, coupon?.discount ?? 0, settings, {
+    waiveShipping: coupon?.waivesShipping ?? false,
+  });
 
   // The shop's own minimum, set in the admin panel rather than compiled in.
   if (settings.minimumOrderValue > 0 && totals.subtotal < settings.minimumOrderValue) {

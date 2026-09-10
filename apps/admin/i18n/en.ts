@@ -459,6 +459,8 @@ export const en = {
   'coupons.code': 'Code',
   'coupons.type': 'Discount type',
   'coupons.percent': 'Percentage',
+  'coupons.freeShipping': 'Free delivery',
+  'coupons.freeShippingHint': 'Waives the delivery fee, whatever it comes to',
   'coupons.flat': 'Fixed amount',
   'coupons.value': 'Value',
   'coupons.minOrder': 'Minimum order',

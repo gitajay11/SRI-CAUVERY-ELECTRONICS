@@ -15,7 +15,14 @@ export function toCouponInput(body: z.infer<typeof couponInputSchema>): CouponIn
     code: body.code,
     description: body.description,
     type: body.type,
-    value: body.type === 'PERCENT' ? (body.percentValue ?? 0) : (body.flatValue ?? 0),
+    // A shipping waiver has no amount; zero records that plainly rather
+    // than leaving whatever the form last held in an unused field.
+    value:
+      body.type === 'FREE_SHIPPING'
+        ? 0
+        : body.type === 'PERCENT'
+          ? (body.percentValue ?? 0)
+          : (body.flatValue ?? 0),
     minOrder: body.minOrder,
     maxDiscount: body.maxDiscount ?? null,
     startsAt: body.startsAt,

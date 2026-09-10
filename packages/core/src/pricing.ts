@@ -33,8 +33,8 @@ export interface CouponRule {
   id: string;
   code: string;
   description: string;
-  type: 'PERCENT' | 'FLAT';
-  /** Basis points for PERCENT (1000 = 10%), paise for FLAT. */
+  type: 'PERCENT' | 'FLAT' | 'FREE_SHIPPING';
+  /** Basis points for PERCENT (1000 = 10%), paise for FLAT, unused for FREE_SHIPPING. */
   value: number;
   minOrder: number;
   maxDiscount: number | null;
@@ -46,7 +46,20 @@ export interface CouponRule {
 }
 
 export type CouponCheck =
-  | { valid: true; discount: number; coupon: CouponRule }
+  | {
+      valid: true;
+      discount: number;
+      /**
+       * Whether delivery is waived.
+       *
+       * Deliberately not folded into `discount`. The delivery fee depends on
+       * the subtotal *after* the discount, so a waiver expressed as money
+       * would change the very number it is derived from — and it would also
+       * show up on the order as money off the goods, which it is not.
+       */
+      waivesShipping: boolean;
+      coupon: CouponRule;
+    }
   | { valid: false; reason: string };
 
 /**
@@ -81,6 +94,12 @@ export function evaluateCoupon(
     };
   }
 
+  // A shipping waiver takes nothing off the goods; the saving appears as a
+  // delivery fee of zero further down.
+  if (coupon.type === 'FREE_SHIPPING') {
+    return { valid: true, discount: 0, waivesShipping: true, coupon };
+  }
+
   // PERCENT coupons store basis points (1000 = 10%), so that "12.5% off" is
   // expressible without floats.
   let discount =
@@ -92,7 +111,7 @@ export function evaluateCoupon(
   // Never discount below zero, and never more than the goods are worth.
   discount = Math.max(0, Math.min(discount, subtotal));
 
-  return { valid: true, discount, coupon };
+  return { valid: true, discount, waivesShipping: false, coupon };
 }
 
 export function shippingFeeFor(
@@ -113,6 +132,7 @@ export function calculateTotals(
   items: Pick<CartItemView, 'unitPrice' | 'mrp' | 'quantity'>[],
   couponDiscount = 0,
   rules: ShippingRules = DEFAULT_SHIPPING_RULES,
+  options: { waiveShipping?: boolean } = {},
 ): CartTotals {
   let subtotal = 0;
   let mrpTotal = 0;
@@ -123,7 +143,7 @@ export function calculateTotals(
 
   const cappedCoupon = Math.max(0, Math.min(couponDiscount, subtotal));
   const afterDiscount = subtotal - cappedCoupon;
-  const shippingFee = shippingFeeFor(afterDiscount, rules);
+  const shippingFee = options.waiveShipping ? 0 : shippingFeeFor(afterDiscount, rules);
 
   return {
     subtotal,
@@ -132,8 +152,12 @@ export function calculateTotals(
     couponDiscount: cappedCoupon,
     shippingFee,
     total: afterDiscount + shippingFee,
+    // With delivery already waived there is nothing left to spend towards it,
+    // so the "add ₹x more for free delivery" nudge must not appear.
     freeShippingRemaining:
-      afterDiscount > 0 && afterDiscount < rules.freeShippingThreshold
+      !options.waiveShipping &&
+      afterDiscount > 0 &&
+      afterDiscount < rules.freeShippingThreshold
         ? rules.freeShippingThreshold - afterDiscount
         : 0,
   };

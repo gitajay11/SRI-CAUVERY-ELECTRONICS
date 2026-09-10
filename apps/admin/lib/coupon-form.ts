@@ -3,7 +3,7 @@ export interface CouponFormValues {
   id?: string;
   code: string;
   description: string;
-  type: 'PERCENT' | 'FLAT';
+  type: 'PERCENT' | 'FLAT' | 'FREE_SHIPPING';
   /** A percentage or a rupee amount, depending on `type`. */
   value: string;
   minOrder: string;

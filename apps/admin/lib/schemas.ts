@@ -101,7 +101,7 @@ export const couponInputSchema = z
       .max(32)
       .regex(/^[A-Z0-9_-]+$/, 'Letters, numbers, dashes and underscores only'),
     description: nonEmpty(200, 'Description'),
-    type: z.enum(['PERCENT', 'FLAT']),
+    type: z.enum(['PERCENT', 'FLAT', 'FREE_SHIPPING']),
     /** Percent coupons carry basis points; flat ones carry paise. */
     percentValue: percentSchema.optional(),
     flatValue: rupeesSchema.optional(),
@@ -116,8 +116,14 @@ export const couponInputSchema = z
     productIds: z.array(z.string().max(64)).max(200).default([]),
   })
   .refine(
-    (input) =>
-      input.type === 'PERCENT' ? input.percentValue !== undefined : input.flatValue !== undefined,
+    (input) => {
+      // A shipping waiver has no amount to enter — the saving is whatever
+      // delivery would have cost on that particular order.
+      if (input.type === 'FREE_SHIPPING') return true;
+      return input.type === 'PERCENT'
+        ? input.percentValue !== undefined
+        : input.flatValue !== undefined;
+    },
     { message: 'Enter a discount value', path: ['percentValue'] },
   );
 

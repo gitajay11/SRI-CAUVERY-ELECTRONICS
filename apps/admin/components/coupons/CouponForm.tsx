@@ -152,6 +152,11 @@ export function CouponForm({
                 label: t('coupons.flat'),
                 description: '₹100 off the order',
               },
+              {
+                value: 'FREE_SHIPPING',
+                label: t('coupons.freeShipping'),
+                description: t('coupons.freeShippingHint'),
+              },
             ]}
           />
 
@@ -162,7 +167,10 @@ export function CouponForm({
           ) : null}
 
           <FieldGroup columns={2}>
-            {values.type === 'PERCENT' ? (
+            {/* Nothing to enter for a waiver: the saving is whatever delivery
+                would have cost on that order, which is not known until there
+                is an order. */}
+            {values.type === 'FREE_SHIPPING' ? null : values.type === 'PERCENT' ? (
               <TextField
                 label={t('coupons.value')}
                 type="number"

@@ -463,6 +463,8 @@ export const ta: Dictionary = {
   'coupons.code': 'குறியீடு',
   'coupons.type': 'தள்ளுபடி வகை',
   'coupons.percent': 'சதவீதம்',
+  'coupons.freeShipping': 'இலவச டெலிவரி',
+  'coupons.freeShippingHint': 'டெலிவரி கட்டணத்தை முழுவதுமாக தள்ளுபடி செய்யும்',
   'coupons.flat': 'நிலையான தொகை',
   'coupons.value': 'மதிப்பு',
   'coupons.minOrder': 'குறைந்தபட்ச ஆர்டர்',

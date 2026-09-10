@@ -111,6 +111,8 @@ enum ReturnStatus {
 enum CouponType {
   PERCENT
   FLAT
+  /// Waives delivery. Takes nothing off the goods, so `value` is unused.
+  FREE_SHIPPING
 }
 
 enum ReviewStatus {

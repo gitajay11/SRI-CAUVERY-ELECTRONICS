@@ -60,9 +60,11 @@ export default async function CouponsPage({
       cell: (row) => (
         <span>
           <span className="block font-semibold tabular-nums text-slate-900">
-            {row.type === 'PERCENT'
-              ? `${row.value / 100}%`
-              : formatINR(row.value)}
+            {row.type === 'FREE_SHIPPING'
+              ? t('coupons.freeShipping')
+              : row.type === 'PERCENT'
+                ? `${row.value / 100}%`
+                : formatINR(row.value)}
           </span>
           {row.minOrder > 0 ? (
             <span className="block text-xs text-slate-400">
