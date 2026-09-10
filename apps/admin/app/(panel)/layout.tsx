@@ -1,4 +1,5 @@
 import { cookies } from 'next/headers';
+import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
 import { THEME_COOKIE, normalizeTheme } from '@tamizh/core/theme';
 import { unreadCount } from '@/services/notifications';
@@ -8,6 +9,7 @@ import { getDictionary } from '@/i18n';
 import { storefrontUrl } from '@/lib/env';
 import { AdminProviders } from '@/components/providers/AdminProviders';
 import { AdminShell } from '@/components/layout/AdminShell';
+import { NavigationProgress } from '@/components/layout/NavigationProgress';
 import { ServiceWorkerRegistrar } from '@/components/pwa/ServiceWorkerRegistrar';
 import { InstallPrompt } from '@/components/pwa/InstallPrompt';
 
@@ -67,6 +69,11 @@ export default async function PanelLayout({
         unreadCount={unread}
         theme={theme}
       >
+        {/* useSearchParams needs a boundary; without one the whole panel
+            would opt out of static rendering. */}
+        <Suspense fallback={null}>
+          <NavigationProgress />
+        </Suspense>
         {children}
       </AdminShell>
       <ServiceWorkerRegistrar />

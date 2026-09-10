@@ -134,6 +134,7 @@ export const en = {
   'dash.greeting': 'Good morning, {name}',
   'dash.greetingAfternoon': 'Good afternoon, {name}',
   'dash.greetingEvening': 'Good evening, {name}',
+  'dash.range': 'Date range',
   'dash.today': 'Today',
   'dash.yesterday': 'Yesterday',
   'dash.last7': 'Last 7 days',

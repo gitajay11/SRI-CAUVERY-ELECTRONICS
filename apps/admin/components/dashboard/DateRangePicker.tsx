@@ -6,6 +6,7 @@ import { cn } from '@tamizh/core/utils';
 import { useAdmin } from '@/components/providers/AdminProviders';
 import type { TranslationKey } from '@/i18n/en';
 import { Button } from '@/components/ui/Button';
+import { SelectMenu } from '@/components/ui/SelectMenu';
 import { CalendarIcon } from '@/components/ui/Icons';
 
 /**
@@ -13,6 +14,12 @@ import { CalendarIcon } from '@/components/ui/Icons';
  *
  * The range lives in the URL, so a view is shareable and the back button
  * behaves — an admin comparing two periods should not lose the first one.
+ *
+ * Two shapes, because seven chips do not fit on a phone. A rail that scrolls
+ * sideways hides its own contents: "This month" and "Previous month" sat past
+ * the right edge with nothing to suggest they were there, so the options an
+ * owner reaches for at the end of the month were the ones they could not see.
+ * Below `sm` the presets collapse into one dropdown that shows all of them.
  */
 
 const PRESETS: { key: string; labelKey: TranslationKey }[] = [
@@ -54,7 +61,21 @@ export function DateRangePicker({
 
   return (
     <div className="flex flex-col items-stretch gap-2 sm:items-end">
-      <div className="snap-rail -mx-4 px-4 sm:mx-0 sm:flex-wrap sm:justify-end sm:px-0">
+      {/* Phones: every option in one tap, nothing hidden off-screen. */}
+      <div className="sm:hidden">
+        <SelectMenu
+          label={t('dash.range')}
+          value={current}
+          options={[
+            ...PRESETS.map((preset) => ({ value: preset.key, label: t(preset.labelKey) })),
+            { value: 'custom', label: t('dash.custom') },
+          ]}
+          onChange={go}
+        />
+      </div>
+
+      {/* Everywhere else there is room for the chips, which are quicker. */}
+      <div className="hidden flex-wrap justify-end gap-2 sm:flex">
         {PRESETS.map((preset) => (
           <button
             key={preset.key}

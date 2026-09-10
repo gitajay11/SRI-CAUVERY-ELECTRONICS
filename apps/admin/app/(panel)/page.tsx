@@ -68,7 +68,9 @@ export default async function DashboardPage({
       <AttentionStrip attention={data.attention} />
 
       {/* Period figures */}
-      <div className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+      {/* Two to a row on a phone. One per row turned five numbers into five
+          screenfuls, which is the opposite of what a dashboard is for. */}
+      <div className="mb-5 grid grid-cols-2 gap-3 xl:grid-cols-5">
         <StatCard
           label={t('dash.revenue')}
           value={formatINR(data.period.revenue)}

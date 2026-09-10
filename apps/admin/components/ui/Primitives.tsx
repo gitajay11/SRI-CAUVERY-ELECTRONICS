@@ -206,20 +206,27 @@ export function StatCard({
   };
 
   return (
-    <div className="rounded-panel border border-slate-200 bg-surface p-4 shadow-panel">
+    <div className="rounded-panel border border-slate-200 bg-surface p-3 shadow-panel sm:p-4">
       <div className="flex items-start justify-between gap-2">
-        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+        <p className="text-[0.7rem] font-semibold uppercase tracking-wide text-slate-500 sm:text-xs">
           {label}
         </p>
+        {/* The icon is decoration; at two cards to a 375px row the number
+            needs the width more than the badge does. */}
         {icon ? (
           <span
-            className={cn('grid size-8 shrink-0 place-items-center rounded-lg', accents[tone])}
+            className={cn(
+              'hidden size-8 shrink-0 place-items-center rounded-lg sm:grid',
+              accents[tone],
+            )}
           >
             {icon}
           </span>
         ) : null}
       </div>
-      <p className="mt-2 text-2xl font-bold tabular-nums text-slate-900">{value}</p>
+      <p className="mt-2 break-words text-xl font-bold tabular-nums text-slate-900 sm:text-2xl">
+        {value}
+      </p>
       <div className="mt-1 flex flex-wrap items-center gap-2">
         {delta !== undefined && delta !== null ? (
           <span

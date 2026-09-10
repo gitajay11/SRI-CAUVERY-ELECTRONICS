@@ -141,6 +141,7 @@ export const ta: Dictionary = {
   'dash.greeting': 'காலை வணக்கம், {name}',
   'dash.greetingAfternoon': 'மதிய வணக்கம், {name}',
   'dash.greetingEvening': 'மாலை வணக்கம், {name}',
+  'dash.range': 'தேதி வரம்பு',
   'dash.today': 'இன்று',
   'dash.yesterday': 'நேற்று',
   'dash.last7': 'கடந்த 7 நாட்கள்',
