@@ -145,6 +145,21 @@ export async function POST(request: Request): Promise<NextResponse> {
             ? `${cause.name}: ${cause.message}`
             : String(cause);
 
+        // A private store cannot hold product photography, and no amount of
+        // retrying changes that. Shoppers' browsers fetch these directly, with
+        // no session to authenticate — serving them from a private store would
+        // mean proxying every thumbnail on every page through this server.
+        if (/private store|private access/i.test(detail)) {
+          throw new AppError(
+            'This Blob store is configured for private access, which cannot serve ' +
+              'product images — shoppers fetch them directly, with no session. ' +
+              'Create a Blob store with public access and connect that one instead.',
+            503,
+            'storage_private',
+            { file: 'The image was not saved.' },
+          );
+        }
+
         throw new AppError(
           `The image could not be stored — ${detail}`,
           502,
