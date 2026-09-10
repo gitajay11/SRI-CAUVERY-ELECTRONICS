@@ -10,6 +10,8 @@ import { ApiError, api } from '@/lib/http';
 import { INDIAN_STATES, TAMIL_NADU_DISTRICTS } from '@/lib/india';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { useLocale } from '@/components/providers/LocaleProvider';
+import { openRazorpayCheckout } from '@/lib/razorpay-checkout';
+import { shopConfig } from '@/lib/site';
 import { Button } from '@/components/ui/Button';
 import {
   CheckboxField,
@@ -111,10 +113,71 @@ export function CheckoutForm({
         saveAddress: saveAddress && Boolean(user),
       });
 
+      // The order exists and is waiting on payment. Everything from here is
+      // about that one order: its total is already fixed on the server, so
+      // nothing the gateway or the browser says can change what is owed.
+      if (result.payment?.provider === 'razorpay') {
+        const pending = `/order/${result.order.orderNumber}?payment=pending&email=${encodeURIComponent(result.order.customerEmail)}`;
+
+        let outcome: Awaited<ReturnType<typeof openRazorpayCheckout>>;
+        try {
+          outcome = await openRazorpayCheckout(
+            {
+              key: String(result.payment.key),
+              amount: Number(result.payment.amount),
+              currency: String(result.payment.currency),
+              razorpayOrderId: String(result.payment.razorpayOrderId),
+              orderNumber: result.order.orderNumber,
+            },
+            {
+              name: form.customerName,
+              email: form.customerEmail,
+              phone: form.customerPhone,
+              shopName: shopConfig.nameEn,
+            },
+          );
+        } catch {
+          // The script could not load — a blocked third party, or no network.
+          // The order stands; it simply has not been paid for yet.
+          setError(t('checkout.payment.gatewayUnavailable'));
+          setBusy(false);
+          return;
+        }
+
+        if (outcome.status === 'paid') {
+          try {
+            await api.post('/api/payments/verify', outcome.handshake);
+            router.push(
+              `/order/${result.order.orderNumber}?placed=1&email=${encodeURIComponent(result.order.customerEmail)}`,
+            );
+          } catch {
+            // Money may well have left the shopper's account, so this must
+            // never read as "payment failed". The order page is the honest
+            // place for it: the shop can see the payment and reconcile.
+            router.push(`${pending}&verify=failed`);
+          }
+          return;
+        }
+
+        // Dismissed or declined. Recorded so the order does not sit in
+        // PENDING with nothing said about why, and best-effort because
+        // failing to record a failure must not lose the order.
+        void api
+          .post('/api/payments/verify', {
+            failed: true,
+            razorpay_order_id: String(result.payment.razorpayOrderId),
+            reason:
+              outcome.status === 'failed' ? outcome.reason : 'Payment window closed',
+          })
+          .catch(() => {});
+
+        router.push(pending);
+        return;
+      }
+
       if (result.payment) {
-        // A gateway that needs a browser step (Razorpay Checkout) would be
-        // opened here with result.payment. The order already exists and is
-        // waiting for payment confirmation, so we send the shopper to it.
+        // Any other online provider — the mock one in development — has no
+        // browser step, so the order simply waits for confirmation.
         router.push(
           `/order/${result.order.orderNumber}?payment=pending&email=${encodeURIComponent(result.order.customerEmail)}`,
         );

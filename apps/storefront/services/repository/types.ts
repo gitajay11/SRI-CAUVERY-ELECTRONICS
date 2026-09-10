@@ -89,6 +89,14 @@ export interface PlaceOrderInput {
   total: number;
   orderNumber: string;
   paymentProvider: string;
+  /**
+   * The gateway's own order id, when it issued one.
+   *
+   * This is what a payment callback is matched against later — without it a
+   * confirmation arriving from the gateway cannot be tied to anything, so an
+   * online payment could never be marked paid.
+   */
+  paymentProviderOrderId: string | null;
 }
 
 export interface Repository {

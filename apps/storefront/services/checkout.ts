@@ -144,6 +144,7 @@ export async function placeOrder(input: CheckoutInput): Promise<PlaceOrderResult
     total: totals.total,
     orderNumber,
     paymentProvider: intent.provider,
+    paymentProviderOrderId: intent.providerOrderId,
   });
 
   // The order exists; the cart and the coupon have served their purpose.

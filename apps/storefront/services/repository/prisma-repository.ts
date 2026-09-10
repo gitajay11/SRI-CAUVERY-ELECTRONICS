@@ -1053,6 +1053,7 @@ export class PrismaRepository implements Repository {
           payments: {
             create: {
               provider: input.paymentProvider,
+              providerOrderId: input.paymentProviderOrderId,
               amount: input.total,
               status: input.paymentStatus,
             },

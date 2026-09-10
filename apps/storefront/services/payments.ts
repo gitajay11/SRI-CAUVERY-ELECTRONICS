@@ -41,8 +41,33 @@ export interface PaymentProvider {
     customerEmail: string;
     customerPhone: string;
   }): Promise<PaymentIntent>;
-  /** Verifies a gateway callback/webhook signature. */
+  /** Verifies a gateway webhook signature. */
   verifySignature(payload: string, signature: string): boolean;
+  /**
+   * Verifies the handshake Razorpay Checkout hands back to the browser.
+   *
+   * Separate from the webhook check because it is a different secret over a
+   * different payload, and conflating the two is how a gateway integration
+   * ends up accepting forged confirmations.
+   */
+  verifyCheckout?(input: {
+    orderId: string;
+    paymentId: string;
+    signature: string;
+  }): boolean;
+}
+
+/**
+ * Constant-time comparison.
+ *
+ * A plain `===` on a signature returns faster the earlier it finds a
+ * difference, which is enough to recover a valid signature one byte at a time.
+ * Lengths are compared first because timingSafeEqual throws on a mismatch.
+ */
+function safeEqual(expected: string, received: string): boolean {
+  const a = Buffer.from(expected);
+  const b = Buffer.from(received);
+  return a.length === b.length && timingSafeEqual(a, b);
 }
 
 /** Cash on delivery — always available, no gateway involved. */
@@ -89,6 +114,10 @@ const mockProvider: PaymentProvider = {
     };
   },
   verifySignature() {
+    return true;
+  },
+  /** Test mode has no signature to check; the flow is what is being tested. */
+  verifyCheckout() {
     return true;
   },
 };
@@ -147,13 +176,30 @@ const razorpayProvider: PaymentProvider = {
       completed: false,
     };
   },
+  /**
+   * Webhooks. Signed with the webhook secret over the raw request body — a
+   * different secret from the one below, which is why they are separate.
+   */
   verifySignature(payload: string, signature: string) {
     const expected = createHmac('sha256', razorpay.webhookSecret())
       .update(payload)
       .digest('hex');
-    const a = Buffer.from(expected);
-    const b = Buffer.from(signature);
-    return a.length === b.length && timingSafeEqual(a, b);
+    return safeEqual(expected, signature);
+  },
+
+  /**
+   * The browser handshake: HMAC-SHA256 of "order_id|payment_id" keyed with the
+   * API secret.
+   *
+   * This is the only thing standing between a real payment and a forged one.
+   * The browser can send any three strings it likes to the verify endpoint;
+   * only Razorpay and this server know the secret that makes them agree.
+   */
+  verifyCheckout({ orderId, paymentId, signature }) {
+    const expected = createHmac('sha256', razorpay.keySecret())
+      .update(`${orderId}|${paymentId}`)
+      .digest('hex');
+    return safeEqual(expected, signature);
   },
 };
 

@@ -246,6 +246,7 @@ export const en = {
   'checkout.payment.codBody': 'Pay the delivery agent when your parcel arrives.',
   'checkout.payment.online': 'Pay online (UPI / card / netbanking)',
   'checkout.payment.onlineBody': 'Secure payment through our payment partner.',
+  'checkout.payment.gatewayUnavailable': 'The payment window could not open. Your order is saved — you can pay from the order page.',
   'checkout.payment.onlineUnavailable':
     'Online payment is not configured yet. Please choose cash on delivery.',
   'checkout.notes': 'Delivery instructions ({optional})',

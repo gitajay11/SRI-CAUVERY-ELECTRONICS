@@ -246,6 +246,7 @@ export const ta: Dictionary = {
   'checkout.payment.codBody': 'பொருள் வந்ததும் டெலிவரி நபரிடம் பணம் செலுத்தலாம்.',
   'checkout.payment.online': 'ஆன்லைனில் செலுத்து (UPI / கார்டு / நெட் பேங்கிங்)',
   'checkout.payment.onlineBody': 'எங்கள் பேமெண்ட் பார்ட்னர் மூலம் பாதுகாப்பான பரிமாற்றம்.',
+  'checkout.payment.gatewayUnavailable': 'கட்டண சாளரத்தைத் திறக்க முடியவில்லை. உங்கள் ஆர்டர் சேமிக்கப்பட்டுள்ளது — ஆர்டர் பக்கத்திலிருந்து செலுத்தலாம்.',
   'checkout.payment.onlineUnavailable':
     'ஆன்லைன் பணப்பரிமாற்றம் இன்னும் அமைக்கப்படவில்லை. தயவுசெய்து COD ஐத் தேர்வு செய்யவும்.',
   'checkout.notes': 'டெலிவரி குறிப்புகள் ({optional})',
