@@ -59,6 +59,10 @@ export function SelectMenu({
 }) {
   const id = useId();
   const [open, setOpen] = useState(false);
+  // Which edge of the trigger the list hangs from. Decided by measuring, at
+  // the moment of opening, whether the list would run off the right of the
+  // viewport — as it does when the control sits top-right on a phone.
+  const [alignEnd, setAlignEnd] = useState(false);
   const [active, setActive] = useState(0);
   const rootRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
@@ -105,7 +109,21 @@ export function SelectMenu({
     if (option.value !== value) onChange(option.value);
   };
 
+  /** The list's minimum width, matching `min-w-48` below. */
+  const LIST_MIN_WIDTH = 192;
+
   const openAt = (index: number) => {
+    // The list is at least LIST_MIN_WIDTH wide and normally hangs from the
+    // trigger's left edge. When the trigger is near the right of the screen
+    // that edge is the wrong one: the list would extend past the viewport,
+    // and a page that can be scrolled sideways is the result. Hanging it
+    // from the right edge instead keeps it on screen without any of the
+    // page moving.
+    const rect = rootRef.current?.getBoundingClientRect();
+    if (rect) {
+      const width = Math.max(rect.width, LIST_MIN_WIDTH);
+      setAlignEnd(rect.left + width > window.innerWidth);
+    }
     setActive(index);
     setOpen(true);
   };
@@ -251,7 +269,12 @@ export function SelectMenu({
           role="listbox"
           aria-label={label}
           tabIndex={-1}
-          className="absolute z-50 mt-1.5 max-h-72 w-full min-w-48 overflow-y-auto rounded-lg border border-slate-200 bg-surface p-1 shadow-overlay"
+          className={cn(
+            'absolute z-50 mt-1.5 max-h-72 w-full min-w-48 overflow-y-auto rounded-lg border border-slate-200 bg-surface p-1 shadow-overlay',
+            // Never wider than the screen, whichever edge it hangs from.
+            'max-w-[calc(100vw-1.5rem)]',
+            alignEnd ? 'right-0' : 'left-0',
+          )}
         >
           {options.map((option, index) => {
             const isSelected = option.value === value;
