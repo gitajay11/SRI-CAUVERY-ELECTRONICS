@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { ProductDetailView } from '@tamizh/core/types';
 import { cn } from '@tamizh/core/utils';
@@ -27,38 +27,55 @@ import { MinusIcon, PlusIcon } from '@/components/ui/Icons';
  *
  * Two ways of choosing, because two kinds of buyer. Someone buying a cable
  * taps plus once or twice. Someone buying return gifts for a wedding needs
- * two hundred and is not going to tap forty times — so a bulk line offers
- * a box to type into, checked against the same rule as the buttons: at
- * least the minimum, then multiples of the step. The server checks the same
- * rule again on every cart write, so the two never disagree.
+ * two hundred and is not going to tap forty times — so a bulk line also
+ * offers a box to type into, always on screen, never behind a toggle a
+ * shopper would have to discover. The stepper and the box are two views of
+ * one number: step and the box follows, type and the stepper follows.
+ *
+ * Both are checked against the same rule — at least the minimum, then
+ * multiples of the step — and the server checks it again on every cart
+ * write, so the two never disagree.
  */
 export function ProductPurchasePanel({ product }: { product: ProductDetailView }) {
   const { t } = useLocale();
   const router = useRouter();
   const { addItem } = useCart();
+  const noteId = useId();
 
   const rule = quantityRuleFor(product);
   const max = maxQuantity(rule, product.stock);
   const outOfStock = max <= 0;
 
   const [quantity, setQuantity] = useState(() => firstQuantity(rule));
-  // Bulk entry: what the shopper has typed, kept as text so a half-typed
-  // "2" on the way to "25" is not snapped to something else underneath them.
-  const [bulkMode, setBulkMode] = useState(false);
-  const [typed, setTyped] = useState(String(firstQuantity(rule)));
+  // What the shopper has typed, kept as text so a half-typed "2" on the way
+  // to "25" is not snapped to something else underneath them.
+  const [typed, setTyped] = useState(() => String(firstQuantity(rule)));
   const [buying, setBuying] = useState(false);
 
   const typedNumber = Number.parseInt(typed, 10);
-  const typedProblem: QuantityProblem | 'empty' | null = bulkMode
-    ? typed.trim() === '' || Number.isNaN(typedNumber)
+  const typedProblem: QuantityProblem | 'empty' | null = !rule.bulk
+    ? null
+    : typed.trim() === '' || Number.isNaN(typedNumber)
       ? 'empty'
-      : quantityProblem(typedNumber, rule, product.stock)
-    : null;
+      : quantityProblem(typedNumber, rule, product.stock);
 
-  // What will actually be bought: the typed figure when it is valid, else
-  // the stepper's. Never a figure the rule would refuse.
-  const chosen = bulkMode && typedProblem === null ? typedNumber : quantity;
-  const canBuy = !outOfStock && !(bulkMode && typedProblem !== null);
+  const canBuy = !outOfStock && typedProblem === null;
+
+  /** The stepper moved: the box shows the same figure. */
+  const stepTo = (next: number) => {
+    setQuantity(next);
+    setTyped(String(next));
+  };
+
+  /** The box changed: the stepper follows once the figure is one we sell. */
+  const typeTo = (raw: string) => {
+    const clean = raw.replace(/[^\d]/g, '');
+    setTyped(clean);
+    const next = Number.parseInt(clean, 10);
+    if (!Number.isNaN(next) && quantityProblem(next, rule, product.stock) === null) {
+      setQuantity(next);
+    }
+  };
 
   const problemText = (problem: QuantityProblem | 'empty'): string => {
     switch (problem) {
@@ -76,107 +93,97 @@ export function ProductPurchasePanel({ product }: { product: ProductDetailView }
   const buyNow = async () => {
     if (!canBuy) return;
     setBuying(true);
-    const ok = await addItem(product.id, chosen, product.name);
+    const ok = await addItem(product.id, quantity, product.name);
     if (ok) router.push('/checkout');
     else setBuying(false);
   };
 
   return (
     <div className="space-y-4">
-      {rule.bulk ? (
-        <p className="rounded-lg bg-success-50 px-3 py-2 text-sm text-link">
-          {t('product.bulk.rule', { min: rule.min, step: rule.step })}
-        </p>
-      ) : null}
-
       {!outOfStock ? (
-        <div className="space-y-3">
-          <div className="flex flex-wrap items-center gap-4">
-            <span className="text-sm font-semibold text-ink-700">{t('product.quantity')}</span>
-
-            {!bulkMode ? (
-              <div className="inline-flex items-center rounded-full border border-ink-200 bg-surface">
-                <StepButton
-                  label={t('product.decrease')}
-                  onClick={() => setQuantity((value) => stepDown(value, rule))}
-                  disabled={quantity <= rule.min}
-                >
-                  <MinusIcon />
-                </StepButton>
-                <span
-                  aria-live="polite"
-                  className="min-w-14 border-x border-ink-200 py-2.5 text-center text-base font-bold tabular-nums text-ink-900"
-                >
-                  {quantity}
-                </span>
-                <StepButton
-                  label={t('product.increase')}
-                  onClick={() => setQuantity((value) => stepUp(value, rule, product.stock))}
-                  disabled={quantity >= max}
-                >
-                  <PlusIcon />
-                </StepButton>
-              </div>
-            ) : (
-              <input
-                type="number"
-                inputMode="numeric"
-                min={rule.min}
-                max={max}
-                step={rule.step}
-                value={typed}
-                aria-label={t('product.bulk.quantityLabel')}
-                aria-invalid={typedProblem ? true : undefined}
-                aria-describedby="bulk-quantity-note"
-                onChange={(event) => setTyped(event.target.value.replace(/[^\d]/g, ''))}
-                className={cn(
-                  'w-28 rounded-full border bg-surface px-4 py-2.5 text-center text-base font-bold tabular-nums text-ink-900 outline-none',
-                  typedProblem ? 'border-danger-500' : 'border-ink-200 focus:border-brand-500',
-                )}
-              />
-            )}
-
-            {rule.bulk ? (
-              <button
-                type="button"
-                onClick={() => {
-                  setBulkMode((on) => !on);
-                  setTyped(String(quantity));
-                }}
-                aria-pressed={bulkMode}
-                className={cn(
-                  'min-h-9 rounded-full border px-3.5 text-sm font-semibold transition-colors',
-                  bulkMode
-                    ? 'border-brand-500 bg-success-50 text-link'
-                    : 'border-ink-300 text-ink-700 hover:border-action-edge hover:text-link',
-                )}
-              >
-                {t('product.bulk.toggle')}
-              </button>
-            ) : null}
-
-            {product.stock <= 10 && !rule.bulk ? (
-              <span className="text-sm font-semibold text-warning-500">
-                {t('product.lowStock', { count: product.stock })}
-              </span>
-            ) : null}
-          </div>
-
-          {rule.bulk ? (
-            <p
-              id="bulk-quantity-note"
-              role={typedProblem ? 'alert' : undefined}
-              className={cn('text-sm', typedProblem ? 'text-danger-500' : 'text-ink-600')}
+        <div className="flex flex-wrap items-center gap-4">
+          <span className="text-sm font-semibold text-ink-700">{t('product.quantity')}</span>
+          <div className="inline-flex items-center rounded-full border border-ink-200 bg-surface">
+            <StepButton
+              label={t('product.decrease')}
+              onClick={() => stepTo(stepDown(quantity, rule))}
+              disabled={quantity <= rule.min}
             >
-              {typedProblem
-                ? problemText(typedProblem)
-                : t('product.bulk.total', {
-                    count: chosen,
-                    total: formatINR(product.price * chosen),
-                  })}
-            </p>
+              <MinusIcon />
+            </StepButton>
+            <span
+              aria-live="polite"
+              className="min-w-14 border-x border-ink-200 py-2.5 text-center text-base font-bold tabular-nums text-ink-900"
+            >
+              {quantity}
+            </span>
+            <StepButton
+              label={t('product.increase')}
+              onClick={() => stepTo(stepUp(quantity, rule, product.stock))}
+              disabled={quantity >= max}
+            >
+              <PlusIcon />
+            </StepButton>
+          </div>
+          {product.stock <= 10 && !rule.bulk ? (
+            <span className="text-sm font-semibold text-warning-500">
+              {t('product.lowStock', { count: product.stock })}
+            </span>
           ) : null}
         </div>
+      ) : null}
+
+      {rule.bulk && !outOfStock ? (
+        <section
+          aria-labelledby={`${noteId}-title`}
+          className="rounded-card border border-action-edge/40 bg-success-50/60 p-4"
+        >
+          <h3 id={`${noteId}-title`} className="text-sm font-bold text-ink-900">
+            {t('product.bulk.title')}
+          </h3>
+          <p className="mt-0.5 text-sm text-ink-600">
+            {t('product.bulk.rule', { min: rule.min, step: rule.step })}
+          </p>
+
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <label htmlFor={`${noteId}-qty`} className="text-sm font-semibold text-ink-700">
+              {t('product.bulk.quantityLabel')}
+            </label>
+            <input
+              id={`${noteId}-qty`}
+              type="number"
+              inputMode="numeric"
+              min={rule.min}
+              max={max}
+              step={rule.step}
+              value={typed}
+              aria-invalid={typedProblem ? true : undefined}
+              aria-describedby={`${noteId}-note`}
+              onChange={(event) => typeTo(event.target.value)}
+              className={cn(
+                'w-32 rounded-xl border bg-surface px-4 py-2.5 text-center text-lg font-bold tabular-nums text-ink-900 outline-none',
+                typedProblem ? 'border-danger-500' : 'border-ink-300 focus:border-brand-500',
+              )}
+            />
+          </div>
+
+          <p
+            id={`${noteId}-note`}
+            role={typedProblem ? 'alert' : 'status'}
+            className={cn(
+              'mt-2.5 text-sm font-semibold',
+              typedProblem ? 'text-danger-500' : 'text-ink-900',
+            )}
+          >
+            {typedProblem
+              ? problemText(typedProblem)
+              : t('product.bulk.total', {
+                  count: quantity,
+                  unit: formatINR(product.price),
+                  total: formatINR(product.price * quantity),
+                })}
+          </p>
+        </section>
       ) : null}
 
       <div className="flex flex-col gap-2.5 sm:flex-row">
@@ -185,7 +192,7 @@ export function ProductPurchasePanel({ product }: { product: ProductDetailView }
           productName={product.name}
           minOrderQuantity={product.minOrderQuantity}
           stock={product.stock}
-          quantity={chosen}
+          quantity={quantity}
           disabled={outOfStock}
           inactive={!canBuy}
           size="lg"
