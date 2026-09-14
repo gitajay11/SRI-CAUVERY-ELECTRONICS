@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useId, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { cn } from '@tamizh/core/utils';
 import { CheckIcon, ChevronDownIcon } from './Icons';
 
@@ -59,10 +60,20 @@ export function SelectMenu({
 }) {
   const id = useId();
   const [open, setOpen] = useState(false);
-  // Which edge of the trigger the list hangs from. Decided by measuring, at
-  // the moment of opening, whether the list would run off the right of the
-  // viewport — as it does when the control sits top-right on a phone.
-  const [alignEnd, setAlignEnd] = useState(false);
+  /**
+   * Where the list sits, in viewport coordinates.
+   *
+   * The list is rendered through a portal onto <body>, not inside the
+   * control. Inside, it would be clipped by any ancestor that hides its
+   * overflow — and the form panels do, so a list hanging below a panel's
+   * edge lost its lower options and looked as if they did not exist.
+   */
+  const [place, setPlace] = useState<{
+    top: number;
+    left: number;
+    width: number;
+    maxHeight: number;
+  } | null>(null);
   const [active, setActive] = useState(0);
   const rootRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
@@ -80,11 +91,19 @@ export function SelectMenu({
     if (!open) return;
 
     const onPointerDown = (event: MouseEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+      const target = event.target as Node;
+      if (rootRef.current?.contains(target) || listRef.current?.contains(target)) return;
+      setOpen(false);
     };
     // A filter row can sit inside a scrolling page; an anchored panel that
     // stays put while the page moves under it looks broken, so close instead.
-    const onScroll = () => setOpen(false);
+    // The list's own scrolling is the one exception: a long list must be
+    // scrolled to reach its lower options, and closing on that made every
+    // option past the fold impossible to choose.
+    const onScroll = (event: Event) => {
+      if (listRef.current?.contains(event.target as Node)) return;
+      setOpen(false);
+    };
 
     document.addEventListener('mousedown', onPointerDown);
     window.addEventListener('scroll', onScroll, true);
@@ -109,20 +128,26 @@ export function SelectMenu({
     if (option.value !== value) onChange(option.value);
   };
 
-  /** The list's minimum width, matching `min-w-48` below. */
+  /** The list's minimum width. */
   const LIST_MIN_WIDTH = 192;
+  /** Breathing room from the viewport's edges. */
+  const EDGE = 8;
 
   const openAt = (index: number) => {
-    // The list is at least LIST_MIN_WIDTH wide and normally hangs from the
-    // trigger's left edge. When the trigger is near the right of the screen
-    // that edge is the wrong one: the list would extend past the viewport,
-    // and a page that can be scrolled sideways is the result. Hanging it
-    // from the right edge instead keeps it on screen without any of the
-    // page moving.
+    // Measured once, as the list opens. It is at least LIST_MIN_WIDTH wide
+    // and normally hangs from the trigger's left edge; near the right of the
+    // screen that edge is the wrong one, so it hangs from the right instead.
+    // Its height is whatever the viewport leaves below the trigger, so a long
+    // list scrolls inside itself rather than running off the bottom.
     const rect = rootRef.current?.getBoundingClientRect();
     if (rect) {
-      const width = Math.max(rect.width, LIST_MIN_WIDTH);
-      setAlignEnd(rect.left + width > window.innerWidth);
+      const width = Math.min(Math.max(rect.width, LIST_MIN_WIDTH), window.innerWidth - EDGE * 2);
+      let left = rect.left;
+      if (left + width > window.innerWidth - EDGE) left = rect.right - width;
+      left = Math.max(EDGE, left);
+      const top = rect.bottom + 6;
+      const maxHeight = Math.max(160, Math.min(288, window.innerHeight - top - EDGE));
+      setPlace({ top, left, width, maxHeight });
     }
     setActive(index);
     setOpen(true);
@@ -262,19 +287,21 @@ export function SelectMenu({
         />
       </button>
 
-      {open ? (
+      {open && place
+        ? createPortal(
         <ul
           ref={listRef}
           id={`${id}-list`}
           role="listbox"
           aria-label={label}
           tabIndex={-1}
-          className={cn(
-            'absolute z-50 mt-1.5 max-h-72 w-full min-w-48 overflow-y-auto rounded-lg border border-slate-200 bg-surface p-1 shadow-overlay',
-            // Never wider than the screen, whichever edge it hangs from.
-            'max-w-[calc(100vw-1.5rem)]',
-            alignEnd ? 'right-0' : 'left-0',
-          )}
+          style={{
+            top: place.top,
+            left: place.left,
+            width: place.width,
+            maxHeight: place.maxHeight,
+          }}
+          className="fixed z-[80] overflow-y-auto rounded-lg border border-slate-200 bg-surface p-1 shadow-overlay"
         >
           {options.map((option, index) => {
             const isSelected = option.value === value;
@@ -303,8 +330,10 @@ export function SelectMenu({
               </li>
             );
           })}
-        </ul>
-      ) : null}
+        </ul>,
+        document.body,
+        )
+        : null}
     </div>
   );
 }
