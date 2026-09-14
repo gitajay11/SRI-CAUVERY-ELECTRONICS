@@ -1,5 +1,6 @@
 import 'server-only';
 import { db } from '@tamizh/db';
+import type { PrismaClient } from '@tamizh/db';
 import type { OrderStatus, PaymentStatus } from '@tamizh/db/enums';
 import { AppError, notFound } from '@tamizh/core/api';
 import { canTransition } from '@tamizh/core/pricing';
@@ -172,6 +173,17 @@ export async function getOrderDetail(orderNumber: string) {
 
 export type OrderDetail = NonNullable<Awaited<ReturnType<typeof getOrderDetail>>>;
 
+export interface OrderStatusInput {
+  status: OrderStatus;
+  trackingNumber?: string;
+  courier?: string;
+  note?: string;
+  cancelReason?: string;
+}
+
+/** What a transaction hands its callbacks: the client minus transaction methods. */
+type Tx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$extends'>;
+
 /**
  * Moves an order to a new status.
  *
@@ -183,15 +195,26 @@ export type OrderDetail = NonNullable<Awaited<ReturnType<typeof getOrderDetail>>
 export async function updateOrderStatus(
   actor: AdminIdentity,
   orderNumber: string,
-  input: {
-    status: OrderStatus;
-    trackingNumber?: string;
-    courier?: string;
-    note?: string;
-    cancelReason?: string;
-  },
+  input: OrderStatusInput,
 ) {
-  const updated = await db.$transaction(async (tx) => {
+  return db.$transaction((tx) => updateOrderStatusWithin(tx, actor, orderNumber, input));
+}
+
+/**
+ * The same move, inside a transaction somebody else opened.
+ *
+ * Approving a cancellation request has to change the request and cancel the
+ * order as one unit — a request marked approved against an order that is
+ * still live would be a lie in the database. Callers that own the
+ * transaction use this; everyone else uses the wrapper above.
+ */
+export async function updateOrderStatusWithin(
+  tx: Tx,
+  actor: AdminIdentity,
+  orderNumber: string,
+  input: OrderStatusInput,
+) {
+  {
     const order = await tx.order.findUnique({
       where: { orderNumber },
       include: { items: true },
@@ -310,9 +333,7 @@ export async function updateOrderStatus(
     );
 
     return result;
-  });
-
-  return updated;
+  }
 }
 
 export async function addOrderNote(

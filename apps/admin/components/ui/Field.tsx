@@ -449,6 +449,7 @@ export function SelectField({
                 currentTarget: { value: next },
               } as never)
             }
+            disabled={props.disabled}
             className={className}
           />
         </div>

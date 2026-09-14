@@ -12,6 +12,8 @@
  */
 
 const BASE = process.env.ADMIN_URL ?? 'http://localhost:3001';
+/** The shop, for the flows that start with a customer. Skipped when it is down. */
+const STOREFRONT = (process.env.STOREFRONT_URL ?? 'http://localhost:3000').replace(/\/+$/, '');
 const OWNER = { email: 'owner@tamizhelectronics.in', password: 'Owner@Tamizh2026' };
 
 let passed = 0;
@@ -153,6 +155,7 @@ async function main() {
     ['/customers', 'customers'],
     ['/payments', 'payments'],
     ['/returns', 'returns'],
+    ['/cancellations', 'cancel requests'],
     ['/refunds', 'refunds'],
     ['/coupons', 'coupons'],
     ['/coupons/new', 'new coupon'],
@@ -319,6 +322,164 @@ async function main() {
   });
   check('a refund on an unknown order is refused', badRefund.status === 404);
 
+  // -- cancellation requests ------------------------------------------------
+  section('Cancel requests');
+  const unknownRequest = await request('/api/admin/cancellations/CR-000000-XXX', {
+    method: 'PATCH',
+    json: { status: 'REJECTED', note: 'smoke test' },
+  });
+  check('deciding an unknown request is a 404', unknownRequest.status === 404, `status ${unknownRequest.status}`);
+
+  // The full flow needs a customer, so it needs the shop. A separate cookie
+  // jar keeps the shopper's session apart from the owner's.
+  const shopJar = new Map();
+  const shop = async (path, { method = 'GET', json } = {}) => {
+    const cookie = [...shopJar.entries()].map(([k, v]) => `${k}=${v}`).join('; ');
+    const response = await fetch(`${STOREFRONT}${path}`, {
+      method,
+      headers: {
+        ...(json !== undefined ? { 'Content-Type': 'application/json' } : {}),
+        ...(cookie ? { Cookie: cookie } : {}),
+      },
+      body: json !== undefined ? JSON.stringify(json) : undefined,
+    }).catch(() => null);
+    if (!response) return { status: 0, body: null };
+    for (const line of response.headers.getSetCookie?.() ?? []) {
+      const [pair] = line.split(';');
+      const i = pair.indexOf('=');
+      if (i > 0) shopJar.set(pair.slice(0, i).trim(), pair.slice(i + 1).trim());
+    }
+    const body = (response.headers.get('content-type') ?? '').includes('application/json')
+      ? await response.json().catch(() => null)
+      : await response.text();
+    return { status: response.status, body };
+  };
+
+  const shopUp = (await shop('/api/products?pageSize=1')).status === 200;
+  if (!shopUp) {
+    skip('cancellation approve/reject flow', `storefront not reachable at ${STOREFRONT}`);
+  } else {
+    const stamp = Date.now();
+    const registered = await shop('/api/auth/register', {
+      method: 'POST',
+      json: {
+        name: 'Cancel Smoke',
+        email: `cancel-smoke-${stamp}@example.com`,
+        password: 'Str0ng!Pass123',
+        phone: '9840012345',
+      },
+    });
+    const product = (await shop('/api/products?pageSize=1')).body?.data?.items?.[0];
+    const stockOf = async () =>
+      (await shop(`/api/products?q=${encodeURIComponent(product?.name ?? '')}&pageSize=5`)).body?.data?.items?.find?.(
+        (item) => item.id === product?.id,
+      )?.stock;
+    // Measured before the order exists, so "put back" means back to this.
+    const stockAtStart = await stockOf();
+    await shop('/api/cart/items', { method: 'POST', json: { productId: product?.id, quantity: 1 } });
+    const placed = await shop('/api/checkout', {
+      method: 'POST',
+      json: {
+        customerName: 'Cancel Smoke',
+        customerEmail: `cancel-smoke-${stamp}@example.com`,
+        customerPhone: '9840012345',
+        addressLine1: '1 Bazaar Road',
+        city: 'Madurai',
+        district: 'Madurai',
+        state: 'Tamil Nadu',
+        pincode: '625001',
+        paymentMethod: 'COD',
+      },
+    });
+    const orderNumber = placed.body?.data?.order?.orderNumber;
+
+    if (registered.status !== 201 || !orderNumber) {
+      skip(
+        'cancellation approve/reject flow',
+        `could not place a shop order (register ${registered.status}, checkout ${placed.status}) — the shop's limiter may be exhausted`,
+      );
+    } else {
+      const stockAfterOrder = await stockOf();
+      check(
+        'placing the order took the unit',
+        typeof stockAtStart === 'number' && stockAfterOrder === stockAtStart - 1,
+        `start ${stockAtStart} after order ${stockAfterOrder}`,
+      );
+
+      const asked = await shop(`/api/orders/${orderNumber}/cancel`, {
+        method: 'POST',
+        json: { reason: 'Changed my mind' },
+      });
+      const requestNumber = asked.body?.data?.requestNumber;
+      check('a customer request reaches the panel', asked.status === 200 && /^CR-/.test(String(requestNumber)), `status ${asked.status}`);
+
+      const detail = await request(`/cancellations/${requestNumber}`);
+      check('the request has its own page', detail.status === 200 && isHtml(detail.body), `status ${detail.status}`);
+
+      const orderPage = await request(`/orders/${orderNumber}`);
+      check(
+        'the order page flags the pending request',
+        orderPage.status === 200 && String(orderPage.body).includes(requestNumber),
+      );
+
+      const rejectNoNote = await request(`/api/admin/cancellations/${requestNumber}`, {
+        method: 'PATCH',
+        json: { status: 'REJECTED' },
+      });
+      check('rejecting without a note is refused', rejectNoNote.status === 422, `status ${rejectNoNote.status}`);
+
+      const rejected = await request(`/api/admin/cancellations/${requestNumber}`, {
+        method: 'PATCH',
+        json: { status: 'REJECTED', note: 'Already being packed, sorry.' },
+      });
+      check('a request can be rejected', rejected.status === 200, `status ${rejected.status}`);
+
+      const rejectedAgain = await request(`/api/admin/cancellations/${requestNumber}`, {
+        method: 'PATCH',
+        json: { status: 'APPROVED' },
+      });
+      check('a decided request cannot be decided again', rejectedAgain.status === 409, `status ${rejectedAgain.status}`);
+
+      const afterReject = (await shop('/api/orders')).body?.data?.orders?.find?.((o) => o.orderNumber === orderNumber);
+      check('rejection leaves the order as it was', afterReject?.status === 'PENDING', `status ${afterReject?.status}`);
+      check(
+        'the customer can read why',
+        afterReject?.cancellationRequest?.status === 'REJECTED' &&
+          String(afterReject?.cancellationRequest?.decisionNote).includes('packed'),
+      );
+
+      // Rejected is not final for the customer: they may ask again.
+      const askedAgain = await shop(`/api/orders/${orderNumber}/cancel`, {
+        method: 'POST',
+        json: { reason: 'Really do not need it' },
+      });
+      const secondRequest = askedAgain.body?.data?.requestNumber;
+      check('after a rejection the customer may ask again', askedAgain.status === 200, `status ${askedAgain.status}`);
+
+      const approved = await request(`/api/admin/cancellations/${secondRequest}`, {
+        method: 'PATCH',
+        json: { status: 'APPROVED', note: 'Fine, cancelled.' },
+      });
+      check('a request can be approved', approved.status === 200, `status ${approved.status} ${JSON.stringify(approved.body)}`);
+
+      const afterApprove = (await shop('/api/orders')).body?.data?.orders?.find?.((o) => o.orderNumber === orderNumber);
+      check('approval cancels the order', afterApprove?.status === 'CANCELLED', `status ${afterApprove?.status}`);
+
+      const stockAfter = await stockOf();
+      check(
+        'approval puts the stock back',
+        typeof stockAtStart === 'number' && stockAfter === stockAtStart,
+        `start ${stockAtStart} after approval ${stockAfter}`,
+      );
+
+      const review = await shop('/api/reviews', {
+        method: 'POST',
+        json: { productId: product.id, rating: 4, comment: 'Bought this but the order was cancelled.' },
+      });
+      check('a cancelled order confers no review rights', review.status === 403, `status ${review.status}`);
+    }
+  }
+
   // -- reports --------------------------------------------------------------
   section('Reports');
   for (const report of ['orders', 'sales', 'products', 'inventory']) {
@@ -383,7 +544,23 @@ async function main() {
 }
 
 /** Reads a leaf category id out of the new-product form. */
+/**
+ * A sub category to file the smoke product under.
+ *
+ * Products live in sub categories — the server refuses a top-level one —
+ * and the new-product page only lists parents until one is chosen, so the
+ * leaf is taken from the shop's public tree. Falls back to scraping the
+ * page when the shop is not running, in which case the rule is what fails.
+ */
 async function firstCategoryId() {
+  try {
+    const response = await fetch(`${STOREFRONT}/api/categories`);
+    const tree = (await response.json())?.data?.categories ?? [];
+    const leaf = tree.flatMap((parent) => parent.children ?? [])[0];
+    if (leaf?.id) return leaf.id;
+  } catch {
+    // Shop not reachable: fall through.
+  }
   const page = await request('/products/new');
   const match = /<option value="(c[a-z0-9]{20,})"/.exec(String(page.body));
   return match?.[1] ?? null;

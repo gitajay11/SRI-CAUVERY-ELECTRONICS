@@ -35,6 +35,8 @@ export interface ProductRow {
   nameTa: string | null;
   brand: string;
   categoryName: string;
+  /** The parent's name, when the category has one. */
+  parentCategoryName: string | null;
   price: number;
   mrp: number;
   costPrice: number;
@@ -91,7 +93,7 @@ export async function listProducts(filters: ProductFilters): Promise<{
         isFeatured: true,
         soldCount: true,
         updatedAt: true,
-        category: { select: { name: true } },
+        category: { select: { name: true, parent: { select: { name: true } } } },
         images: { orderBy: { sortOrder: 'asc' }, take: 1, select: { url: true } },
       },
     }),
@@ -107,6 +109,7 @@ export async function listProducts(filters: ProductFilters): Promise<{
       nameTa: row.nameTa,
       brand: row.brand,
       categoryName: row.category.name,
+      parentCategoryName: row.category.parent?.name ?? null,
       price: row.price,
       mrp: row.mrp,
       costPrice: row.costPrice,
@@ -141,6 +144,7 @@ export interface ProductInput {
   descriptionTa?: string;
   brand: string;
   categoryId: string;
+  parentCategoryId?: string;
   /** Paise. */
   mrp: number;
   price: number;
@@ -184,6 +188,43 @@ async function assertUnique(sku: string, slug: string, excludeId?: string) {
   );
 }
 
+/**
+ * A product lives in a sub category, under the parent the form said.
+ *
+ * The dropdowns make an invalid pair hard to send, but nothing stops a
+ * hand-built request — and a product filed under "Electronics" itself, or
+ * under a cable category with a "Home Essentials" parent, would surface in
+ * the wrong place on the shop for every customer. Checked here, once, for
+ * both creating and editing.
+ */
+async function validateCategory(input: Pick<ProductInput, 'categoryId' | 'parentCategoryId'>) {
+  const category = await db.category.findFirst({
+    where: { id: input.categoryId, deletedAt: null },
+    select: { id: true, parentId: true, isActive: true },
+  });
+  if (!category) {
+    throw new AppError('That category no longer exists.', 422, 'unknown_category', {
+      categoryId: 'Choose a category from the list.',
+    });
+  }
+  if (category.parentId === null) {
+    throw new AppError(
+      'Products belong in a sub category, not a top-level one.',
+      422,
+      'category_not_leaf',
+      { categoryId: 'Choose a sub category.' },
+    );
+  }
+  if (input.parentCategoryId && category.parentId !== input.parentCategoryId) {
+    throw new AppError(
+      'That sub category does not belong to the chosen category.',
+      422,
+      'category_mismatch',
+      { categoryId: 'Choose a sub category of the selected category.' },
+    );
+  }
+}
+
 function validatePricing(input: Pick<ProductInput, 'price' | 'mrp'>) {
   if (input.price > input.mrp) {
     throw new AppError(
@@ -198,6 +239,7 @@ function validatePricing(input: Pick<ProductInput, 'price' | 'mrp'>) {
 export async function createProduct(actor: AdminIdentity, input: ProductInput) {
   await assertUnique(input.sku, input.slug);
   validatePricing(input);
+  await validateCategory(input);
 
   return db.$transaction(async (tx) => {
     const product = await tx.product.create({
@@ -300,11 +342,14 @@ export async function updateProduct(
 
   await assertUnique(input.sku, input.slug, id);
   validatePricing(input);
+  await validateCategory(input);
 
   // Stock is not editable here — it moves only through the inventory module,
   // so that every change carries a reason and lands in the ledger.
-  const { stock: _ignoredStock, ...editable } = input;
+  // The parent is only ever a check; the product stores the leaf.
+  const { stock: _ignoredStock, parentCategoryId: _ignoredParent, ...editable } = input;
   void _ignoredStock;
+  void _ignoredParent;
 
   return db.$transaction(async (tx) => {
     await tx.product.update({

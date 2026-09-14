@@ -97,6 +97,14 @@ enum RefundStatus {
   FAILED
 }
 
+/// A customer's request to cancel, judged by staff. Approval performs the
+/// cancellation; nothing about the order changes until then.
+enum CancellationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 enum ReturnStatus {
   REQUESTED
   APPROVED
@@ -139,6 +147,7 @@ enum AdminNotificationType {
   LOW_STOCK
   OUT_OF_STOCK
   RETURN_REQUESTED
+  CANCELLATION_REQUESTED
   REFUND_REQUESTED
   NEW_CUSTOMER
   NEW_REVIEW
@@ -184,16 +193,17 @@ model AdminUser {
   createdBy   AdminUser?  @relation("AdminCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   created     AdminUser[] @relation("AdminCreatedBy")
 
-  sessions          AdminSession[]
-  auditLogs         AuditLog[]
-  inventoryMoves    InventoryTransaction[]
-  orderNotes        OrderNote[]
-  orderEvents       OrderEvent[]
-  refundsActioned   Refund[]
-  returnsActioned   ReturnRequest[]
-  reviewsActioned   Review[]
-  pushSubscriptions PushSubscription[]
-  passwordResets    PasswordResetToken[]
+  sessions              AdminSession[]
+  auditLogs             AuditLog[]
+  inventoryMoves        InventoryTransaction[]
+  orderNotes            OrderNote[]
+  orderEvents           OrderEvent[]
+  refundsActioned       Refund[]
+  returnsActioned       ReturnRequest[]
+  cancellationsActioned CancellationRequest[]
+  reviewsActioned       Review[]
+  pushSubscriptions     PushSubscription[]
+  passwordResets        PasswordResetToken[]
 
   @@index([role])
   @@index([isActive])
@@ -287,11 +297,12 @@ model User {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
-  addresses Address[]
-  carts     Cart[]
-  wishlist  Wishlist?
-  orders    Order[]
-  reviews   Review[]
+  addresses            Address[]
+  carts                Cart[]
+  wishlist             Wishlist?
+  orders               Order[]
+  reviews              Review[]
+  cancellationRequests CancellationRequest[]
 
   @@index([createdAt])
   @@index([isActive])
@@ -611,13 +622,14 @@ model Order {
   deliveredAt DateTime?
   cancelledAt DateTime?
 
-  items          OrderItem[]
-  payments       Payment[]
-  refunds        Refund[]
-  returnRequests ReturnRequest[]
-  events         OrderEvent[]
-  internalNotes  OrderNote[]
-  stockMoves     InventoryTransaction[]
+  items                OrderItem[]
+  payments             Payment[]
+  refunds              Refund[]
+  returnRequests       ReturnRequest[]
+  cancellationRequests CancellationRequest[]
+  events               OrderEvent[]
+  internalNotes        OrderNote[]
+  stockMoves           InventoryTransaction[]
 
   @@index([userId, placedAt])
   @@index([status, placedAt])
@@ -799,6 +811,47 @@ model ReturnItem {
 // ===========================================================================
 // Reviews and promotions
 // ===========================================================================
+
+/// A customer asking for an order to be cancelled.
+///
+/// Deliberately a request and not an action: once goods are being picked the
+/// shop decides, not the shopper. Approving it is what actually cancels the
+/// order — stock back, ledger row, refund raised if money was taken — through
+/// the same path staff use when they cancel an order themselves.
+///
+/// One open request per order is enforced by a partial unique index in the
+/// migration (Prisma cannot express "unique where status = PENDING"), so a
+/// double tap or a retried request cannot create two.
+model CancellationRequest {
+  id            String  @id @default(cuid())
+  requestNumber String  @unique
+  orderId       String
+  order         Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  /// Who asked. Kept on the request so the audit trail survives the order's
+  /// customer details changing.
+  userId        String?
+  user          User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  reason String
+
+  status CancellationStatus @default(PENDING)
+
+  /// Staff decision.
+  decisionNote String?
+  handledById  String?
+  handledBy    AdminUser? @relation(fields: [handledById], references: [id], onDelete: SetNull)
+  handledAt    DateTime?
+
+  /// The refund raised on approval, when the order had been paid.
+  refundId String?
+
+  requestedAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([orderId])
+  @@index([userId])
+  @@index([status, requestedAt])
+}
 
 model Review {
   id        String  @id @default(cuid())

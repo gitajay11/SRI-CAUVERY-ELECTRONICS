@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { cn } from '@tamizh/core/utils';
-import { StarIcon } from './Icons';
+import { SpinnerIcon, StarIcon } from './Icons';
 
 /** Small presentational pieces used across the storefront. */
 
@@ -149,6 +149,65 @@ export function EmptyState({
       <h3 className="text-lg font-bold text-ink-900">{title}</h3>
       {body ? <p className="mt-1.5 max-w-sm text-sm text-ink-500">{body}</p> : null}
       {action ? <div className="mt-6">{action}</div> : null}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Loading
+// ---------------------------------------------------------------------------
+
+/**
+ * A centred spinner with a line saying what is being waited on.
+ *
+ * The one way to say "working on it" anywhere on the shop, so that every wait
+ * looks the same and is announced the same way. `overlay` pins it over the
+ * whole viewport for the moments nothing else on the page should be touched —
+ * confirming a payment, say — and is otherwise an ordinary block that sits
+ * inside whatever region is loading.
+ *
+ * Skeletons remain the right answer for a page whose *shape* is known; this
+ * is for the wait whose outcome is not yet known.
+ */
+export function LoadingState({
+  message,
+  detail,
+  overlay = false,
+  size = 'md',
+  className,
+}: {
+  message: string;
+  detail?: string;
+  overlay?: boolean;
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}) {
+  const spinner = { sm: 'text-2xl', md: 'text-4xl', lg: 'text-5xl' }[size];
+
+  const body = (
+    <div
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+      className={cn(
+        'flex flex-col items-center justify-center gap-3 text-center',
+        !overlay && 'px-6 py-14',
+        className,
+      )}
+    >
+      <SpinnerIcon className={cn(spinner, 'text-brand-500')} />
+      <p className="text-base font-semibold text-ink-900">{message}</p>
+      {detail ? <p className="max-w-xs text-sm text-ink-500">{detail}</p> : null}
+    </div>
+  );
+
+  if (!overlay) return body;
+
+  return (
+    <div className="fixed inset-0 z-[70] grid place-items-center bg-paper/80 p-6 backdrop-blur-sm">
+      <div className="w-full max-w-sm rounded-card border border-ink-100 bg-surface px-6 py-8 shadow-overlay">
+        {body}
+      </div>
     </div>
   );
 }

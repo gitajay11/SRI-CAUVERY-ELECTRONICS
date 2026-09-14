@@ -1,15 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import type { AddressView, CartView, OrderView, SessionUser } from '@tamizh/core/types';
 import { cn } from '@tamizh/core/utils';
 import { formatINR } from '@tamizh/core/money';
 import { ApiError, api } from '@/lib/http';
-import { INDIAN_STATES, TAMIL_NADU_DISTRICTS } from '@/lib/india';
+import { INDIAN_STATES } from '@/lib/india';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { useLocale } from '@/components/providers/LocaleProvider';
+import { useCart } from '@/components/providers/CartProvider';
 import { openRazorpayCheckout } from '@/lib/razorpay-checkout';
 import { shopConfig } from '@/lib/site';
 import { Button } from '@/components/ui/Button';
@@ -22,7 +23,7 @@ import {
   TextField,
 } from '@/components/ui/Field';
 import { CartSummary } from '@/components/cart/CartSummary';
-import { Alert } from '@/components/ui/Primitives';
+import { Alert, LoadingState } from '@/components/ui/Primitives';
 import { CheckIcon, ShieldIcon, TruckIcon, WifiOffIcon } from '@/components/ui/Icons';
 
 /**
@@ -35,6 +36,14 @@ import { CheckIcon, ShieldIcon, TruckIcon, WifiOffIcon } from '@/components/ui/I
  * server for the decision that counts. The order total is never sent; the
  * server recomputes it from the cart.
  */
+/**
+ * Where the shopper is in placing the order. Each phase has its own words on
+ * the screen, because "please wait" means something different when the order
+ * is being written, when the payment window is open, and when the payment is
+ * being checked with the gateway.
+ */
+type Phase = 'idle' | 'placing' | 'paying' | 'confirming' | 'leaving';
+
 export function CheckoutForm({
   cart,
   user,
@@ -48,6 +57,7 @@ export function CheckoutForm({
 }) {
   const { t } = useLocale();
   const router = useRouter();
+  const { clear: clearCartState } = useCart();
 
   const defaultAddress = addresses.find((address) => address.isDefault) ?? addresses[0];
 
@@ -68,10 +78,27 @@ export function CheckoutForm({
   });
   const [paymentMethod, setPaymentMethod] = useState<'COD' | 'ONLINE'>('COD');
   const [saveAddress, setSaveAddress] = useState(false);
-  const [busy, setBusy] = useState(false);
+  const [phase, setPhase] = useState<Phase>('idle');
   const [error, setError] = useState<string | null>(null);
   const [fields, setFields] = useState<Record<string, string>>({});
   const offline = !useOnlineStatus();
+
+  // The page stays mounted until the confirmation page has actually arrived,
+  // and this is how long that takes. The overlay is held up until then so the
+  // shopper is never dropped back onto a live checkout form for a beat.
+  const [navigating, startNavigation] = useTransition();
+
+  // A second tap can land before the disabled state has rendered. State is
+  // for what the screen shows; this ref is what actually stops a second
+  // order being placed.
+  const inFlight = useRef(false);
+
+  const busy = phase !== 'idle' || navigating;
+
+  /** Leaves the form for the order page, keeping the overlay up until it lands. */
+  const leaveFor = (href: string) => {
+    startNavigation(() => router.push(href));
+  };
 
   const set = (key: keyof typeof form) => (value: string) =>
     setForm((current) => ({ ...current, [key]: value }));
@@ -93,6 +120,7 @@ export function CheckoutForm({
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
+    if (inFlight.current) return;
     setError(null);
     setFields({});
 
@@ -101,7 +129,8 @@ export function CheckoutForm({
       return;
     }
 
-    setBusy(true);
+    inFlight.current = true;
+    setPhase('placing');
     try {
       const result = await api.post<{
         order: OrderView;
@@ -113,12 +142,18 @@ export function CheckoutForm({
         saveAddress: saveAddress && Boolean(user),
       });
 
-      // The order exists and is waiting on payment. Everything from here is
-      // about that one order: its total is already fixed on the server, so
-      // nothing the gateway or the browser says can change what is owed.
+      // The order exists. The server emptied the cart as part of placing it,
+      // so the badge and every "in your cart" button must forget it now —
+      // whatever happens with payment, these goods are no longer in a cart.
+      clearCartState();
+
+      // Everything from here is about that one order: its total is already
+      // fixed on the server, so nothing the gateway or the browser says can
+      // change what is owed.
       if (result.payment?.provider === 'razorpay') {
         const pending = `/order/${result.order.orderNumber}?payment=pending&email=${encodeURIComponent(result.order.customerEmail)}`;
 
+        setPhase('paying');
         let outcome: Awaited<ReturnType<typeof openRazorpayCheckout>>;
         try {
           outcome = await openRazorpayCheckout(
@@ -140,21 +175,26 @@ export function CheckoutForm({
           // The script could not load — a blocked third party, or no network.
           // The order stands; it simply has not been paid for yet.
           setError(t('checkout.payment.gatewayUnavailable'));
-          setBusy(false);
+          setPhase('idle');
+          inFlight.current = false;
           return;
         }
 
         if (outcome.status === 'paid') {
+          // The gateway says paid; the shop has not agreed yet. Until the
+          // server has checked the signature nothing on screen may say
+          // "confirmed" — this phase is the honest state in between.
+          setPhase('confirming');
           try {
             await api.post('/api/payments/verify', outcome.handshake);
-            router.push(
+            leaveFor(
               `/order/${result.order.orderNumber}?placed=1&email=${encodeURIComponent(result.order.customerEmail)}`,
             );
           } catch {
             // Money may well have left the shopper's account, so this must
             // never read as "payment failed". The order page is the honest
             // place for it: the shop can see the payment and reconcile.
-            router.push(`${pending}&verify=failed`);
+            leaveFor(`${pending}&verify=failed`);
           }
           return;
         }
@@ -171,20 +211,22 @@ export function CheckoutForm({
           })
           .catch(() => {});
 
-        router.push(pending);
+        setPhase('leaving');
+        leaveFor(pending);
         return;
       }
 
+      setPhase('leaving');
       if (result.payment) {
         // Any other online provider — the mock one in development — has no
         // browser step, so the order simply waits for confirmation.
-        router.push(
+        leaveFor(
           `/order/${result.order.orderNumber}?payment=pending&email=${encodeURIComponent(result.order.customerEmail)}`,
         );
         return;
       }
 
-      router.push(
+      leaveFor(
         `/order/${result.order.orderNumber}?placed=1&email=${encodeURIComponent(result.order.customerEmail)}`,
       );
     } catch (caught) {
@@ -199,13 +241,48 @@ export function CheckoutForm({
       }
       // Scroll the error into view; on a phone the button is far from the top.
       window.scrollTo({ top: 0, behavior: 'smooth' });
-    } finally {
-      setBusy(false);
+      // Released only on failure. A successful order is leaving this page,
+      // and nothing must be allowed to place a second one on the way out.
+      setPhase('idle');
+      inFlight.current = false;
     }
   };
 
+  const overlayCopy: Record<Exclude<Phase, 'idle'>, { message: string; detail: string }> = {
+    placing: {
+      message: t('checkout.wait.placing'),
+      detail: t('checkout.wait.placingDetail'),
+    },
+    paying: {
+      message: t('checkout.wait.paying'),
+      detail: t('checkout.wait.payingDetail'),
+    },
+    confirming: {
+      message: t('checkout.wait.confirming'),
+      detail: t('checkout.wait.confirmingDetail'),
+    },
+    leaving: {
+      message: t('checkout.wait.leaving'),
+      detail: t('checkout.wait.leavingDetail'),
+    },
+  };
+  // Once the order is placed the overlay stays until the next page arrives;
+  // the form underneath must not come back to life for a beat in between.
+  const overlay = phase !== 'idle' ? overlayCopy[phase] : navigating ? overlayCopy.leaving : null;
+
   return (
-    <form onSubmit={submit} noValidate className="grid gap-6 lg:grid-cols-[1fr_22rem] lg:items-start lg:gap-8">
+    <form
+      onSubmit={submit}
+      noValidate
+      aria-busy={busy || undefined}
+      className="grid gap-6 lg:grid-cols-[1fr_22rem] lg:items-start lg:gap-8"
+    >
+      {/* The payment window is the gateway's own; while it is open ours
+          stays out of the way so nothing here can be read as competing. */}
+      {overlay && phase !== 'paying' ? (
+        <LoadingState overlay message={overlay.message} detail={overlay.detail} />
+      ) : null}
+
       <div className="space-y-6">
         {offline ? (
           <Alert tone="warning" icon={<WifiOffIcon />}>
@@ -345,15 +422,10 @@ export function CheckoutForm({
               label={t('checkout.address.district')}
               value={form.district}
               onChange={(event) => set('district')(event.target.value)}
-              list="tn-districts"
+              autoComplete="address-level3"
               required
               error={fields.district}
             />
-            <datalist id="tn-districts">
-              {TAMIL_NADU_DISTRICTS.map((district) => (
-                <option key={district} value={district} />
-              ))}
-            </datalist>
             <SelectField
               label={t('checkout.address.state')}
               value={form.state}

@@ -134,7 +134,12 @@ export async function sendContactEnquiry(input: {
  * a dropped alert costs a nudge, not a record.
  */
 export async function notifyAdmin(input: {
-  type: 'NEW_ORDER' | 'RETURN_REQUESTED' | 'PAYMENT_FAILED' | 'NEW_CUSTOMER';
+  type:
+    | 'NEW_ORDER'
+    | 'RETURN_REQUESTED'
+    | 'CANCELLATION_REQUESTED'
+    | 'PAYMENT_FAILED'
+    | 'NEW_CUSTOMER';
   title: string;
   body: string;
   entityId?: string;

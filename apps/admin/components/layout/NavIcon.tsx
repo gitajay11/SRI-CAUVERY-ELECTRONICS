@@ -1,6 +1,7 @@
 import type { SVGProps } from 'react';
 import {
   BellIcon,
+  BanIcon,
   BoxesIcon,
   CartIcon,
   ChartIcon,
@@ -33,6 +34,7 @@ const ICONS: Record<string, (props: SVGProps<SVGSVGElement>) => React.ReactEleme
   receipt: ReceiptIcon,
   card: TagIcon,
   rotate: RotateLeftIcon,
+  ban: BanIcon,
   refund: ClipboardIcon,
   box: BoxesIcon,
   grid: GridIcon,

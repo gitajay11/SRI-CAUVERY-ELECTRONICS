@@ -3,6 +3,7 @@ import { getPrisma } from '@tamizh/db';
 import type {
   AddressInput,
   AddressView,
+  CancellationRequestView,
   CartItemView,
   CategoryView,
   OrderStatus,
@@ -1128,6 +1129,14 @@ export class PrismaRepository implements Repository {
     trackingNumber: string | null;
     cancelReason: string | null;
     notes: string | null;
+    cancellationRequests?: {
+      requestNumber: string;
+      status: string;
+      reason: string;
+      requestedAt: Date;
+      decisionNote: string | null;
+      handledAt: Date | null;
+    }[];
     items: {
       id: string;
       productId: string | null;
@@ -1168,6 +1177,18 @@ export class PrismaRepository implements Repository {
       trackingNumber: row.trackingNumber,
       cancelReason: row.cancelReason,
       notes: row.notes,
+      cancellationRequest: (() => {
+        const latest = row.cancellationRequests?.[0];
+        if (!latest) return null;
+        return {
+          requestNumber: latest.requestNumber,
+          status: latest.status as CancellationRequestView['status'],
+          reason: latest.reason,
+          requestedAt: latest.requestedAt.toISOString(),
+          decisionNote: latest.decisionNote,
+          handledAt: latest.handledAt?.toISOString() ?? null,
+        };
+      })(),
       items: row.items.map((item) => ({
         id: item.id,
         productId: item.productId,
@@ -1186,6 +1207,20 @@ export class PrismaRepository implements Repository {
 
   private readonly orderInclude = {
     items: { include: { product: { select: { slug: true } } } },
+    // Newest first, and only one: the order page needs to know the current
+    // state of the conversation, not its whole history.
+    cancellationRequests: {
+      orderBy: { requestedAt: 'desc' },
+      take: 1,
+      select: {
+        requestNumber: true,
+        status: true,
+        reason: true,
+        requestedAt: true,
+        decisionNote: true,
+        handledAt: true,
+      },
+    },
   } as const;
 
   async listOrdersForUser(userId: string): Promise<OrderView[]> {
@@ -1272,6 +1307,81 @@ export class PrismaRepository implements Repository {
         include: this.orderInclude,
       });
       return this.toOrderView(updated);
+    });
+  }
+
+  /**
+   * Asks staff to cancel an order.
+   *
+   * Everything that decides whether the request is allowed is read here, not
+   * sent by the browser: the order must belong to this customer, must still be
+   * in a state the shop cancels from, and must not already have a request
+   * waiting. The last check is also a partial unique index on the table, so
+   * two taps arriving together cannot both get through.
+   *
+   * No stock moves and no money moves. This creates a request for shop staff
+   * to judge — the order only changes once someone has approved it.
+   */
+  async requestCancellation(
+    userId: string,
+    orderNumber: string,
+    reason: string,
+  ): Promise<{ requestNumber: string; orderNumber: string }> {
+    return this.db.$transaction(async (tx) => {
+      const order = await tx.order.findFirst({
+        where: { orderNumber, userId },
+        select: { id: true, orderNumber: true, status: true },
+      });
+      if (!order) throw notFound('Order not found.');
+      if (!(CANCELLABLE_STATUSES as readonly string[]).includes(order.status)) {
+        throw new AppError(
+          'This order can no longer be cancelled. Please contact support.',
+          409,
+          'not_cancellable',
+        );
+      }
+
+      const open = await tx.cancellationRequest.findFirst({
+        where: { orderId: order.id, status: 'PENDING' },
+        select: { requestNumber: true },
+      });
+      if (open) {
+        throw new AppError(
+          'A cancellation request for this order is already being reviewed.',
+          409,
+          'cancellation_pending',
+        );
+      }
+
+      const requestNumber = `CR-${order.orderNumber.replace(/^TE-/, '')}-${Math.random()
+        .toString(36)
+        .slice(2, 5)
+        .toUpperCase()}`;
+
+      try {
+        const created = await tx.cancellationRequest.create({
+          data: {
+            requestNumber,
+            orderId: order.id,
+            userId,
+            reason: reason.trim(),
+            status: 'PENDING',
+          },
+          select: { requestNumber: true },
+        });
+        return { ...created, orderNumber: order.orderNumber };
+      } catch (error) {
+        // The partial unique index caught a request that raced past the
+        // check above. Same answer as if the check had seen it.
+        if ((error as { code?: string }).code === 'P2002') {
+          throw new AppError(
+            'A cancellation request for this order is already being reviewed.',
+            409,
+            'cancellation_pending',
+          );
+        }
+        throw error;
+      }
     });
   }
 

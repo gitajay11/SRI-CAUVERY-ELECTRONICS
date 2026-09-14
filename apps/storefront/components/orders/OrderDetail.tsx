@@ -247,10 +247,26 @@ export async function OrderDetail({
           </section>
 
           {showCancel && !cancelled ? (
-            <CancelOrderButton
-              orderNumber={order.orderNumber}
-              status={order.status}
-            />
+            order.cancellationRequest?.status === 'PENDING' ? (
+              <p className="rounded-card border border-warning-500/25 bg-warning-50 px-4 py-3 text-sm text-ink-700">
+                <span className="block font-semibold text-warning-500">
+                  {t('order.cancelPending')}
+                </span>
+                {t('order.cancelPendingBody', { number: order.cancellationRequest.requestNumber })}
+              </p>
+            ) : (
+              <>
+                {order.cancellationRequest?.status === 'REJECTED' ? (
+                  <p className="rounded-card border border-ink-100 bg-ink-50/60 px-4 py-3 text-sm text-ink-600">
+                    <span className="block font-semibold text-ink-800">
+                      {t('order.cancelRejected')}
+                    </span>
+                    {order.cancellationRequest.decisionNote}
+                  </p>
+                ) : null}
+                <CancelOrderButton orderNumber={order.orderNumber} status={order.status} />
+              </>
+            )
           ) : null}
 
           {showCancel && returns ? (

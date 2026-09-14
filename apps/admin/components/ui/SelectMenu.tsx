@@ -43,6 +43,7 @@ export function SelectMenu({
    */
   placeholder,
   tone = 'filter',
+  disabled = false,
   className,
 }: {
   value: string;
@@ -52,6 +53,8 @@ export function SelectMenu({
   placeholder?: string;
   /** `filter` carries gold once set; `field` stays as quiet as an input. */
   tone?: 'filter' | 'field';
+  /** A control that cannot be used yet — a sub category with no category chosen. */
+  disabled?: boolean;
   className?: string;
 }) {
   const id = useId();
@@ -190,6 +193,7 @@ export function SelectMenu({
         aria-hidden="true"
         tabIndex={-1}
         value={value}
+        disabled={disabled}
         onChange={(event) => onChange(event.target.value)}
         className="sr-only"
       >
@@ -208,9 +212,12 @@ export function SelectMenu({
         aria-controls={`${id}-list`}
         aria-label={label}
         aria-activedescendant={open ? `${id}-opt-${active}` : undefined}
+        disabled={disabled}
+        aria-disabled={disabled || undefined}
         onClick={() => (open ? setOpen(false) : openAt(selectedIndex))}
         onKeyDown={onKeyDown}
         className={cn(
+          'disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:border-slate-300',
           'flex min-h-10 w-full items-center gap-2 rounded-lg border px-3 text-sm font-medium',
           'transition-colors duration-150',
           'focus:outline-none focus-visible:border-brand-500 focus-visible:ring-3 focus-visible:ring-brand-500/15',

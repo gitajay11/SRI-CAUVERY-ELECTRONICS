@@ -269,6 +269,18 @@ export interface OrderView {
   cancelReason: string | null;
   notes: string | null;
   items: OrderItemView[];
+  /** The latest cancellation request on this order, if the customer made one. */
+  cancellationRequest: CancellationRequestView | null;
+}
+
+export interface CancellationRequestView {
+  requestNumber: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  reason: string;
+  requestedAt: string;
+  /** Staff's note back to the customer, once decided. */
+  decisionNote: string | null;
+  handledAt: string | null;
 }
 
 export interface SessionUser {

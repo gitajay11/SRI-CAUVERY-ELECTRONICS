@@ -170,6 +170,15 @@ export interface Repository {
     email: string,
   ): Promise<OrderView | null>;
   cancelOrder(userId: string, orderNumber: string, reason: string): Promise<OrderView>;
+  /**
+   * Asks for an order to be cancelled. Creates a request for staff to judge;
+   * nothing about the order changes until they approve it.
+   */
+  requestCancellation(
+    userId: string,
+    orderNumber: string,
+    reason: string,
+  ): Promise<{ requestNumber: string; orderNumber: string }>;
   requestReturn(
     userId: string,
     orderNumber: string,

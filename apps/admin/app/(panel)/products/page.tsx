@@ -69,7 +69,14 @@ export default async function ProductsPage({
       header: t('products.category'),
       hideBelow: 'lg',
       mobile: 'meta',
-      cell: (row) => <span className="text-slate-600">{row.categoryName}</span>,
+      cell: (row) => (
+        <span className="text-slate-600">
+          {row.parentCategoryName ? (
+            <span className="text-slate-400">{row.parentCategoryName} › </span>
+          ) : null}
+          {row.categoryName}
+        </span>
+      ),
     },
     {
       key: 'price',

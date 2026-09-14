@@ -33,7 +33,12 @@ export const productInputSchema = z
     description: z.string().trim().min(20, 'Write at least 20 characters').max(5000),
     descriptionTa: z.string().trim().max(5000).optional().or(z.literal('')),
     brand: nonEmpty(80, 'Brand'),
-    categoryId: z.string().min(1, 'Choose a category').max(64),
+    categoryId: z.string().min(1, 'Choose a sub category').max(64),
+    /**
+     * The parent the sub category was picked under. Optional so older
+     * clients still work; when present the server insists the two agree.
+     */
+    parentCategoryId: z.string().max(64).optional(),
 
     mrp: rupeesSchema,
     price: rupeesSchema,

@@ -8,6 +8,7 @@ import { getI18n } from '@/i18n/server';
 import { getOrderDetail, type OrderDetail } from '@/services/orders';
 import { storefrontUrl } from '@/lib/env';
 import {
+  Alert,
   Badge,
   DescriptionList,
   DescriptionRow,
@@ -22,7 +23,8 @@ import {
 import { OrderStatusForm } from '@/components/orders/OrderStatusForm';
 import { OrderNotes } from '@/components/orders/OrderNotes';
 import { cn } from '@tamizh/core/utils';
-import { ChevronLeftIcon, PrinterIcon } from '@/components/ui/Icons';
+import { BanIcon, ChevronLeftIcon, PrinterIcon } from '@/components/ui/Icons';
+import { db } from '@tamizh/db';
 
 export async function generateMetadata({
   params,
@@ -44,6 +46,13 @@ export default async function OrderDetailPage({
 
   const order = await getOrderDetail(orderNumber);
   if (!order) nextNotFound();
+
+  // A customer waiting on a cancellation is the most urgent thing about an
+  // order, so it is said at the top rather than left for the list page.
+  const pendingCancellation = await db.cancellationRequest.findFirst({
+    where: { orderId: order.id, status: 'PENDING' },
+    select: { requestNumber: true, reason: true },
+  });
 
   const canUpdate = identity.permissions.has('orders.update_status');
   const canNote = identity.permissions.has('orders.note');
@@ -77,6 +86,23 @@ export default async function OrderDetailPage({
           </div>
         }
       />
+
+      {pendingCancellation ? (
+        <Alert tone="caution" icon={<BanIcon />} className="mb-5">
+          <span className="flex flex-wrap items-center justify-between gap-2">
+            <span>
+              {t('cancellations.pendingOnOrder')}{' '}
+              <span className="text-slate-600">“{pendingCancellation.reason}”</span>
+            </span>
+            <Link
+              href={`/cancellations/${pendingCancellation.requestNumber}`}
+              className="font-semibold text-link hover:underline"
+            >
+              {t('cancellations.review')} →
+            </Link>
+          </span>
+        </Alert>
+      ) : null}
 
       {order.status === 'CANCELLED' && order.cancelReason ? (
         <p className="mb-4 rounded-lg border border-critical-100 bg-critical-50 px-3.5 py-2.5 text-sm font-medium text-critical-600">

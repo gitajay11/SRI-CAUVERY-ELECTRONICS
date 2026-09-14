@@ -62,6 +62,13 @@ export const RefundStatus = {
 } as const;
 export type RefundStatus = (typeof RefundStatus)[keyof typeof RefundStatus];
 
+export const CancellationStatus = {
+  PENDING: 'PENDING',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
+} as const;
+export type CancellationStatus = (typeof CancellationStatus)[keyof typeof CancellationStatus];
+
 export const ReturnStatus = {
   REQUESTED: 'REQUESTED',
   APPROVED: 'APPROVED',
@@ -102,6 +109,7 @@ export const AdminNotificationType = {
   LOW_STOCK: 'LOW_STOCK',
   OUT_OF_STOCK: 'OUT_OF_STOCK',
   RETURN_REQUESTED: 'RETURN_REQUESTED',
+  CANCELLATION_REQUESTED: 'CANCELLATION_REQUESTED',
   REFUND_REQUESTED: 'REFUND_REQUESTED',
   NEW_CUSTOMER: 'NEW_CUSTOMER',
   NEW_REVIEW: 'NEW_REVIEW',

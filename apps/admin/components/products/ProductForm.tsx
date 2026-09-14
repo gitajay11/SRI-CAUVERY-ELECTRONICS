@@ -55,8 +55,24 @@ export function ProductForm({
   const [uploading, setUploading] = useState(false);
 
   const isNew = !initial.id;
-  // Products live in leaf categories; a parent is a browsing bucket.
-  const assignable = categories.filter((category) => category.parentId !== null);
+
+  // Products live in sub categories; a parent is a browsing bucket. The two
+  // dropdowns are two views of the one tree the page already loaded — nothing
+  // is fetched when the parent changes, and nothing is hard-coded.
+  const parents = categories.filter((category) => category.parentId === null);
+  const [parentCategoryId, setParentCategoryId] = useState(
+    () => categories.find((category) => category.id === initial.categoryId)?.parentId ?? '',
+  );
+  const subcategories = parentCategoryId
+    ? categories.filter((category) => category.parentId === parentCategoryId)
+    : [];
+
+  const chooseParent = (nextParentId: string) => {
+    setParentCategoryId(nextParentId);
+    // A sub category from the old parent would be an invalid pair; the
+    // server would refuse it, so it is never allowed to linger.
+    set('categoryId', '');
+  };
 
   const set = <K extends keyof ProductFormValues>(key: K, value: ProductFormValues[K]) =>
     setValues((current) => ({ ...current, [key]: value }));
@@ -111,6 +127,7 @@ export function ProductForm({
       descriptionTa: values.descriptionTa,
       brand: values.brand,
       categoryId: values.categoryId,
+      parentCategoryId: parentCategoryId || undefined,
       mrp: Number(values.mrp) || 0,
       price: Number(values.price) || 0,
       costPrice: Number(values.costPrice) || 0,
@@ -205,13 +222,28 @@ export function ProductForm({
               />
               <SelectField
                 label={t('products.category')}
+                value={parentCategoryId}
+                onChange={(event) => chooseParent(event.target.value)}
+                required
+              >
+                <option value="">{t('products.selectCategory')}</option>
+                {parents.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </SelectField>
+              <SelectField
+                label={t('products.subcategory')}
                 value={values.categoryId}
                 onChange={(event) => set('categoryId', event.target.value)}
                 required
+                disabled={!parentCategoryId}
+                hint={!parentCategoryId ? t('products.subcategoryHint') : undefined}
                 error={fields.categoryId}
               >
-                <option value="">—</option>
-                {assignable.map((category) => (
+                <option value="">{t('products.selectSubcategory')}</option>
+                {subcategories.map((category) => (
                   <option key={category.id} value={category.id}>
                     {category.name}
                   </option>

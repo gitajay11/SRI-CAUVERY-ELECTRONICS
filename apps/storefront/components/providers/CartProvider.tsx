@@ -42,6 +42,16 @@ interface CartContextValue {
   removeItem: (itemId: string, productName?: string) => Promise<boolean>;
   /** What is already in the cart for this product, if anything. */
   lineFor: (productId: string, variantId?: string | null) => CartLine | null;
+  /**
+   * Forgets everything the provider knows about the cart.
+   *
+   * Checkout empties the cart on the server as part of placing the order,
+   * but this provider is mounted once in the root layout and outlives the
+   * checkout page — so without being told, it would carry the old badge
+   * count and "in your cart" quantities onto the confirmation page and every
+   * page after, until a full reload re-seeded it.
+   */
+  clear: () => void;
   wishlistIds: Set<string>;
   toggleWishlist: (productId: string) => Promise<void>;
 }
@@ -196,6 +206,11 @@ export function CartProvider({
     [lines],
   );
 
+  const clear = useCallback(() => {
+    setCount(0);
+    setLines({});
+  }, []);
+
   const value = useMemo<CartContextValue>(
     () => ({
       count,
@@ -204,6 +219,7 @@ export function CartProvider({
       setQuantity,
       removeItem,
       lineFor,
+      clear,
       wishlistIds,
       toggleWishlist,
     }),
@@ -215,6 +231,7 @@ export function CartProvider({
       setQuantity,
       removeItem,
       lineFor,
+      clear,
       wishlistIds,
       toggleWishlist,
     ],

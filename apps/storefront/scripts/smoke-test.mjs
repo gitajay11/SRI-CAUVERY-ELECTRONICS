@@ -661,18 +661,43 @@ async function main() {
     `status ${crossCancel.status}`,
   );
 
+  // Cancelling is a request, not an action: the order stands until staff
+  // approve it in the admin panel. Nothing here moves stock or money.
   const cancelled = await shopper.api(`/api/orders/${orderNumber}/cancel`, {
     method: 'POST',
     json: { reason: 'Ordered the wrong colour' },
   });
-  check('owner can cancel', cancelled.status === 200);
-  check('status becomes cancelled', cancelled.body?.data?.order?.status === 'CANCELLED');
+  check('owner can request cancellation', cancelled.status === 200, `status ${cancelled.status}`);
+  check(
+    'the request gets a CR- number',
+    /^CR-/.test(String(cancelled.body?.data?.requestNumber ?? '')),
+    JSON.stringify(cancelled.body?.data),
+  );
+
+  const afterRequest = await shopper.api('/api/orders');
+  const requestedOrder = (afterRequest.body?.data?.orders ?? afterRequest.body?.data ?? []).find?.(
+    (o) => o.orderNumber === orderNumber,
+  );
+  check(
+    'the order is untouched until staff decide',
+    requestedOrder?.status === 'PENDING',
+    `status ${requestedOrder?.status}`,
+  );
+  check(
+    'the order carries its pending request',
+    requestedOrder?.cancellationRequest?.status === 'PENDING',
+    JSON.stringify(requestedOrder?.cancellationRequest),
+  );
 
   const cancelAgain = await shopper.api(`/api/orders/${orderNumber}/cancel`, {
     method: 'POST',
     json: { reason: 'Trying twice' },
   });
-  check('a cancelled order cannot be cancelled again', cancelAgain.status === 409);
+  check(
+    'a second request while one is pending is refused',
+    cancelAgain.status === 409 && cancelAgain.body?.error?.code === 'cancellation_pending',
+    `status ${cancelAgain.status} ${cancelAgain.body?.error?.code}`,
+  );
 
   // -----------------------------------------------------------------------
   section('Reviews');
@@ -691,20 +716,22 @@ async function main() {
     `status ${unpurchased.status}`,
   );
 
-  // secondProduct was bought above (the order is cancelled, so this should
-  // also be refused — cancelled orders must not confer review rights).
-  const afterCancel = await shopper.api('/api/reviews', {
+  // secondProduct was bought above. The order has a cancellation *request*
+  // on it but is not cancelled — it stands until staff decide — so the
+  // purchase still counts. (The admin smoke test covers the approval, after
+  // which review rights go with the order.)
+  const whilePending = await shopper.api('/api/reviews', {
     method: 'POST',
     json: {
       productId: secondProduct.id,
       rating: 4,
-      comment: 'Bought this but then cancelled the order entirely.',
+      comment: 'Bought this; asked to cancel, still waiting to hear.',
     },
   });
   check(
-    'review refused after the order was cancelled',
-    afterCancel.status === 403,
-    `status ${afterCancel.status}`,
+    'a pending cancellation request does not remove a real purchase',
+    whilePending.status === 201,
+    `status ${whilePending.status}`,
   );
 
   // -----------------------------------------------------------------------

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { CartView } from '@tamizh/core/types';
 import { formatINR } from '@tamizh/core/money';
@@ -143,6 +143,19 @@ function Row({
   );
 }
 
+/**
+ * The coupon box.
+ *
+ * Not a <form>, and that is the whole point. This summary is also rendered
+ * inside the checkout — which is itself a form — and HTML does not allow a
+ * form inside a form. The parser drops the inner tag, React fails to hydrate
+ * what it finds, and the Apply button ends up owned by the *checkout* form:
+ * tapping it submitted the checkout natively, reloaded the page, and wiped
+ * every field the shopper had just typed. Their delivery details "vanished".
+ *
+ * A group with a button does exactly what the form did — Enter still applies
+ * — without ever being able to submit anything but the coupon.
+ */
 function CouponForm({ cart }: { cart: CartView }) {
   const { t } = useLocale();
   const { toast } = useToast();
@@ -150,6 +163,30 @@ function CouponForm({ cart }: { cart: CartView }) {
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // State alone is not enough to stop a double tap: the second click can
+  // arrive before React has re-rendered the button as disabled.
+  const inFlight = useRef(false);
+
+  const apply = async () => {
+    if (inFlight.current || code.trim().length < 3) return;
+    inFlight.current = true;
+    setError(null);
+    setBusy(true);
+    try {
+      await api.post('/api/cart/coupon', { code });
+      toast(t('cart.couponApplied', { code: code.toUpperCase() }));
+      setCode('');
+      // The cart is priced on the server; only it knows the new total.
+      // A refresh re-renders the server tree and leaves client state —
+      // every field the shopper has typed — exactly where it was.
+      router.refresh();
+    } catch (caught) {
+      setError(caught instanceof ApiError ? caught.message : t('error.body'));
+    } finally {
+      inFlight.current = false;
+      setBusy(false);
+    }
+  };
 
   if (cart.coupon) {
     return (
@@ -183,25 +220,8 @@ function CouponForm({ cart }: { cart: CartView }) {
   }
 
   return (
-    <form
-      className="mt-4"
-      onSubmit={async (event) => {
-        event.preventDefault();
-        setError(null);
-        setBusy(true);
-        try {
-          await api.post('/api/cart/coupon', { code });
-          toast(t('cart.couponApplied', { code: code.toUpperCase() }));
-          setCode('');
-          router.refresh();
-        } catch (caught) {
-          setError(caught instanceof ApiError ? caught.message : t('error.body'));
-        } finally {
-          setBusy(false);
-        }
-      }}
-    >
-      <label htmlFor="coupon" className="text-sm font-semibold text-ink-700">
+    <div className="mt-4" role="group" aria-labelledby="coupon-label">
+      <label id="coupon-label" htmlFor="coupon" className="text-sm font-semibold text-ink-700">
         {t('cart.coupon')}
       </label>
       <div className="mt-1.5 flex gap-2">
@@ -209,12 +229,30 @@ function CouponForm({ cart }: { cart: CartView }) {
           id="coupon"
           value={code}
           onChange={(event) => setCode(event.target.value.toUpperCase())}
+          onKeyDown={(event) => {
+            // Enter applies the coupon and nothing else. Inside the checkout
+            // this key would otherwise place the order.
+            if (event.key === 'Enter') {
+              event.preventDefault();
+              void apply();
+            }
+          }}
           placeholder={t('cart.couponPlaceholder')}
+          autoComplete="off"
+          autoCapitalize="characters"
+          enterKeyHint="go"
+          disabled={busy}
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? 'coupon-error' : undefined}
-          className="min-w-0 flex-1 rounded-xl border border-ink-200 px-3 py-2.5 text-sm uppercase tracking-wide outline-none focus:border-brand-500"
+          className="min-w-0 flex-1 rounded-xl border border-ink-200 px-3 py-2.5 text-sm uppercase tracking-wide outline-none focus:border-brand-500 disabled:opacity-60"
         />
-        <Button type="submit" variant="outline" loading={busy} disabled={code.length < 3}>
+        <Button
+          type="button"
+          variant="outline"
+          loading={busy}
+          disabled={code.length < 3}
+          onClick={() => void apply()}
+        >
           {t('common.apply')}
         </Button>
       </div>
@@ -223,6 +261,6 @@ function CouponForm({ cart }: { cart: CartView }) {
           {error}
         </p>
       ) : null}
-    </form>
+    </div>
   );
 }

@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import { Suspense } from 'react';
 import { Manrope, Noto_Sans_Tamil } from 'next/font/google';
 import './globals.css';
 
@@ -20,6 +21,7 @@ import { CartProvider } from '@/components/providers/CartProvider';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { BottomNav } from '@/components/layout/BottomNav';
+import { NavigationProgress } from '@/components/layout/NavigationProgress';
 import { ServiceWorkerRegistrar } from '@/components/pwa/ServiceWorkerRegistrar';
 import { InstallPrompt } from '@/components/pwa/InstallPrompt';
 import { InstallProvider } from '@/components/pwa/InstallProvider';
@@ -137,6 +139,12 @@ export default async function RootLayout({
 
               <Footer categories={categories} />
               <BottomNav />
+
+              {/* Reads the search params, which needs a Suspense boundary so a
+                  page can still be statically prerendered around it. */}
+              <Suspense fallback={null}>
+                <NavigationProgress />
+              </Suspense>
 
               <ServiceWorkerRegistrar />
               <InstallPrompt />

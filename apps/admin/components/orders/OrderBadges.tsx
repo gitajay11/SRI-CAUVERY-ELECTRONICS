@@ -1,4 +1,5 @@
 import type {
+  CancellationStatus,
   OrderStatus,
   PaymentStatus,
   RefundStatus,
@@ -51,6 +52,12 @@ export function returnStatusTone(status: ReturnStatus): BadgeTone {
   return 'caution';
 }
 
+export function cancellationStatusTone(status: CancellationStatus): BadgeTone {
+  if (status === 'APPROVED') return 'positive';
+  if (status === 'REJECTED') return 'critical';
+  return 'caution';
+}
+
 export function refundStatusTone(status: RefundStatus): BadgeTone {
   if (status === 'COMPLETED') return 'positive';
   if (status === 'REJECTED' || status === 'FAILED') return 'critical';
@@ -99,6 +106,21 @@ export function ReturnStatusBadge({
   return (
     <Badge tone={returnStatusTone(status)}>
       {dict[`return.${status}` as 'return.REQUESTED']}
+    </Badge>
+  );
+}
+
+export function CancellationStatusBadge({
+  status,
+  locale,
+}: {
+  status: CancellationStatus;
+  locale: Locale;
+}) {
+  const dict = getDictionary(locale);
+  return (
+    <Badge tone={cancellationStatusTone(status)}>
+      {dict[`cancellation.${status}` as 'cancellation.PENDING']}
     </Badge>
   );
 }

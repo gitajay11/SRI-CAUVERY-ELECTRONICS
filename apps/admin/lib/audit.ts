@@ -48,6 +48,8 @@ export type AuditAction =
   | 'return.rejected'
   | 'return.received'
   | 'return.closed'
+  | 'cancellation.approved'
+  | 'cancellation.rejected'
   | 'coupon.created'
   | 'coupon.updated'
   | 'coupon.deleted'

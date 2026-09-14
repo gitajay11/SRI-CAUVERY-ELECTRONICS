@@ -104,6 +104,14 @@
       animation-iteration-count: 1 !important;
       transition-duration: 0.001ms !important;
     }
+
+    /* A spinner is the one animation that carries information: it is how
+       staff know the tap registered. Removing it removes feedback, not
+       motion sickness — so it keeps turning, just more gently. */
+    .animate-spin {
+      animation-duration: 1.4s !important;
+      animation-iteration-count: infinite !important;
+    }
   }
 
   /* Printing an invoice or packing slip should not print the app chrome. */

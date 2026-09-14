@@ -331,15 +331,27 @@ export const GridIcon = (p: IconProps) => (
   </Icon>
 );
 
-export const SpinnerIcon = (p: IconProps) => (
+/**
+ * The one loading indicator. Every busy button, the navigation overlay and
+ * every "please wait" state render this, so it is the single place a spinner
+ * can go wrong — and it did: `className` used to be set and then overwritten
+ * by the props spread that followed it, so any caller passing a class (which
+ * is every Button) silently lost `animate-spin` and got a frozen arc.
+ *
+ * Reduced-motion users still see it turn. A spinner is not decoration; it is
+ * the only thing telling them the click landed. globals.css exempts it from
+ * the global animation reset for that reason.
+ */
+export const SpinnerIcon = ({ className, ...rest }: IconProps) => (
   <svg
     viewBox="0 0 24 24"
     width="1em"
     height="1em"
     fill="none"
     aria-hidden="true"
-    className={`animate-spin ${p.className ?? ''}`}
-    {...p}
+    focusable="false"
+    {...rest}
+    className={`animate-spin ${className ?? ''}`.trim()}
   >
     <circle cx="12" cy="12" r="9" stroke="currentColor" strokeOpacity="0.25" strokeWidth="2.5" />
     <path

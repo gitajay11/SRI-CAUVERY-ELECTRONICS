@@ -21,7 +21,13 @@ import { notifyStaff } from '@/services/notifications';
  */
 
 const schema = z.object({
-  type: z.enum(['NEW_ORDER', 'RETURN_REQUESTED', 'PAYMENT_FAILED', 'NEW_CUSTOMER']),
+  type: z.enum([
+    'NEW_ORDER',
+    'RETURN_REQUESTED',
+    'CANCELLATION_REQUESTED',
+    'PAYMENT_FAILED',
+    'NEW_CUSTOMER',
+  ]),
   title: z.string().trim().min(3).max(80),
   body: z.string().trim().min(1).max(160),
   entityId: z.string().trim().max(64).optional(),

@@ -41,7 +41,10 @@ export default async function NewProductPage() {
         </Alert>
       ) : (
         <ProductForm
-          initial={emptyProduct(assignable[0]!.id)}
+          // Nothing pre-chosen: the category is picked first, and the sub
+          // category opens up from it. A default here would silently file
+          // every new product under whichever sub category sorted first.
+          initial={emptyProduct('')}
           categories={categories}
           storefrontUrl={storefrontUrl()}
           canEditPrice={identity.permissions.has('products.price')}

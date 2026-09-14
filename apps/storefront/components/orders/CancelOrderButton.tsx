@@ -11,10 +11,12 @@ import { Button } from '@/components/ui/Button';
 import { TextAreaField, FormError } from '@/components/ui/Field';
 
 /**
- * Customer-initiated cancellation.
+ * Customer-initiated cancellation — as a request.
  *
- * Only rendered while the order is still cancellable — the server enforces the
- * same window, and returns stock as part of the cancellation transaction.
+ * Only rendered while the order is still cancellable; the server enforces the
+ * same window. Submitting files a request for the shop to judge and changes
+ * nothing about the order itself, which is why the copy says "request" and
+ * not "cancel": once someone is picking the goods, the shop decides.
  */
 export function CancelOrderButton({
   orderNumber,
@@ -36,7 +38,7 @@ export function CancelOrderButton({
   if (!open) {
     return (
       <Button variant="outline" fullWidth onClick={() => setOpen(true)}>
-        {t('order.cancel')}
+        {t('order.cancelRequest')}
       </Button>
     );
   }
@@ -52,8 +54,10 @@ export function CancelOrderButton({
           await api.post(`/api/orders/${encodeURIComponent(orderNumber)}/cancel`, {
             reason,
           });
-          toast(t('order.cancelled'), { tone: 'info' });
+          toast(t('order.cancelRequested'), { tone: 'info' });
           setOpen(false);
+          // The order page reads the request back from the server and shows
+          // "awaiting review" in place of this form.
           router.refresh();
         } catch (caught) {
           setError(caught instanceof ApiError ? caught.message : t('error.body'));
@@ -62,7 +66,7 @@ export function CancelOrderButton({
         }
       }}
     >
-      <p className="text-sm font-semibold text-danger-600">{t('order.cancelConfirm')}</p>
+      <p className="text-sm font-semibold text-danger-600">{t('order.cancelRequestConfirm')}</p>
 
       <TextAreaField
         label={t('order.cancelReason')}
@@ -91,7 +95,7 @@ export function CancelOrderButton({
           loading={busy}
           disabled={reason.trim().length < 3}
         >
-          {t('order.cancel')}
+          {t('order.cancelRequestSubmit')}
         </Button>
       </div>
     </form>

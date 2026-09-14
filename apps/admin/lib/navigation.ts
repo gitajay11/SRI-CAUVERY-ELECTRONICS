@@ -62,6 +62,13 @@ export const NAVIGATION: NavSection[] = [
         prefix: true,
       },
       {
+        href: '/cancellations',
+        labelKey: 'nav.cancellations',
+        icon: 'ban',
+        permission: 'orders.view',
+        prefix: true,
+      },
+      {
         href: '/refunds',
         labelKey: 'nav.refunds',
         icon: 'refund',
