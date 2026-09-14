@@ -42,6 +42,7 @@ export interface ProductRow {
   costPrice: number;
   stock: number;
   lowStockThreshold: number;
+  minOrderQuantity: number | null;
   status: ProductStatus;
   isFeatured: boolean;
   imageUrl: string | null;
@@ -89,6 +90,7 @@ export async function listProducts(filters: ProductFilters): Promise<{
         costPrice: true,
         stock: true,
         lowStockThreshold: true,
+        minOrderQuantity: true,
         status: true,
         isFeatured: true,
         soldCount: true,
@@ -115,6 +117,7 @@ export async function listProducts(filters: ProductFilters): Promise<{
       costPrice: row.costPrice,
       stock: row.stock,
       lowStockThreshold: row.lowStockThreshold,
+      minOrderQuantity: row.minOrderQuantity,
       status: row.status,
       isFeatured: row.isFeatured,
       imageUrl: row.images[0]?.url ?? null,
@@ -153,6 +156,7 @@ export interface ProductInput {
   taxBps: number;
   stock: number;
   lowStockThreshold: number;
+  minOrderQuantity?: number | null;
   weightGrams?: number | null;
   lengthMm?: number | null;
   widthMm?: number | null;
@@ -258,6 +262,7 @@ export async function createProduct(actor: AdminIdentity, input: ProductInput) {
         taxBps: input.taxBps,
         stock: input.stock,
         lowStockThreshold: input.lowStockThreshold,
+        minOrderQuantity: input.minOrderQuantity ?? null,
         weightGrams: input.weightGrams ?? null,
         lengthMm: input.lengthMm ?? null,
         widthMm: input.widthMm ?? null,
@@ -331,6 +336,7 @@ export async function updateProduct(
       costPrice: true,
       taxBps: true,
       lowStockThreshold: true,
+      minOrderQuantity: true,
       status: true,
       isFeatured: true,
       isBestSeller: true,
@@ -368,6 +374,7 @@ export async function updateProduct(
         costPrice: editable.costPrice,
         taxBps: editable.taxBps,
         lowStockThreshold: editable.lowStockThreshold,
+        minOrderQuantity: editable.minOrderQuantity ?? null,
         weightGrams: editable.weightGrams ?? null,
         lengthMm: editable.lengthMm ?? null,
         widthMm: editable.widthMm ?? null,
@@ -413,6 +420,7 @@ export async function updateProduct(
         'costPrice',
         'taxBps',
         'lowStockThreshold',
+        'minOrderQuantity',
         'status',
         'isFeatured',
         'isBestSeller',
@@ -563,6 +571,7 @@ export async function duplicateProduct(actor: AdminIdentity, id: string) {
         // A copy starts empty: stock belongs to the original.
         stock: 0,
         lowStockThreshold: source.lowStockThreshold,
+        minOrderQuantity: source.minOrderQuantity,
         weightGrams: source.weightGrams,
         lengthMm: source.lengthMm,
         widthMm: source.widthMm,

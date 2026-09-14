@@ -256,6 +256,10 @@ export const ta: Dictionary = {
   'products.discountShown': '{percent}% தள்ளுபடியாகக் காட்டப்படும்',
   'products.stock': 'இருப்பு',
   'products.lowStockThreshold': 'குறைந்த இருப்பு எல்லை',
+  'products.minOrderQuantity': 'குறைந்தபட்ச ஆர்டர் அளவு',
+  'products.minOrderQuantityHint':
+    'ரிட்டர்ன் கிஃப்ட் போன்ற மொத்த விற்பனைப் பொருட்களுக்கு. வாடிக்கையாளர்கள் குறைந்தது இத்தனை வாங்க வேண்டும், பின்னர் {step}-ன் மடங்குகளில். சாதாரண விற்பனைக்கு காலியாக விடவும்.',
+  'products.bulkBadge': 'மொத்தம் · குறைந்தது {min}',
   'products.weight': 'எடை (கிராம்)',
   'products.dimensions': 'அளவுகள் (மி.மீ)',
   'products.length': 'நீளம்',

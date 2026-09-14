@@ -6,6 +6,7 @@ import { formatINR } from '@tamizh/core/money';
 import { getSessionUser } from '@/lib/auth';
 import { getRepository } from './repository';
 import { calculateTotals, evaluateCoupon, generateOrderNumber } from '@tamizh/core/pricing';
+import { isValidQuantity, quantityRuleFor } from '@tamizh/core/quantity';
 import { onlinePaymentAvailable, providerFor } from './payments';
 import { resolveCartOwner, setCouponCookie } from './cart';
 import { getShopSettings } from './settings';
@@ -65,6 +66,14 @@ export async function placeOrder(input: CheckoutInput): Promise<PlaceOrderResult
   // Stock is re-checked again inside the repository transaction; this early
   // check exists to give a precise, friendly message before we create anything.
   for (const item of items) {
+    const rule = quantityRuleFor(item);
+    if (rule.bulk && !isValidQuantity(item.quantity, rule)) {
+      throw new AppError(
+        `${item.name} is sold from ${rule.min} in multiples of ${rule.step}. Please adjust the quantity in your cart.`,
+        409,
+        'invalid_quantity',
+      );
+    }
     if (item.quantity > item.availableStock) {
       throw new AppError(
         `${item.name} now has only ${item.availableStock} in stock. Please review your cart.`,

@@ -26,6 +26,8 @@ export interface ProductFormValues {
   taxPercent: string;
   stock: string;
   lowStockThreshold: string;
+  /** Rupees-free: a count. Empty for ordinary sale. */
+  minOrderQuantity: string;
   weightGrams: string;
   lengthMm: string;
   widthMm: string;
@@ -56,6 +58,7 @@ export function emptyProduct(categoryId: string): ProductFormValues {
     taxPercent: '18',
     stock: '0',
     lowStockThreshold: '5',
+    minOrderQuantity: '',
     weightGrams: '',
     lengthMm: '',
     widthMm: '',

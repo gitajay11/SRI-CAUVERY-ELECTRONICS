@@ -4,6 +4,17 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { ProductDetailView } from '@tamizh/core/types';
 import { cn } from '@tamizh/core/utils';
+import { formatINR } from '@tamizh/core/money';
+import {
+  exampleQuantities,
+  firstQuantity,
+  maxQuantity,
+  quantityProblem,
+  quantityRuleFor,
+  stepDown,
+  stepUp,
+  type QuantityProblem,
+} from '@tamizh/core/quantity';
 import { useCart } from '@/components/providers/CartProvider';
 import { useLocale } from '@/components/providers/LocaleProvider';
 import { Button } from '@/components/ui/Button';
@@ -12,71 +23,158 @@ import { WishlistButton } from './WishlistButton';
 import { MinusIcon, PlusIcon } from '@/components/ui/Icons';
 
 /**
- * Quantity stepper plus the buy actions.
+ * Quantity chooser plus the buy actions.
  *
- * The stepper is clamped to available stock on the client for responsiveness;
- * the server clamps again on every cart write, so the two never disagree in a
- * way that could oversell.
+ * Two ways of choosing, because two kinds of buyer. Someone buying a cable
+ * taps plus once or twice. Someone buying return gifts for a wedding needs
+ * two hundred and is not going to tap forty times — so a bulk line offers
+ * a box to type into, checked against the same rule as the buttons: at
+ * least the minimum, then multiples of the step. The server checks the same
+ * rule again on every cart write, so the two never disagree.
  */
 export function ProductPurchasePanel({ product }: { product: ProductDetailView }) {
   const { t } = useLocale();
   const router = useRouter();
   const { addItem } = useCart();
-  const [quantity, setQuantity] = useState(1);
+
+  const rule = quantityRuleFor(product);
+  const max = maxQuantity(rule, product.stock);
+  const outOfStock = max <= 0;
+
+  const [quantity, setQuantity] = useState(() => firstQuantity(rule));
+  // Bulk entry: what the shopper has typed, kept as text so a half-typed
+  // "2" on the way to "25" is not snapped to something else underneath them.
+  const [bulkMode, setBulkMode] = useState(false);
+  const [typed, setTyped] = useState(String(firstQuantity(rule)));
   const [buying, setBuying] = useState(false);
 
-  const outOfStock = product.stock <= 0;
-  const max = Math.min(product.stock, 99);
+  const typedNumber = Number.parseInt(typed, 10);
+  const typedProblem: QuantityProblem | 'empty' | null = bulkMode
+    ? typed.trim() === '' || Number.isNaN(typedNumber)
+      ? 'empty'
+      : quantityProblem(typedNumber, rule, product.stock)
+    : null;
+
+  // What will actually be bought: the typed figure when it is valid, else
+  // the stepper's. Never a figure the rule would refuse.
+  const chosen = bulkMode && typedProblem === null ? typedNumber : quantity;
+  const canBuy = !outOfStock && !(bulkMode && typedProblem !== null);
+
+  const problemText = (problem: QuantityProblem | 'empty'): string => {
+    switch (problem) {
+      case 'empty':
+        return t('product.bulk.enterQuantity');
+      case 'below_minimum':
+        return t('product.bulk.belowMinimum', { min: rule.min });
+      case 'not_a_multiple':
+        return t('product.bulk.notMultiple', { step: rule.step, examples: exampleQuantities(rule) });
+      case 'above_stock':
+        return t('product.bulk.aboveStock', { count: max });
+    }
+  };
 
   const buyNow = async () => {
+    if (!canBuy) return;
     setBuying(true);
-    const ok = await addItem(product.id, quantity, product.name);
+    const ok = await addItem(product.id, chosen, product.name);
     if (ok) router.push('/checkout');
     else setBuying(false);
   };
 
   return (
     <div className="space-y-4">
+      {rule.bulk ? (
+        <p className="rounded-lg bg-success-50 px-3 py-2 text-sm text-link">
+          {t('product.bulk.rule', { min: rule.min, step: rule.step })}
+        </p>
+      ) : null}
+
       {!outOfStock ? (
-        <div className="flex items-center gap-4">
-          <span className="text-sm font-semibold text-ink-700">
-            {t('product.quantity')}
-          </span>
-          <div className="inline-flex items-center rounded-full border border-ink-200 bg-surface">
-            <StepButton
-              label={t('product.decrease')}
-              onClick={() => setQuantity((value) => Math.max(1, value - 1))}
-              disabled={quantity <= 1}
-            >
-              <MinusIcon />
-            </StepButton>
-            <input
-              type="number"
-              inputMode="numeric"
-              min={1}
-              max={max}
-              value={quantity}
-              aria-label={t('product.quantity')}
-              onChange={(event) => {
-                const next = Number.parseInt(event.target.value, 10);
-                if (Number.isFinite(next)) {
-                  setQuantity(Math.min(Math.max(1, next), max));
-                }
-              }}
-              className="w-12 border-x border-ink-200 bg-transparent py-2.5 text-center text-base font-bold text-ink-900 outline-none"
-            />
-            <StepButton
-              label={t('product.increase')}
-              onClick={() => setQuantity((value) => Math.min(max, value + 1))}
-              disabled={quantity >= max}
-            >
-              <PlusIcon />
-            </StepButton>
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center gap-4">
+            <span className="text-sm font-semibold text-ink-700">{t('product.quantity')}</span>
+
+            {!bulkMode ? (
+              <div className="inline-flex items-center rounded-full border border-ink-200 bg-surface">
+                <StepButton
+                  label={t('product.decrease')}
+                  onClick={() => setQuantity((value) => stepDown(value, rule))}
+                  disabled={quantity <= rule.min}
+                >
+                  <MinusIcon />
+                </StepButton>
+                <span
+                  aria-live="polite"
+                  className="min-w-14 border-x border-ink-200 py-2.5 text-center text-base font-bold tabular-nums text-ink-900"
+                >
+                  {quantity}
+                </span>
+                <StepButton
+                  label={t('product.increase')}
+                  onClick={() => setQuantity((value) => stepUp(value, rule, product.stock))}
+                  disabled={quantity >= max}
+                >
+                  <PlusIcon />
+                </StepButton>
+              </div>
+            ) : (
+              <input
+                type="number"
+                inputMode="numeric"
+                min={rule.min}
+                max={max}
+                step={rule.step}
+                value={typed}
+                aria-label={t('product.bulk.quantityLabel')}
+                aria-invalid={typedProblem ? true : undefined}
+                aria-describedby="bulk-quantity-note"
+                onChange={(event) => setTyped(event.target.value.replace(/[^\d]/g, ''))}
+                className={cn(
+                  'w-28 rounded-full border bg-surface px-4 py-2.5 text-center text-base font-bold tabular-nums text-ink-900 outline-none',
+                  typedProblem ? 'border-danger-500' : 'border-ink-200 focus:border-brand-500',
+                )}
+              />
+            )}
+
+            {rule.bulk ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setBulkMode((on) => !on);
+                  setTyped(String(quantity));
+                }}
+                aria-pressed={bulkMode}
+                className={cn(
+                  'min-h-9 rounded-full border px-3.5 text-sm font-semibold transition-colors',
+                  bulkMode
+                    ? 'border-brand-500 bg-success-50 text-link'
+                    : 'border-ink-300 text-ink-700 hover:border-action-edge hover:text-link',
+                )}
+              >
+                {t('product.bulk.toggle')}
+              </button>
+            ) : null}
+
+            {product.stock <= 10 && !rule.bulk ? (
+              <span className="text-sm font-semibold text-warning-500">
+                {t('product.lowStock', { count: product.stock })}
+              </span>
+            ) : null}
           </div>
-          {product.stock <= 10 ? (
-            <span className="text-sm font-semibold text-warning-500">
-              {t('product.lowStock', { count: product.stock })}
-            </span>
+
+          {rule.bulk ? (
+            <p
+              id="bulk-quantity-note"
+              role={typedProblem ? 'alert' : undefined}
+              className={cn('text-sm', typedProblem ? 'text-danger-500' : 'text-ink-600')}
+            >
+              {typedProblem
+                ? problemText(typedProblem)
+                : t('product.bulk.total', {
+                    count: chosen,
+                    total: formatINR(product.price * chosen),
+                  })}
+            </p>
           ) : null}
         </div>
       ) : null}
@@ -85,8 +183,11 @@ export function ProductPurchasePanel({ product }: { product: ProductDetailView }
         <AddToCartButton
           productId={product.id}
           productName={product.name}
-          quantity={quantity}
+          minOrderQuantity={product.minOrderQuantity}
+          stock={product.stock}
+          quantity={chosen}
           disabled={outOfStock}
+          inactive={!canBuy}
           size="lg"
           variant="secondary"
           className="flex-1"
@@ -95,7 +196,7 @@ export function ProductPurchasePanel({ product }: { product: ProductDetailView }
           size="lg"
           variant="primary"
           className="flex-1"
-          disabled={outOfStock}
+          disabled={!canBuy}
           loading={buying}
           onClick={buyNow}
         >

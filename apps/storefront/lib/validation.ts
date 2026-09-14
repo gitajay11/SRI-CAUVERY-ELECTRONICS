@@ -90,13 +90,15 @@ export const addressSchema = z.object({
 export const addToCartSchema = z.object({
   productId: cuidSchema,
   variantId: cuidSchema.nullish(),
-  quantity: z.coerce.number().int().min(1).max(99).default(1),
+  // The ceiling is the product's own rule and its stock, decided server-side;
+  // this only rules out nonsense.
+  quantity: z.coerce.number().int().min(1).max(100_000).default(1),
 });
 
 export const updateCartItemSchema = z.object({
   itemId: cuidSchema,
   /** Zero removes the line. */
-  quantity: z.coerce.number().int().min(0).max(99),
+  quantity: z.coerce.number().int().min(0).max(100_000),
 });
 
 export const couponSchema = z.object({

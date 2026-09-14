@@ -262,6 +262,57 @@ async function main() {
     check('a product can be created', create.status === 201, JSON.stringify(create.body));
     productId = create.body?.data?.id ?? null;
 
+    // Bulk sale: the minimum must be a multiple of the step, and once set the
+    // shop refuses quantities the rule does not allow.
+    const badMoq = await request('/api/admin/products', {
+      method: 'POST',
+      json: {
+        sku: `${sku}-M`, slug: `${sku.toLowerCase()}-m`, name: 'Smoke MOQ product',
+        description: 'Created by the admin smoke test and removed again immediately.',
+        brand: 'Tamizh', categoryId, mrp: 999, price: 799, costPrice: 500, taxBps: 18,
+        stock: 5, lowStockThreshold: 2, minOrderQuantity: 12, status: 'DRAFT', tags: [], specs: {}, images: [],
+      },
+    });
+    check('a minimum order quantity must be a multiple of 5', badMoq.status === 422, `status ${badMoq.status}`);
+
+    const moqShopUp = (await fetch(`${STOREFRONT}/api/products?pageSize=1`).catch(() => null))?.ok;
+    if (!moqShopUp) {
+      skip('bulk quantity rules on the shop', 'storefront not reachable');
+    } else {
+      const moqCreate = await request('/api/admin/products', {
+        method: 'POST',
+        json: {
+          sku: `${sku}-Q`, slug: `${sku.toLowerCase()}-q`, name: 'Smoke bulk product',
+          description: 'Created by the admin smoke test and removed again immediately.',
+          brand: 'Tamizh', categoryId, mrp: 999, price: 799, costPrice: 500, taxBps: 18,
+          stock: 120, lowStockThreshold: 2, minOrderQuantity: 10, status: 'ACTIVE', tags: [], specs: {}, images: [],
+        },
+      });
+      const moqId = moqCreate.body?.data?.id;
+      check('a bulk product can be created', moqCreate.status === 201 && Boolean(moqId), JSON.stringify(moqCreate.body));
+      if (moqId) {
+        const jar = new Map();
+        const shopCall = async (path, method, json) => {
+          const cookie = [...jar.entries()].map(([k, v]) => `${k}=${v}`).join('; ');
+          const res = await fetch(`${STOREFRONT}${path}`, { method, headers: { 'Content-Type': 'application/json', ...(cookie ? { Cookie: cookie } : {}) }, body: JSON.stringify(json) });
+          for (const line of res.headers.getSetCookie?.() ?? []) { const [pair] = line.split(';'); const i = pair.indexOf('='); if (i > 0) jar.set(pair.slice(0, i).trim(), pair.slice(i + 1).trim()); }
+          return { status: res.status, body: await res.json().catch(() => null) };
+        };
+        const add7 = await shopCall('/api/cart/items', 'POST', { productId: moqId, quantity: 7 });
+        check('the shop refuses less than the minimum', add7.status === 422 && add7.body?.error?.code === 'below_minimum', `status ${add7.status}`);
+        const add23 = await shopCall('/api/cart/items', 'POST', { productId: moqId, quantity: 23 });
+        check('the shop refuses a quantity that is not a multiple of 5', add23.status === 422 && add23.body?.error?.code === 'not_a_multiple', `status ${add23.status}`);
+        const add10 = await shopCall('/api/cart/items', 'POST', { productId: moqId, quantity: 10 });
+        const moqLine = add10.body?.data?.items?.find?.((i) => i.productId === moqId);
+        check('the shop accepts the minimum', add10.status === 200 && moqLine?.quantity === 10 && moqLine?.lineTotal === 79900 * 10, `status ${add10.status}`);
+        const set23 = await shopCall('/api/cart/items', 'PATCH', { itemId: moqLine?.id, quantity: 23 });
+        check('the cart refuses 23', set23.status === 422, `status ${set23.status}`);
+        const set25 = await shopCall('/api/cart/items', 'PATCH', { itemId: moqLine?.id, quantity: 25 });
+        check('the cart accepts 25', set25.status === 200 && set25.body?.data?.items?.find?.((i) => i.productId === moqId)?.lineTotal === 79900 * 25, `status ${set25.status}`);
+        await request(`/api/admin/products/${moqId}`, { method: 'DELETE' });
+      }
+    }
+
     const overPriced = await request('/api/admin/products', {
       method: 'POST',
       json: {

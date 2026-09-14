@@ -57,6 +57,7 @@ export default async function EditProductPage({
     taxPercent: String(product.taxBps / 100),
     stock: String(product.stock),
     lowStockThreshold: String(product.lowStockThreshold),
+    minOrderQuantity: product.minOrderQuantity === null ? '' : String(product.minOrderQuantity),
     weightGrams: product.weightGrams === null ? '' : String(product.weightGrams),
     lengthMm: product.lengthMm === null ? '' : String(product.lengthMm),
     widthMm: product.widthMm === null ? '' : String(product.widthMm),

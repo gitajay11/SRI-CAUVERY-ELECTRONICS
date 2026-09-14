@@ -120,6 +120,8 @@ export function ProductCard({
         <AddToCartButton
           productId={product.id}
           productName={name}
+          minOrderQuantity={product.minOrderQuantity}
+          stock={product.stock}
           disabled={outOfStock}
           size="sm"
           className="relative z-10 mt-2.5 w-full"

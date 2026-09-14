@@ -6,6 +6,14 @@ import { useState } from 'react';
 import type { CartItemView } from '@tamizh/core/types';
 import { cn } from '@tamizh/core/utils';
 import { formatINR } from '@tamizh/core/money';
+import {
+  exampleQuantities,
+  maxQuantity,
+  quantityProblem,
+  quantityRuleFor,
+  stepDown,
+  stepUp,
+} from '@tamizh/core/quantity';
 import { useCart } from '@/components/providers/CartProvider';
 import { useLocale } from '@/components/providers/LocaleProvider';
 import { MinusIcon, PlusIcon, TrashIcon } from '@/components/ui/Icons';
@@ -33,10 +41,33 @@ function CartLine({ item }: { item: CartItemView }) {
   const [busy, setBusy] = useState(false);
   const name = pick(item.name, item.nameTa);
 
+  // Bulk lines step by their rule and can be typed into; the same rule the
+  // product page and the server apply, so nothing accepted here is refused
+  // at the checkout.
+  const rule = quantityRuleFor(item);
+  const max = maxQuantity(rule, item.availableStock);
+  const [typed, setTyped] = useState<string | null>(null);
+  const typedNumber = typed === null ? null : Number.parseInt(typed, 10);
+  const typedProblem =
+    typedNumber === null
+      ? null
+      : Number.isNaN(typedNumber)
+        ? 'below_minimum'
+        : quantityProblem(typedNumber, rule, item.availableStock);
+
   const change = async (quantity: number) => {
     setBusy(true);
     await setQuantity(item.id, quantity);
     setBusy(false);
+  };
+
+  const commitTyped = async () => {
+    if (typedNumber === null || typedProblem || typedNumber === item.quantity) {
+      if (!typedProblem) setTyped(null);
+      return;
+    }
+    setTyped(null);
+    await change(typedNumber);
   };
 
   const remove = async () => {
@@ -95,22 +126,50 @@ function CartLine({ item }: { item: CartItemView }) {
           <div className="inline-flex items-center rounded-full border border-ink-200">
             <button
               type="button"
-              onClick={() => change(item.quantity - 1)}
+              // Below the minimum there is nothing to buy: the line goes.
+              onClick={() =>
+                change(item.quantity <= rule.min ? 0 : stepDown(item.quantity, rule))
+              }
               aria-label={t('product.decrease')}
               className="grid size-9 place-items-center rounded-full text-ink-700 transition-colors hover:bg-ink-100"
             >
               <MinusIcon />
             </button>
-            <span
-              aria-live="polite"
-              className="w-9 text-center text-sm font-bold tabular-nums"
-            >
-              {item.quantity}
-            </span>
+            {rule.bulk ? (
+              <input
+                type="number"
+                inputMode="numeric"
+                min={rule.min}
+                max={max}
+                step={rule.step}
+                value={typed ?? String(item.quantity)}
+                aria-label={t('product.bulk.quantityLabel')}
+                aria-invalid={typedProblem ? true : undefined}
+                onChange={(event) => setTyped(event.target.value.replace(/[^\d]/g, ''))}
+                onBlur={() => void commitTyped()}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.preventDefault();
+                    void commitTyped();
+                  }
+                }}
+                className={cn(
+                  'w-16 border-x bg-transparent py-1.5 text-center text-sm font-bold tabular-nums outline-none',
+                  typedProblem ? 'border-danger-500 text-danger-500' : 'border-ink-200 text-ink-900',
+                )}
+              />
+            ) : (
+              <span
+                aria-live="polite"
+                className="w-9 text-center text-sm font-bold tabular-nums"
+              >
+                {item.quantity}
+              </span>
+            )}
             <button
               type="button"
-              onClick={() => change(item.quantity + 1)}
-              disabled={item.quantity >= item.availableStock}
+              onClick={() => change(stepUp(item.quantity, rule, item.availableStock))}
+              disabled={item.quantity >= max}
               aria-label={t('product.increase')}
               className="grid size-9 place-items-center rounded-full text-ink-700 transition-colors hover:bg-ink-100 disabled:opacity-35"
             >
@@ -130,7 +189,20 @@ function CartLine({ item }: { item: CartItemView }) {
           </div>
         </div>
 
-        {item.availableStock <= 5 ? (
+        {rule.bulk ? (
+          <p
+            role={typedProblem ? 'alert' : undefined}
+            className={cn('mt-1.5 text-xs', typedProblem ? 'font-semibold text-danger-500' : 'text-ink-500')}
+          >
+            {typedProblem === 'below_minimum'
+              ? t('product.bulk.belowMinimum', { min: rule.min })
+              : typedProblem === 'not_a_multiple'
+                ? t('product.bulk.notMultiple', { step: rule.step, examples: exampleQuantities(rule) })
+                : typedProblem === 'above_stock'
+                  ? t('product.bulk.aboveStock', { count: max })
+                  : t('product.bulk.rule', { min: rule.min, step: rule.step })}
+          </p>
+        ) : item.availableStock <= 5 ? (
           <p className="mt-1.5 text-xs font-semibold text-warning-500">
             {t('product.lowStock', { count: item.availableStock })}
           </p>

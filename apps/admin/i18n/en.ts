@@ -250,6 +250,10 @@ export const en = {
   'products.discountShown': 'Shows as {percent}% off',
   'products.stock': 'Stock',
   'products.lowStockThreshold': 'Low-stock threshold',
+  'products.minOrderQuantity': 'Minimum order quantity',
+  'products.minOrderQuantityHint':
+    'For bulk lines such as return gifts. Customers must buy at least this many, then in multiples of {step}. Leave empty for ordinary sale.',
+  'products.bulkBadge': 'Bulk · min {min}',
   'products.weight': 'Weight (g)',
   'products.dimensions': 'Dimensions (mm)',
   'products.length': 'Length',

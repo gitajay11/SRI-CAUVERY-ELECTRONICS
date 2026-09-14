@@ -208,12 +208,11 @@ async function main() {
   // -----------------------------------------------------------------------
   section('Guest cart');
   // -----------------------------------------------------------------------
-  const cheapProduct = products
-    .filter((p) => p.stock > 3)
-    .sort((a, b) => a.price - b.price)[0];
-  const secondProduct = products.filter(
-    (p) => p.stock > 3 && p.id !== cheapProduct.id,
-  )[0];
+  // Ordinary-sale lines only: a bulk product refuses a quantity of one by
+  // design, and its rules are covered by the admin smoke test.
+  const single = products.filter((p) => p.stock > 3 && !p.minOrderQuantity);
+  const cheapProduct = [...single].sort((a, b) => a.price - b.price)[0];
+  const secondProduct = single.filter((p) => p.id !== cheapProduct.id)[0];
 
   const added = await guest.api('/api/cart/items', {
     method: 'POST',

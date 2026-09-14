@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { BULK_QUANTITY_STEP } from '@tamizh/core/quantity';
 import { nonEmpty, percentSchema, rupeesSchema } from '@tamizh/core/validation';
 
 /**
@@ -47,6 +48,21 @@ export const productInputSchema = z
 
     stock: z.coerce.number().int().min(0).max(1_000_000),
     lowStockThreshold: z.coerce.number().int().min(0).max(100_000),
+    /**
+     * Bulk sale. Empty means ordinary sale. A set value must be a multiple
+     * of the shop-wide step so the shopper's first quantity is the minimum
+     * itself — a minimum of 12 sold in fives would start them at 15.
+     */
+    minOrderQuantity: z.preprocess(
+      (value) => (value === '' || value === undefined ? null : value),
+      z
+        .number({ error: 'Enter a whole number' })
+        .int('Enter a whole number')
+        .min(BULK_QUANTITY_STEP, `At least ${BULK_QUANTITY_STEP}`)
+        .max(100_000)
+        .multipleOf(BULK_QUANTITY_STEP, `Must be a multiple of ${BULK_QUANTITY_STEP}`)
+        .nullable(),
+    ),
 
     weightGrams: z.coerce.number().int().min(0).max(1_000_000).nullish(),
     lengthMm: z.coerce.number().int().min(0).max(100_000).nullish(),

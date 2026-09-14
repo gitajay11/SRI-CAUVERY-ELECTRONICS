@@ -60,6 +60,8 @@ export interface ProductCardView {
   mrp: number;
   discountPercent: number;
   stock: number;
+  /** Set when the product is sold in bulk; see @tamizh/core/quantity. */
+  minOrderQuantity: number | null;
   ratingAvg: number;
   ratingCount: number;
   image: ProductImageView | null;
@@ -174,6 +176,8 @@ export interface CartItemView {
   /** Paise. */
   mrp: number;
   quantity: number;
+  /** Set when the line is sold in bulk; see @tamizh/core/quantity. */
+  minOrderQuantity: number | null;
   /** Units currently available; the quantity stepper clamps to this. */
   availableStock: number;
   lineTotal: number;

@@ -19,6 +19,13 @@ import { AppError, notFound } from '@tamizh/core/api';
 import type { CouponRule } from '@tamizh/core/pricing';
 import { CANCELLABLE_STATUSES } from '@tamizh/core/pricing';
 import {
+  isValidQuantity,
+  quantityProblem,
+  quantityRuleFor,
+  roundDown,
+  roundUp,
+} from '@tamizh/core/quantity';
+import {
   DEFAULT_PAGE_SIZE,
   MAX_PAGE_SIZE,
   MAX_QUANTITY_PER_ITEM,
@@ -56,6 +63,7 @@ const cardSelect = {
   price: true,
   mrp: true,
   stock: true,
+  minOrderQuantity: true,
   ratingAvg: true,
   ratingCount: true,
   isFeatured: true,
@@ -77,6 +85,7 @@ type CardRow = {
   price: number;
   mrp: number;
   stock: number;
+  minOrderQuantity: number | null;
   ratingAvg: number;
   ratingCount: number;
   isFeatured: boolean;
@@ -96,6 +105,7 @@ function toCard(row: CardRow): ProductCardView {
     mrp: row.mrp,
     discountPercent: discountPercent(row.mrp, row.price),
     stock: row.stock,
+    minOrderQuantity: row.minOrderQuantity,
     ratingAvg: row.ratingAvg,
     ratingCount: row.ratingCount,
     image: row.images[0] ?? null,
@@ -103,6 +113,38 @@ function toCard(row: CardRow): ProductCardView {
     categoryName: row.category?.name ?? '',
     isFeatured: row.isFeatured,
   };
+}
+
+/**
+ * A bulk-quantity refusal, worded for the shopper.
+ *
+ * 422 rather than 409: the request itself is malformed by the shop's rules,
+ * not in conflict with a state that might change. Stock shortfall is the
+ * exception — that is a 409 like everywhere else.
+ */
+function quantityError(
+  problem: 'below_minimum' | 'not_a_multiple' | 'above_stock',
+  rule: { min: number; step: number },
+  stock: number,
+): AppError {
+  switch (problem) {
+    case 'below_minimum':
+      return new AppError(
+        `This item is sold in bulk — the minimum order is ${rule.min}.`,
+        422,
+        'below_minimum',
+        { quantity: `At least ${rule.min}.` },
+      );
+    case 'not_a_multiple':
+      return new AppError(
+        `This item is sold in multiples of ${rule.step} — choose ${rule.min}, ${rule.min + rule.step}, ${rule.min + rule.step * 2}, and so on.`,
+        422,
+        'not_a_multiple',
+        { quantity: `Must be a multiple of ${rule.step}.` },
+      );
+    case 'above_stock':
+      return new AppError(`Only ${stock} left in stock.`, 409, 'insufficient_stock');
+  }
 }
 
 function asSpecs(value: unknown): Record<string, string> {
@@ -724,15 +766,31 @@ export class PrismaRepository implements Repository {
       }
       const stock = line.variant ? line.variant.stock : product.stock;
       const unitPrice = line.variant?.price ?? product.price;
+      const rule = quantityRuleFor(product);
 
       let quantity = line.quantity;
       if (quantity > stock) {
-        quantity = stock;
+        // Bulk lines cannot simply be cut to the stock figure — 23 is not a
+        // quantity the shop sells. Cut to the largest that is, or drop the
+        // line when even the minimum is no longer there.
+        quantity = rule.bulk ? (roundDown(stock, rule) ?? 0) : stock;
         clampUpdates.push({ id: line.id, quantity });
         notices.push(
-          stock === 0
+          quantity === 0
             ? `${product.name} is out of stock and was removed.`
-            : `Quantity for ${product.name} was reduced to the ${stock} we have in stock.`,
+            : `Quantity for ${product.name} was reduced to the ${quantity} we can supply.`,
+        );
+      } else if (rule.bulk && !isValidQuantity(quantity, rule)) {
+        // The rule changed after the line was added — the admin set or
+        // raised a minimum. Lift the line to the nearest quantity the shop
+        // now sells, if stock allows; otherwise it cannot be fulfilled.
+        const lifted = roundUp(quantity, rule);
+        quantity = lifted <= stock ? lifted : (roundDown(stock, rule) ?? 0);
+        clampUpdates.push({ id: line.id, quantity });
+        notices.push(
+          quantity === 0
+            ? `${product.name} is now sold in bulk and there is not enough in stock; it was removed.`
+            : `${product.name} is sold from ${rule.min} in multiples of ${rule.step}; the quantity was adjusted to ${quantity}.`,
         );
       }
       if (quantity <= 0) {
@@ -760,6 +818,7 @@ export class PrismaRepository implements Repository {
         unitPrice,
         mrp: product.mrp,
         quantity,
+        minOrderQuantity: product.minOrderQuantity,
         availableStock: stock,
         lineTotal: unitPrice * quantity,
       });
@@ -788,9 +847,10 @@ export class PrismaRepository implements Repository {
   ): Promise<void> {
     const product = await this.db.product.findFirst({
       where: { id: productId, status: 'ACTIVE', deletedAt: null },
-      select: { id: true, stock: true, reservedStock: true },
+      select: { id: true, stock: true, reservedStock: true, minOrderQuantity: true },
     });
     if (!product) throw notFound('That product is no longer available.');
+    const rule = quantityRuleFor(product);
 
     let stock = product.stock - product.reservedStock;
     if (variantId) {
@@ -812,7 +872,18 @@ export class PrismaRepository implements Repository {
     });
 
     const desired = (existing?.quantity ?? 0) + quantity;
-    const capped = Math.min(desired, stock, MAX_QUANTITY_PER_ITEM);
+
+    // Ordinary sale is forgiving: ask for more than we have and you get what
+    // we have. Bulk sale cannot be, because a capped figure is usually one
+    // the shop does not sell — so the request is refused and told why.
+    let capped: number;
+    if (rule.bulk) {
+      const problem = quantityProblem(desired, rule, stock);
+      if (problem) throw quantityError(problem, rule, stock);
+      capped = desired;
+    } else {
+      capped = Math.min(desired, stock, MAX_QUANTITY_PER_ITEM);
+    }
 
     if (existing) {
       await this.db.cartItem.update({
@@ -834,7 +905,10 @@ export class PrismaRepository implements Repository {
   ): Promise<void> {
     const line = await this.db.cartItem.findFirst({
       where: { id: itemId, cart: this.cartWhere(owner) },
-      include: { product: { select: { stock: true } }, variant: { select: { stock: true } } },
+      include: {
+        product: { select: { stock: true, minOrderQuantity: true } },
+        variant: { select: { stock: true } },
+      },
     });
     if (!line) throw notFound('That cart item no longer exists.');
 
@@ -843,12 +917,16 @@ export class PrismaRepository implements Repository {
       return;
     }
     const stock = line.variant?.stock ?? line.product.stock;
-    if (quantity > stock) {
+    const rule = quantityRuleFor(line.product);
+    if (rule.bulk) {
+      const problem = quantityProblem(quantity, rule, stock);
+      if (problem) throw quantityError(problem, rule, stock);
+    } else if (quantity > stock) {
       throw new AppError(`Only ${stock} left in stock.`, 409, 'insufficient_stock');
     }
     await this.db.cartItem.update({
       where: { id: itemId },
-      data: { quantity: Math.min(quantity, MAX_QUANTITY_PER_ITEM) },
+      data: { quantity: rule.bulk ? quantity : Math.min(quantity, MAX_QUANTITY_PER_ITEM) },
     });
   }
 
@@ -996,7 +1074,13 @@ export class PrismaRepository implements Repository {
       for (const item of input.items) {
         const product = await tx.product.findUnique({
           where: { id: item.productId },
-          select: { stock: true, status: true, deletedAt: true, name: true },
+          select: {
+            stock: true,
+            status: true,
+            deletedAt: true,
+            name: true,
+            minOrderQuantity: true,
+          },
         });
         if (!product || product.status !== 'ACTIVE' || product.deletedAt) {
           throw new AppError(
@@ -1010,6 +1094,17 @@ export class PrismaRepository implements Repository {
             `Only ${product.stock} of ${product.name} left in stock.`,
             409,
             'insufficient_stock',
+          );
+        }
+        // The cart already enforces the bulk rule, but the order is the
+        // thing that costs money, so it checks for itself — against the
+        // product as it is now, not as it was when the line was added.
+        const rule = quantityRuleFor(product);
+        if (rule.bulk && !isValidQuantity(item.quantity, rule)) {
+          throw new AppError(
+            `${product.name} is sold from ${rule.min} in multiples of ${rule.step}. Please adjust the quantity in your cart.`,
+            409,
+            'invalid_quantity',
           );
         }
       }

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { BULK_QUANTITY_STEP } from '@tamizh/core/quantity';
 import type { ProductStatus } from '@tamizh/db/enums';
 import type { ProductFormValues } from '@/lib/product-form';
 import { cn, slugify } from '@tamizh/core/utils';
@@ -134,6 +135,7 @@ export function ProductForm({
       taxBps: Number(values.taxPercent) || 0,
       stock: Number(values.stock) || 0,
       lowStockThreshold: Number(values.lowStockThreshold) || 0,
+      minOrderQuantity: values.minOrderQuantity.trim() === '' ? null : Number(values.minOrderQuantity),
       weightGrams: values.weightGrams ? Number(values.weightGrams) : null,
       lengthMm: values.lengthMm ? Number(values.lengthMm) : null,
       widthMm: values.widthMm ? Number(values.widthMm) : null,
@@ -518,6 +520,19 @@ export function ProductForm({
                 min={0}
                 value={values.lowStockThreshold}
                 onChange={(event) => set('lowStockThreshold', event.target.value)}
+              />
+              <TextField
+                label={t('products.minOrderQuantity')}
+                type="number"
+                inputMode="numeric"
+                min={BULK_QUANTITY_STEP}
+                step={BULK_QUANTITY_STEP}
+                placeholder="—"
+                optionalLabel={t('common.optional')}
+                hint={t('products.minOrderQuantityHint', { step: BULK_QUANTITY_STEP })}
+                value={values.minOrderQuantity}
+                onChange={(event) => set('minOrderQuantity', event.target.value)}
+                error={fields.minOrderQuantity}
               />
             </div>
           </Panel>

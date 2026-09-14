@@ -379,13 +379,17 @@ model Product {
   taxBps    Int @default(0)
 
   /// Units physically on the shelf.
-  stock             Int @default(0)
+  stock             Int  @default(0)
   /// Units committed to unfulfilled orders. Available = stock - reserved.
-  reservedStock     Int @default(0)
+  reservedStock     Int  @default(0)
   /// Units on order from a supplier, shown as "incoming" in the admin.
-  incomingStock     Int @default(0)
+  incomingStock     Int  @default(0)
   /// Below this, the product is flagged as low stock.
-  lowStockThreshold Int @default(5)
+  lowStockThreshold Int  @default(5)
+  /// Bulk lines — return gifts, mainly — are not sold one at a time. When set,
+  /// an order must take at least this many and then only in multiples of the
+  /// shop-wide step (see @tamizh/core/quantity). Null means ordinary sale.
+  minOrderQuantity  Int?
 
   weightGrams Int?
   lengthMm    Int?

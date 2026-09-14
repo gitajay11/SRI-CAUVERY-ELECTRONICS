@@ -102,13 +102,18 @@ export default async function ProductsPage({
       align: 'center',
       mobile: 'trailing',
       cell: (row) => (
-        <Badge
-          tone={
-            row.stock <= 0 ? 'critical' : row.stock <= row.lowStockThreshold ? 'caution' : 'neutral'
-          }
-        >
-          {row.stock}
-        </Badge>
+        <span className="inline-flex flex-wrap items-center justify-center gap-1">
+          <Badge
+            tone={
+              row.stock <= 0 ? 'critical' : row.stock <= row.lowStockThreshold ? 'caution' : 'neutral'
+            }
+          >
+            {row.stock}
+          </Badge>
+          {row.minOrderQuantity ? (
+            <Badge tone="info">{t('products.bulkBadge', { min: row.minOrderQuantity })}</Badge>
+          ) : null}
+        </span>
       ),
     },
     {
