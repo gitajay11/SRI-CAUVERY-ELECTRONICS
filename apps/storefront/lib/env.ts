@@ -56,9 +56,41 @@ export const paymentProvider = (process.env.PAYMENT_PROVIDER?.trim() || 'mock') 
   | 'mock'
   | 'razorpay';
 
+/**
+ * Live keys move real money, so they are refused anywhere that is not the
+ * production deployment.
+ *
+ * Without this, a `.env` copied to a laptop, a preview deployment, or a smoke
+ * test would create real orders against real cards — and the mistake is
+ * invisible until a customer is charged. Test keys are unrestricted; the
+ * expensive direction is the only one worth guarding.
+ *
+ * `VERCEL_ENV` is checked before `NODE_ENV` because preview deployments build
+ * with NODE_ENV=production and would otherwise be treated as the real site.
+ */
+function assertLiveKeyAllowed(keyId: string): string {
+  if (!keyId.startsWith('rzp_live_')) return keyId;
+
+  const vercelEnv = process.env.VERCEL_ENV;
+  const allowed = vercelEnv ? vercelEnv === 'production' : isProduction;
+
+  if (!allowed) {
+    throw new Error(
+      'Refusing to use live Razorpay keys outside production ' +
+        `(VERCEL_ENV=${vercelEnv ?? 'unset'}, NODE_ENV=${process.env.NODE_ENV}). ` +
+        'Use rzp_test_ keys here.',
+    );
+  }
+  return keyId;
+}
+
 export const razorpay = {
-  keyId: () => required('RAZORPAY_KEY_ID', process.env.RAZORPAY_KEY_ID),
-  keySecret: () => required('RAZORPAY_KEY_SECRET', process.env.RAZORPAY_KEY_SECRET),
+  keyId: () => assertLiveKeyAllowed(required('RAZORPAY_KEY_ID', process.env.RAZORPAY_KEY_ID)),
+  keySecret: () => {
+    // Reading the id first means the guard runs whichever value is asked for.
+    assertLiveKeyAllowed(required('RAZORPAY_KEY_ID', process.env.RAZORPAY_KEY_ID));
+    return required('RAZORPAY_KEY_SECRET', process.env.RAZORPAY_KEY_SECRET);
+  },
   webhookSecret: () =>
     required('RAZORPAY_WEBHOOK_SECRET', process.env.RAZORPAY_WEBHOOK_SECRET),
   isConfigured: () =>

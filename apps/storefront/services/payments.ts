@@ -122,6 +122,9 @@ const mockProvider: PaymentProvider = {
   },
 };
 
+/** Razorpay rejects anything under ₹1, in paise. */
+const MIN_RAZORPAY_AMOUNT = 100;
+
 /**
  * Razorpay.
  *
@@ -135,6 +138,17 @@ const razorpayProvider: PaymentProvider = {
   async createIntent({ amount, orderNumber, customerEmail, customerPhone }) {
     const keyId = razorpay.keyId();
     const keySecret = razorpay.keySecret();
+
+    // Razorpay will not accept an order under ₹1. Caught here rather than left
+    // to the gateway so the shopper is told to use cash on delivery instead of
+    // being shown a generic gateway failure — the shop does sell items at ₹1.
+    if (amount < MIN_RAZORPAY_AMOUNT) {
+      throw new AppError(
+        'This order is too small to pay for online. Please choose cash on delivery.',
+        400,
+        'amount_below_gateway_minimum',
+      );
+    }
 
     const response = await fetch('https://api.razorpay.com/v1/orders', {
       method: 'POST',
@@ -152,7 +166,17 @@ const razorpayProvider: PaymentProvider = {
 
     if (!response.ok) {
       const detail = await response.text().catch(() => '');
-      console.error('[payments] Razorpay order creation failed', response.status, detail);
+      // 401 means our own credentials are wrong, not the shopper's — worth
+      // shouting about separately, because it takes online payment down for
+      // everyone and looks identical to a gateway outage in the logs.
+      if (response.status === 401) {
+        console.error(
+          '[payments] Razorpay rejected our credentials — check RAZORPAY_KEY_ID / RAZORPAY_KEY_SECRET',
+          detail,
+        );
+      } else {
+        console.error('[payments] Razorpay order creation failed', response.status, detail);
+      }
       throw new AppError(
         'We could not start the online payment. Please try cash on delivery, or try again shortly.',
         502,
