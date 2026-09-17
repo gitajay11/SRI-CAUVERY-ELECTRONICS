@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { formatINR, paiseToRupees } from '@tamizh/core/money';
 import { ApiError, api } from '@/lib/http';
 import { useAdmin, useConfirm, useToast } from '@/components/providers/AdminProviders';
@@ -15,6 +14,7 @@ import {
   TextField,
 } from '@/components/ui/Field';
 import { PlusIcon, TrashIcon, EditIcon } from '@/components/ui/Icons';
+import { useNavigation } from '@/hooks/useNavigation';
 
 /**
  * Delivery zones.
@@ -83,7 +83,7 @@ export function ShippingZones({
   const { t, online } = useAdmin();
   const { toast } = useToast();
   const confirm = useConfirm();
-  const router = useRouter();
+  const { refresh, pending } = useNavigation();
 
   const [draft, setDraft] = useState<Draft | null>(null);
   const [busy, setBusy] = useState(false);
@@ -118,7 +118,7 @@ export function ShippingZones({
       else await api.post('/api/admin/shipping', payload);
       toast(t('settings.zoneSaved'));
       setDraft(null);
-      router.refresh();
+      refresh();
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : t('error.saveFailed'));
     } finally {
@@ -137,7 +137,7 @@ export function ShippingZones({
     try {
       await api.delete(`/api/admin/shipping/${zone.id}`);
       toast(t('settings.zoneDeleted'));
-      router.refresh();
+      refresh();
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : t('error.saveFailed'));
     }
@@ -256,7 +256,7 @@ export function ShippingZones({
           </div>
 
           <div className="flex gap-2">
-            <Button size="sm" loading={busy} onClick={() => void save()}>
+            <Button size="sm" loading={busy || pending} onClick={() => void save()}>
               {t('common.save')}
             </Button>
             <Button size="sm" variant="ghost" onClick={() => setDraft(null)}>

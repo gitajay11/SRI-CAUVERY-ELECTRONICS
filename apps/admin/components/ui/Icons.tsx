@@ -373,11 +373,18 @@ export const DashboardIcon = (p: IconProps) => (
   </Icon>
 );
 
+/**
+ * A parcel: one cube with its three visible faces and a strip of tape.
+ *
+ * It used to be three small cubes, one of which ran off the bottom of the
+ * viewBox and was never closed. At the 20px the bottom bar draws it at, the
+ * overlapping outlines merged into an unreadable blot.
+ */
 export const BoxesIcon = (p: IconProps) => (
   <Icon {...p}>
-    <path d="M3.5 7.5 8 5.2l4.5 2.3v5L8 14.8l-4.5-2.3Z" />
-    <path d="M11.5 16.5 16 14.2l4.5 2.3v5L16 23.8" />
-    <path d="M11.5 7.5 16 5.2l4.5 2.3v5L16 14.8l-4.5-2.3Z" />
+    <path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3Z" />
+    <path d="M4 7.5 12 12l8-4.5M12 12v9" />
+    <path d="m8 5.25 8 4.5" />
   </Icon>
 );
 

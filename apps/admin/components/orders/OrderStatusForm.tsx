@@ -1,13 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import type { OrderStatus } from '@tamizh/db/enums';
 import { ApiError, api } from '@/lib/http';
 import { useAdmin, useConfirm, useToast } from '@/components/providers/AdminProviders';
 import { Panel } from '@/components/ui/Primitives';
 import { Button } from '@/components/ui/Button';
 import { FormError, SelectField, TextAreaField, TextField } from '@/components/ui/Field';
+import { useNavigation } from '@/hooks/useNavigation';
 
 /**
  * Moves an order through fulfilment.
@@ -32,7 +32,7 @@ export function OrderStatusForm({
   const { t, online } = useAdmin();
   const { toast } = useToast();
   const confirm = useConfirm();
-  const router = useRouter();
+  const { refresh, pending } = useNavigation();
 
   const [nextStatus, setNextStatus] = useState<OrderStatus>(status);
   const [tracking, setTracking] = useState(trackingNumber ?? '');
@@ -81,7 +81,7 @@ export function OrderStatusForm({
       toast(cancelling ? t('orders.cancelled') : t('orders.statusUpdated'));
       setNote('');
       setCancelReason('');
-      router.refresh();
+      refresh();
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : t('error.saveFailed'));
     } finally {
@@ -149,7 +149,7 @@ export function OrderStatusForm({
         <Button
           type="submit"
           fullWidth
-          loading={busy}
+          loading={busy || pending}
           variant={cancelling ? 'danger' : 'primary'}
           disabled={unchanged && !cancelling}
         >

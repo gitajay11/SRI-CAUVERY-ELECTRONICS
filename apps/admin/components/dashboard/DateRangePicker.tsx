@@ -1,6 +1,5 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { cn } from '@tamizh/core/utils';
 import { useAdmin } from '@/components/providers/AdminProviders';
@@ -8,6 +7,7 @@ import type { TranslationKey } from '@/i18n/en';
 import { Button } from '@/components/ui/Button';
 import { SelectMenu } from '@/components/ui/SelectMenu';
 import { CalendarIcon } from '@/components/ui/Icons';
+import { useNavigation } from '@/hooks/useNavigation';
 
 /**
  * Date-range control for the dashboard and reports.
@@ -43,7 +43,7 @@ export function DateRangePicker({
   basePath?: string;
 }) {
   const { t } = useAdmin();
-  const router = useRouter();
+  const { push } = useNavigation();
   const [customOpen, setCustomOpen] = useState(current === 'custom');
   const [customFrom, setCustomFrom] = useState(from ?? '');
   const [customTo, setCustomTo] = useState(to ?? '');
@@ -54,7 +54,7 @@ export function DateRangePicker({
       return;
     }
     setCustomOpen(false);
-    router.push(`${basePath}?range=${key}`);
+    push(`${basePath}?range=${key}`);
   };
 
   const today = new Date().toISOString().slice(0, 10);
@@ -114,7 +114,7 @@ export function DateRangePicker({
           onSubmit={(event) => {
             event.preventDefault();
             if (!customFrom || !customTo) return;
-            router.push(
+            push(
               `${basePath}?range=custom&from=${customFrom}&to=${customTo}`,
             );
           }}

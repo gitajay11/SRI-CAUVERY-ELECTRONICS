@@ -1,11 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { ApiError, api } from '@/lib/http';
 import { translate, type Dictionary, type TranslationKey } from '@/i18n';
 import { Button } from '@/components/ui/Button';
 import { FormError, TextField } from '@/components/ui/Field';
+import { useNavigation } from '@/hooks/useNavigation';
 
 /**
  * Change your own password.
@@ -28,7 +28,7 @@ export function ChangePasswordForm({
 }) {
   const t = (key: TranslationKey, vars?: Record<string, string | number>) =>
     translate(dictionary, key, vars);
-  const router = useRouter();
+  const { replace, pending } = useNavigation();
 
   const [current, setCurrent] = useState('');
   const [next, setNext] = useState('');
@@ -61,8 +61,7 @@ export function ChangePasswordForm({
         currentPassword: current,
         newPassword: next,
       });
-      router.replace('/');
-      router.refresh();
+      replace('/', { refresh: true });
     } catch (caught) {
       if (caught instanceof ApiError) {
         setError(caught.message);
@@ -122,7 +121,7 @@ export function ChangePasswordForm({
         type="submit"
         fullWidth
         size="lg"
-        loading={busy}
+        loading={busy || pending}
         disabled={!allMet || !matches || current.length === 0}
       >
         {t('account.changePassword')}

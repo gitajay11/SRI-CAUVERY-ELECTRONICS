@@ -3,6 +3,7 @@
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { SpinnerIcon } from '@/components/ui/Icons';
+import { useLeavingPage } from '@/hooks/useNavigation';
 
 /**
  * A spinner for the gap between clicking a link and the next page arriving.
@@ -33,6 +34,7 @@ const GIVE_UP_AFTER_MS = 20_000;
 export function NavigationProgress() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const leaving = useLeavingPage();
   const [pending, setPending] = useState(false);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
@@ -83,8 +85,16 @@ export function NavigationProgress() {
      is only observable after the render that carries it. */
   useEffect(() => {
     clearTimers();
+    if (leaving) {
+      // A programmatic page change — a filter, a date range, a duplicate
+      // opening its copy: the same delay and give-up as a click, ended by
+      // the route arriving or the transition finishing.
+      timers.current.push(setTimeout(() => setPending(true), SHOW_AFTER_MS));
+      timers.current.push(setTimeout(() => setPending(false), GIVE_UP_AFTER_MS));
+      return;
+    }
     setPending(false);
-  }, [pathname, searchParams]);
+  }, [pathname, searchParams, leaving]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   if (!pending) return null;

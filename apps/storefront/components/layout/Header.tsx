@@ -68,6 +68,17 @@ export async function Header({
 
       {/* Brand + search + actions */}
       <div className="container-page">
+        {/*
+            On a phone this row has no slack: the Tamil name alone needs
+            184px, and whatever does not fit does not wrap — it pushes the
+            row past the screen. A mobile browser answers that by widening
+            the layout viewport to the content, which quietly shifts every
+            fixed-position element (the loading spinner, the bottom bar) off
+            centre and lets the page be dragged sideways. So the phone
+            header carries only what the bottom bar does not: the menu, the
+            name and the cart. Language and account live in the drawer and
+            the bar.
+          */}
         <div className="flex items-center gap-2 py-2.5 sm:gap-4 lg:py-3">
           <MobileMenu
             categories={categories}
@@ -82,7 +93,11 @@ export async function Header({
           </div>
 
           <div className="ml-auto flex items-center gap-1 lg:ml-2">
-            <LanguageSwitcher className="hidden md:inline-flex" />
+            {/* A wrapper, not a `hidden` on the switcher: its own `inline-flex`
+                sorts after `hidden` in the stylesheet and would win. */}
+            <div className="hidden md:contents">
+              <LanguageSwitcher />
+            </div>
             <ThemeToggle current={theme} className="hidden md:block" />
             <HeaderActions user={user} wishlistCount={wishlistCount} />
           </div>

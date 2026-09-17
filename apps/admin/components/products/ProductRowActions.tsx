@@ -2,11 +2,17 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import type { ProductStatus } from '@tamizh/db/enums';
 import { ApiError, api } from '@/lib/http';
 import { useAdmin, useConfirm, useToast } from '@/components/providers/AdminProviders';
-import { CopyIcon, EyeIcon, EyeOffIcon, TrashIcon } from '@/components/ui/Icons';
+import {
+  CopyIcon,
+  EyeIcon,
+  EyeOffIcon,
+  SpinnerIcon,
+  TrashIcon,
+} from '@/components/ui/Icons';
+import { useNavigation } from '@/hooks/useNavigation';
 
 /**
  * Per-row actions in the product table.
@@ -33,18 +39,24 @@ export function ProductRowActions({
   const { t, online } = useAdmin();
   const { toast } = useToast();
   const confirm = useConfirm();
-  const router = useRouter();
+  const { push, refresh, pending } = useNavigation();
   const [busy, setBusy] = useState(false);
+  // Which icon was pressed, so the spinner replaces that one and not all
+  // three. Held until the refreshed list is on screen.
+  const [acting, setActing] = useState<'publish' | 'duplicate' | 'remove' | null>(null);
+  const working = busy || pending;
+  const spinning = (kind: typeof acting) => working && acting === kind;
 
-  const run = async (action: () => Promise<void>) => {
+  const run = async (kind: NonNullable<typeof acting>, action: () => Promise<void>) => {
     if (!online) {
       toast(t('offline.blocked'), 'error');
       return;
     }
     setBusy(true);
+    setActing(kind);
     try {
       await action();
-      router.refresh();
+      refresh();
     } catch (error) {
       toast(error instanceof ApiError ? error.message : t('error.saveFailed'), 'error');
     } finally {
@@ -53,17 +65,17 @@ export function ProductRowActions({
   };
 
   const togglePublish = () =>
-    run(async () => {
+    run('publish', async () => {
       const next: ProductStatus = status === 'ACTIVE' ? 'DRAFT' : 'ACTIVE';
       await api.patch(`/api/admin/products/${id}/status`, { status: next });
       toast(next === 'ACTIVE' ? t('products.updated') : t('products.updated'));
     });
 
   const duplicate = () =>
-    run(async () => {
+    run('duplicate', async () => {
       const copy = await api.post<{ id: string }>(`/api/admin/products/${id}/duplicate`);
       toast(t('products.duplicated'));
-      router.push(`/products/${copy.id}`);
+      push(`/products/${copy.id}`);
     });
 
   const remove = async () => {
@@ -75,7 +87,7 @@ export function ProductRowActions({
       typeToConfirm: name.slice(0, 24),
     });
     if (!confirmed) return;
-    await run(async () => {
+    await run('remove', async () => {
       const result = await api.delete<{ archived: boolean }>(`/api/admin/products/${id}`);
       toast(result.archived ? t('products.archived') : t('products.deleted'));
     });
@@ -94,12 +106,12 @@ export function ProductRowActions({
         <button
           type="button"
           onClick={togglePublish}
-          disabled={busy}
+          disabled={working}
           aria-label={status === 'ACTIVE' ? t('products.unpublish') : t('products.publish')}
           title={status === 'ACTIVE' ? t('products.unpublish') : t('products.publish')}
           className="grid size-9 place-items-center rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
         >
-          {status === 'ACTIVE' ? <EyeIcon /> : <EyeOffIcon />}
+          {spinning('publish') ? <SpinnerIcon /> : status === 'ACTIVE' ? <EyeIcon /> : <EyeOffIcon />}
         </button>
       ) : null}
 
@@ -107,12 +119,12 @@ export function ProductRowActions({
         <button
           type="button"
           onClick={duplicate}
-          disabled={busy}
+          disabled={working}
           aria-label={t('products.duplicate')}
           title={t('products.duplicate')}
           className="grid size-9 place-items-center rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
         >
-          <CopyIcon />
+          {spinning('duplicate') ? <SpinnerIcon /> : <CopyIcon />}
         </button>
       ) : null}
 
@@ -120,12 +132,12 @@ export function ProductRowActions({
         <button
           type="button"
           onClick={remove}
-          disabled={busy}
+          disabled={working}
           aria-label={`${t('common.delete')} ${name}`}
           title={t('common.delete')}
           className="grid size-9 place-items-center rounded-md text-slate-400 hover:bg-critical-50 hover:text-critical-600 disabled:opacity-50"
         >
-          <TrashIcon />
+          {spinning('remove') ? <SpinnerIcon className="text-critical-600" /> : <TrashIcon />}
         </button>
       ) : null}
     </span>

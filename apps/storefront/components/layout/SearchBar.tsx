@@ -3,13 +3,14 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import type { ProductCardView } from '@tamizh/core/types';
 import { api } from '@/lib/http';
 import { formatINR } from '@tamizh/core/money';
 import { cn } from '@tamizh/core/utils';
 import { POPULAR_SEARCHES } from '@/lib/storefront-content';
 import { useLocale } from '@/components/providers/LocaleProvider';
+import { useNavigation } from '@/hooks/useNavigation';
 import { CloseIcon, SearchIcon, SpinnerIcon } from '@/components/ui/Icons';
 
 /**
@@ -35,7 +36,7 @@ export function SearchBar({
   onNavigate?: () => void;
   className?: string;
 }) {
-  const router = useRouter();
+  const { push } = useNavigation();
   const params = useSearchParams();
   const { t, locale } = useLocale();
   const listboxId = useId();
@@ -102,7 +103,7 @@ export function SearchBar({
     setOpen(false);
     inputRef.current?.blur();
     onNavigate?.();
-    router.push(`/search?q=${encodeURIComponent(trimmed)}`);
+    push(`/search?q=${encodeURIComponent(trimmed)}`);
   };
 
   const onKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
@@ -119,7 +120,7 @@ export function SearchBar({
         event.preventDefault();
         setOpen(false);
         onNavigate?.();
-        router.push(`/product/${active.slug}`);
+        push(`/product/${active.slug}`);
       }
     } else if (event.key === 'Escape') {
       setOpen(false);

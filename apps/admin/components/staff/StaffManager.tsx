@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import type { StaffRole } from '@tamizh/db/enums';
 import { formatDate } from '@tamizh/core/utils';
 import { ROLE_LABELS } from '@tamizh/core/permissions';
@@ -17,6 +16,7 @@ import {
   TextField,
 } from '@/components/ui/Field';
 import { PlusIcon, KeyIcon, EditIcon, TrashIcon, CopyIcon } from '@/components/ui/Icons';
+import { useNavigation } from '@/hooks/useNavigation';
 
 /**
  * Staff accounts.
@@ -63,7 +63,7 @@ export function StaffManager({
   const { t, online } = useAdmin();
   const { toast } = useToast();
   const confirm = useConfirm();
-  const router = useRouter();
+  const { refresh, pending } = useNavigation();
 
   const [draft, setDraft] = useState<Draft | null>(null);
   const [issued, setIssued] = useState<{ name: string; password: string } | null>(null);
@@ -111,7 +111,7 @@ export function StaffManager({
         toast(t('staff.created'));
       }
       setDraft(null);
-      router.refresh();
+      refresh();
     } catch (caught) {
       if (caught instanceof ApiError) {
         setError(caught.message);
@@ -136,7 +136,7 @@ export function StaffManager({
         `/api/admin/staff/${member.id}/password`,
       );
       setIssued({ name: member.name, password: result.temporaryPassword });
-      router.refresh();
+      refresh();
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : t('error.saveFailed'));
     }
@@ -154,7 +154,7 @@ export function StaffManager({
     try {
       await api.delete(`/api/admin/staff/${member.id}`);
       toast(t('staff.removed'));
-      router.refresh();
+      refresh();
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : t('error.saveFailed'));
     }
@@ -317,7 +317,7 @@ export function StaffManager({
           />
 
           <div className="flex gap-2">
-            <Button size="sm" loading={busy} onClick={() => void save()}>
+            <Button size="sm" loading={busy || pending} onClick={() => void save()}>
               {draft.id ? t('common.save') : t('staff.new')}
             </Button>
             <Button size="sm" variant="ghost" onClick={() => setDraft(null)}>

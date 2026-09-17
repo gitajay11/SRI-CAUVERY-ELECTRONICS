@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import type { StockReason } from '@tamizh/db/enums';
 import { cn } from '@tamizh/core/utils';
 import type { TranslationKey } from '@/i18n';
@@ -9,6 +8,7 @@ import { ApiError, api } from '@/lib/http';
 import { useAdmin, useToast } from '@/components/providers/AdminProviders';
 import { Button } from '@/components/ui/Button';
 import { FormError, SelectField, TextAreaField, TextField } from '@/components/ui/Field';
+import { useNavigation } from '@/hooks/useNavigation';
 
 /**
  * Adjust the stock of one product.
@@ -56,7 +56,7 @@ export function StockAdjuster({
 }) {
   const { t, online } = useAdmin();
   const { toast } = useToast();
-  const router = useRouter();
+  const { refresh, pending } = useNavigation();
 
   const [mode, setMode] = useState<Mode>('add');
   const [quantity, setQuantity] = useState('');
@@ -117,7 +117,7 @@ export function StockAdjuster({
       toast(`${t('inventory.adjusted')} ${result.before} → ${result.after}`);
       setQuantity('');
       setNote('');
-      router.refresh();
+      refresh();
     } catch (caught) {
       if (caught instanceof ApiError) {
         setError(caught.message);
@@ -217,7 +217,7 @@ export function StockAdjuster({
         placeholder="Invoice number, supplier, who counted it…"
       />
 
-      <Button type="submit" fullWidth loading={busy} disabled={!online || wouldGoNegative}>
+      <Button type="submit" fullWidth loading={busy || pending} disabled={!online || wouldGoNegative}>
         {t('inventory.adjust')}
       </Button>
 

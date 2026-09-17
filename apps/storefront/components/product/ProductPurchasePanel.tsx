@@ -1,7 +1,6 @@
 'use client';
 
 import { useId, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import type { ProductDetailView } from '@tamizh/core/types';
 import { cn } from '@tamizh/core/utils';
 import { formatINR } from '@tamizh/core/money';
@@ -17,6 +16,7 @@ import {
 } from '@tamizh/core/quantity';
 import { useCart } from '@/components/providers/CartProvider';
 import { useLocale } from '@/components/providers/LocaleProvider';
+import { useNavigation } from '@/hooks/useNavigation';
 import { Button } from '@/components/ui/Button';
 import { AddToCartButton } from './AddToCartButton';
 import { WishlistButton } from './WishlistButton';
@@ -38,7 +38,7 @@ import { MinusIcon, PlusIcon } from '@/components/ui/Icons';
  */
 export function ProductPurchasePanel({ product }: { product: ProductDetailView }) {
   const { t } = useLocale();
-  const router = useRouter();
+  const { push } = useNavigation();
   const { addItem } = useCart();
   const noteId = useId();
 
@@ -94,7 +94,7 @@ export function ProductPurchasePanel({ product }: { product: ProductDetailView }
     if (!canBuy) return;
     setBuying(true);
     const ok = await addItem(product.id, quantity, product.name);
-    if (ok) router.push('/checkout');
+    if (ok) push('/checkout');
     else setBuying(false);
   };
 

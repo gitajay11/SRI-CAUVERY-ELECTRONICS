@@ -2,18 +2,19 @@
 
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import type { SessionUser } from '@tamizh/core/types';
 import { cn } from '@tamizh/core/utils';
 import { api } from '@/lib/http';
 import { useCart } from '@/components/providers/CartProvider';
 import { useLocale } from '@/components/providers/LocaleProvider';
+import { useNavigation } from '@/hooks/useNavigation';
 import {
   CartIcon,
   ChevronDownIcon,
   ClipboardIcon,
   HeartIcon,
   LogOutIcon,
+  SpinnerIcon,
   UserIcon,
 } from '@/components/ui/Icons';
 
@@ -39,7 +40,10 @@ export function HeaderActions({
         {wishlistCount > 0 ? <Dot>{wishlistCount}</Dot> : null}
       </Link>
 
-      <AccountMenu user={user} />
+      {/* Phones reach the account from the bottom bar; see Header. */}
+      <div className="hidden sm:contents">
+        <AccountMenu user={user} />
+      </div>
 
       <Link
         href="/cart"
@@ -66,7 +70,7 @@ function Dot({ children }: { children: number }) {
 
 function AccountMenu({ user }: { user: SessionUser | null }) {
   const { t } = useLocale();
-  const router = useRouter();
+  const { push, pending: leaving } = useNavigation();
   const [open, setOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -104,10 +108,11 @@ function AccountMenu({ user }: { user: SessionUser | null }) {
     setSigningOut(true);
     try {
       await api.post('/api/auth/logout');
-      setOpen(false);
-      router.push('/');
-      router.refresh();
-    } finally {
+      // The menu stays open, spinning, until the signed-out home page has
+      // taken over; closing it here would leave a signed-in header behind
+      // for the length of the navigation.
+      push('/', { refresh: true });
+    } catch {
       setSigningOut(false);
     }
   };
@@ -157,10 +162,14 @@ function AccountMenu({ user }: { user: SessionUser | null }) {
             type="button"
             role="menuitem"
             onClick={signOut}
-            disabled={signingOut}
+            disabled={signingOut || leaving}
             className="mt-1 flex w-full items-center gap-2.5 border-t border-ink-100 px-4 py-2.5 text-left text-sm font-medium text-danger-600 hover:bg-danger-50 disabled:opacity-60"
           >
-            <LogOutIcon className="text-base" />
+            {signingOut || leaving ? (
+              <SpinnerIcon className="text-base" />
+            ) : (
+              <LogOutIcon className="text-base" />
+            )}
             {t('nav.signOut')}
           </button>
         </div>

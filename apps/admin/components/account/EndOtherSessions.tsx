@@ -1,24 +1,24 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { ApiError, api } from '@/lib/http';
 import { useAdmin, useConfirm, useToast } from '@/components/providers/AdminProviders';
 import { Button } from '@/components/ui/Button';
+import { useNavigation } from '@/hooks/useNavigation';
 
 /** Ends every session except the one making the request. */
 export function EndOtherSessions() {
   const { t, online } = useAdmin();
   const { toast } = useToast();
   const confirm = useConfirm();
-  const router = useRouter();
+  const { refresh, pending } = useNavigation();
   const [busy, setBusy] = useState(false);
 
   return (
     <Button
       variant="outline"
       size="sm"
-      loading={busy}
+      loading={busy || pending}
       disabled={!online}
       onClick={async () => {
         const confirmed = await confirm({
@@ -32,7 +32,7 @@ export function EndOtherSessions() {
         try {
           await api.delete('/api/admin/account/sessions');
           toast(t('account.endedOthers'));
-          router.refresh();
+          refresh();
         } catch (caught) {
           toast(
             caught instanceof ApiError ? caught.message : t('error.saveFailed'),

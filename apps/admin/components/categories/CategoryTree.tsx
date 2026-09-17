@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { cn } from '@tamizh/core/utils';
 import { ApiError, api } from '@/lib/http';
 import type { CategoryNode } from '@/services/categories';
@@ -10,11 +9,13 @@ import { useAdmin, useConfirm, useToast } from '@/components/providers/AdminProv
 import { Button } from '@/components/ui/Button';
 import { Badge, Alert } from '@/components/ui/Primitives';
 import { Thumb } from '@/components/ui/Thumb';
+import { useNavigation } from '@/hooks/useNavigation';
 import {
   ArrowDownIcon,
   ArrowUpIcon,
   EyeIcon,
   EyeOffIcon,
+  SpinnerIcon,
   TrashIcon,
 } from '@/components/ui/Icons';
 
@@ -36,11 +37,16 @@ export function CategoryTree({ tree, canManage }: Props) {
   const { t, online } = useAdmin();
   const { toast } = useToast();
   const confirm = useConfirm();
-  const router = useRouter();
+  const { refresh, pending } = useNavigation();
 
   const [nodes, setNodes] = useState(tree);
   const [dirty, setDirty] = useState(false);
   const [busy, setBusy] = useState(false);
+  // Which node an action is working on, and which action, so the icon that
+  // was pressed spins — and nothing else can be pressed — until the
+  // refreshed tree is on screen.
+  const [acting, setActing] = useState<{ id: string; kind: 'toggle' | 'remove' } | null>(null);
+  const working = busy || pending;
   const [error, setError] = useState<string | null>(null);
 
   const move = (parentId: string | null, index: number, direction: -1 | 1) => {
@@ -77,7 +83,7 @@ export function CategoryTree({ tree, canManage }: Props) {
       await api.post('/api/admin/categories/reorder', { order });
       setDirty(false);
       toast(t('categories.reordered'));
-      router.refresh();
+      refresh();
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : t('error.saveFailed'));
     } finally {
@@ -87,12 +93,16 @@ export function CategoryTree({ tree, canManage }: Props) {
 
   const toggle = async (node: CategoryNode) => {
     setError(null);
+    setBusy(true);
+    setActing({ id: node.id, kind: 'toggle' });
     try {
       await api.patch(`/api/admin/categories/${node.id}`, { isActive: !node.isActive });
       toast(node.isActive ? t('categories.hidden') : t('categories.shown'));
-      router.refresh();
+      refresh();
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : t('error.saveFailed'));
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -109,12 +119,16 @@ export function CategoryTree({ tree, canManage }: Props) {
     if (!confirmed) return;
 
     setError(null);
+    setBusy(true);
+    setActing({ id: node.id, kind: 'remove' });
     try {
       await api.delete(`/api/admin/categories/${node.id}`);
       toast(t('categories.deleted'));
-      router.refresh();
+      refresh();
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : t('error.saveFailed'));
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -175,21 +189,31 @@ export function CategoryTree({ tree, canManage }: Props) {
             <button
               type="button"
               onClick={() => void toggle(node)}
-              disabled={!online}
+              disabled={!online || working}
               aria-label={`${node.isActive ? t('common.no') : t('common.yes')}: ${node.name}`}
               title={node.isActive ? t('categories.hidden') : t('categories.shown')}
               className="grid size-9 place-items-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-40"
             >
-              {node.isActive ? <EyeIcon /> : <EyeOffIcon />}
+              {working && acting?.id === node.id && acting.kind === 'toggle' ? (
+                <SpinnerIcon />
+              ) : node.isActive ? (
+                <EyeIcon />
+              ) : (
+                <EyeOffIcon />
+              )}
             </button>
             <button
               type="button"
               onClick={() => void remove(node)}
-              disabled={!online}
+              disabled={!online || working}
               aria-label={`${t('common.delete')}: ${node.name}`}
               className="grid size-9 place-items-center rounded-lg text-slate-400 hover:bg-critical-50 hover:text-critical-600 disabled:opacity-40"
             >
-              <TrashIcon />
+              {working && acting?.id === node.id && acting.kind === 'remove' ? (
+                <SpinnerIcon className="text-critical-600" />
+              ) : (
+                <TrashIcon />
+              )}
             </button>
           </div>
         ) : null}
@@ -227,7 +251,7 @@ export function CategoryTree({ tree, canManage }: Props) {
             >
               {t('common.cancel')}
             </Button>
-            <Button size="sm" loading={busy} onClick={() => void saveOrder()}>
+            <Button size="sm" loading={busy || pending} onClick={() => void saveOrder()}>
               {t('categories.saveOrder')}
             </Button>
           </div>

@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import type { ProductFacets } from '@tamizh/core/types';
 import { cn } from '@tamizh/core/utils';
 import { formatINR, paiseToRupees } from '@tamizh/core/money';
@@ -12,8 +11,9 @@ import {
   type SearchParamsInput,
 } from '@/lib/product-query';
 import { useLocale } from '@/components/providers/LocaleProvider';
+import { useNavigation } from '@/hooks/useNavigation';
 import { Button } from '@/components/ui/Button';
-import { CheckIcon, CloseIcon, FilterIcon, StarIcon } from '@/components/ui/Icons';
+import { CheckIcon, CloseIcon, FilterIcon, SpinnerIcon, StarIcon } from '@/components/ui/Icons';
 
 /**
  * Faceted filters.
@@ -246,7 +246,7 @@ function PriceFilter({
   onNavigate?: () => void;
 }) {
   const { t } = useLocale();
-  const router = useRouter();
+  const { push, pending } = useNavigation();
   const [min, setMin] = useState((params.minPrice as string) ?? '');
   const [max, setMax] = useState((params.maxPrice as string) ?? '');
 
@@ -286,7 +286,7 @@ function PriceFilter({
         onSubmit={(event) => {
           event.preventDefault();
           onNavigate?.();
-          router.push(
+          push(
             buildHref(basePath, params, {
               minPrice: min === '' ? null : Number(min),
               maxPrice: max === '' ? null : Number(max),
@@ -321,8 +321,11 @@ function PriceFilter({
         </label>
         <button
           type="submit"
-          className="min-h-10 shrink-0 rounded-lg bg-action px-3 text-sm font-semibold text-on-action transition-colors hover:bg-action-hover"
+          disabled={pending}
+          aria-busy={pending || undefined}
+          className="inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-lg bg-action px-3 text-sm font-semibold text-on-action transition-colors hover:bg-action-hover disabled:opacity-60"
         >
+          {pending ? <SpinnerIcon className="text-base" /> : null}
           {t('common.apply')}
         </button>
       </form>

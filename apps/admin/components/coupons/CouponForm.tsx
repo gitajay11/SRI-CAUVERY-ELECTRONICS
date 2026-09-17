@@ -2,12 +2,12 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { ApiError, api } from '@/lib/http';
 import type { CouponFormValues } from '@/lib/coupon-form';
 import { useAdmin, useToast } from '@/components/providers/AdminProviders';
 import { Panel } from '@/components/ui/Primitives';
 import { Button } from '@/components/ui/Button';
+import { useNavigation } from '@/hooks/useNavigation';
 import {
   CheckboxField,
   FieldGroup,
@@ -37,7 +37,7 @@ export function CouponForm({
 }) {
   const { t, online } = useAdmin();
   const { toast } = useToast();
-  const router = useRouter();
+  const { push, pending } = useNavigation();
 
   const [values, setValues] = useState(initial);
   const [busy, setBusy] = useState(false);
@@ -85,8 +85,7 @@ export function CouponForm({
         await api.put(`/api/admin/coupons/${initial.id}`, payload);
         toast(t('coupons.updated'));
       }
-      router.push('/coupons');
-      router.refresh();
+      push('/coupons', { refresh: true });
     } catch (caught) {
       if (caught instanceof ApiError) {
         setError(caught.message);
@@ -281,7 +280,7 @@ export function CouponForm({
       </Panel>
 
       <div className="flex flex-wrap gap-2">
-        <Button type="submit" loading={busy}>
+        <Button type="submit" loading={busy || pending}>
           {isNew ? t('common.create') : t('common.save')}
         </Button>
         <Link

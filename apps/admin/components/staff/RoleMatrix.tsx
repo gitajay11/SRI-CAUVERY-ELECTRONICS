@@ -1,13 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import type { StaffRole } from '@tamizh/db/enums';
 import { PERMISSIONS, ROLE_LABELS, type Permission } from '@tamizh/core/permissions';
 import { ApiError, api } from '@/lib/http';
 import { useAdmin, useToast } from '@/components/providers/AdminProviders';
 import { Button } from '@/components/ui/Button';
 import { FormError, SelectField } from '@/components/ui/Field';
+import { useNavigation } from '@/hooks/useNavigation';
 
 /**
  * What each role may do.
@@ -38,7 +38,7 @@ export function RoleMatrix({
 }) {
   const { t, online } = useAdmin();
   const { toast } = useToast();
-  const router = useRouter();
+  const { refresh, pending } = useNavigation();
 
   const editable: StaffRole[] = [
     'ADMIN',
@@ -87,7 +87,7 @@ export function RoleMatrix({
     try {
       await api.put('/api/admin/roles', { role, permissions: [...granted] });
       toast(t('staff.roleSaved'));
-      router.refresh();
+      refresh();
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : t('error.saveFailed'));
     } finally {
@@ -157,7 +157,7 @@ export function RoleMatrix({
       </div>
 
       <div className="flex items-center gap-3">
-        <Button loading={busy} disabled={!online} onClick={() => void save()}>
+        <Button loading={busy || pending} disabled={!online} onClick={() => void save()}>
           {t('common.save')}
         </Button>
         <p className="text-xs text-slate-400">{t('staff.rolesHint')}</p>

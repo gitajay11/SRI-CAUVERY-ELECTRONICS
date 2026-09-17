@@ -2,10 +2,10 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { ApiError, api } from '@/lib/http';
 import { cn } from '@tamizh/core/utils';
 import { useLocale } from '@/components/providers/LocaleProvider';
+import { useNavigation } from '@/hooks/useNavigation';
 import { useToast } from '@/components/providers/ToastProvider';
 import { Button } from '@/components/ui/Button';
 import { TextAreaField, TextField, FormError } from '@/components/ui/Field';
@@ -29,7 +29,7 @@ export function ReviewForm({
 }) {
   const { t } = useLocale();
   const { toast } = useToast();
-  const router = useRouter();
+  const { refresh, pending } = useNavigation();
 
   const [rating, setRating] = useState(0);
   const [hovered, setHovered] = useState(0);
@@ -68,7 +68,7 @@ export function ReviewForm({
       setRating(0);
       setTitle('');
       setComment('');
-      router.refresh();
+      refresh();
     } catch (caught) {
       if (caught instanceof ApiError) {
         setError(caught.message);
@@ -136,7 +136,7 @@ export function ReviewForm({
 
       {error ? <FormError>{error}</FormError> : null}
 
-      <Button type="submit" loading={busy}>
+      <Button type="submit" loading={busy || pending}>
         {t('product.writeReview')}
       </Button>
     </form>

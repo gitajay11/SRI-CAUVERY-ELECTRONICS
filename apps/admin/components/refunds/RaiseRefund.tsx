@@ -1,12 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { formatINR, paiseToRupees } from '@tamizh/core/money';
 import { ApiError, api } from '@/lib/http';
 import { useAdmin, useToast } from '@/components/providers/AdminProviders';
 import { Button } from '@/components/ui/Button';
 import { FormError, MoneyField, TextAreaField } from '@/components/ui/Field';
+import { useNavigation } from '@/hooks/useNavigation';
 
 /**
  * Raises a refund for approval.
@@ -30,7 +30,7 @@ export function RaiseRefund({
 }) {
   const { t, online } = useAdmin();
   const { toast } = useToast();
-  const router = useRouter();
+  const { refresh, pending } = useNavigation();
 
   const [amount, setAmount] = useState(
     suggested && suggested > 0 ? String(paiseToRupees(suggested)) : '',
@@ -69,7 +69,7 @@ export function RaiseRefund({
       toast(t('refunds.raised'));
       setAmount('');
       setReason('');
-      router.refresh();
+      refresh();
     } catch (caught) {
       if (caught instanceof ApiError) {
         setError(caught.message);
@@ -102,7 +102,7 @@ export function RaiseRefund({
         error={fields.reason}
       />
 
-      <Button type="submit" fullWidth loading={busy} disabled={!online}>
+      <Button type="submit" fullWidth loading={busy || pending} disabled={!online}>
         {t('returns.raiseRefund')}
       </Button>
 

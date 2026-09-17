@@ -2,15 +2,15 @@
 
 import Link from 'next/link';
 import { useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import type { CartView } from '@tamizh/core/types';
 import { formatINR } from '@tamizh/core/money';
 import { cn } from '@tamizh/core/utils';
 import { ApiError, api } from '@/lib/http';
 import { useLocale } from '@/components/providers/LocaleProvider';
+import { useNavigation } from '@/hooks/useNavigation';
 import { useToast } from '@/components/providers/ToastProvider';
 import { Button, ButtonLink } from '@/components/ui/Button';
-import { CheckIcon, CloseIcon, ShieldIcon, TagIcon, TruckIcon } from '@/components/ui/Icons';
+import { CheckIcon, CloseIcon, ShieldIcon, TagIcon, TruckIcon, SpinnerIcon } from '@/components/ui/Icons';
 
 /**
  * Order summary with the coupon form.
@@ -159,7 +159,9 @@ function Row({
 function CouponForm({ cart }: { cart: CartView }) {
   const { t } = useLocale();
   const { toast } = useToast();
-  const router = useRouter();
+  // `pending` lasts until the refreshed cart has rendered, so the button
+  // spins until the total it changed is on screen.
+  const { refresh, pending } = useNavigation();
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -179,7 +181,7 @@ function CouponForm({ cart }: { cart: CartView }) {
       // The cart is priced on the server; only it knows the new total.
       // A refresh re-renders the server tree and leaves client state —
       // every field the shopper has typed — exactly where it was.
-      router.refresh();
+      refresh();
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : t('error.body'));
     } finally {
@@ -205,15 +207,15 @@ function CouponForm({ cart }: { cart: CartView }) {
             setBusy(true);
             try {
               await api.delete('/api/cart/coupon');
-              router.refresh();
+              refresh();
             } finally {
               setBusy(false);
             }
           }}
-          disabled={busy}
+          disabled={busy || pending}
           className="grid size-8 shrink-0 place-items-center rounded-full text-ink-500 hover:bg-surface"
         >
-          <CloseIcon />
+          {busy || pending ? <SpinnerIcon className="text-base" /> : <CloseIcon />}
         </button>
       </div>
     );
@@ -249,7 +251,7 @@ function CouponForm({ cart }: { cart: CartView }) {
         <Button
           type="button"
           variant="outline"
-          loading={busy}
+          loading={busy || pending}
           disabled={code.length < 3}
           onClick={() => void apply()}
         >

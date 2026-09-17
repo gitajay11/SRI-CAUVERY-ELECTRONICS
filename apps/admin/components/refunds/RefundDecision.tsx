@@ -1,13 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import type { RefundStatus } from '@tamizh/db/enums';
 import { formatINR } from '@tamizh/core/money';
 import { ApiError, api } from '@/lib/http';
 import { useAdmin, useConfirm, useToast } from '@/components/providers/AdminProviders';
 import { Button } from '@/components/ui/Button';
 import { FormError, TextField } from '@/components/ui/Field';
+import { useNavigation } from '@/hooks/useNavigation';
 
 /**
  * Approve, reject or settle one refund.
@@ -32,7 +32,7 @@ export function RefundDecision({
   const { t, online } = useAdmin();
   const { toast } = useToast();
   const confirm = useConfirm();
-  const router = useRouter();
+  const { refresh, pending } = useNavigation();
 
   const [settling, setSettling] = useState(false);
   const [reference, setReference] = useState('');
@@ -49,7 +49,7 @@ export function RefundDecision({
       await api.patch(`/api/admin/refunds/${id}`, body);
       toast(success);
       setSettling(false);
-      router.refresh();
+      refresh();
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : t('error.saveFailed'));
     } finally {
@@ -116,7 +116,7 @@ export function RefundDecision({
             optionalLabel={t('common.optional')}
           />
           <div className="flex gap-2">
-            <Button size="sm" loading={busy} disabled={disabled} onClick={() => void settle()}>
+            <Button size="sm" loading={busy || pending} disabled={disabled} onClick={() => void settle()}>
               {t('refunds.complete')}
             </Button>
             <Button size="sm" variant="ghost" onClick={() => setSettling(false)}>

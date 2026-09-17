@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useMemo, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Locale } from '@tamizh/core/types';
 import type { Dictionary, TranslationKey } from '@/i18n/en';
@@ -33,19 +33,17 @@ export function LocaleProvider({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const [isSwitching, setIsSwitching] = useState(false);
+  // True from the tap until the page has re-rendered in the other language,
+  // however long that takes: the switch is only done when the words change.
+  const [isSwitching, startSwitch] = useTransition();
 
   const setLocale = useCallback(
     (next: Locale) => {
       if (next === locale) return;
-      setIsSwitching(true);
       // One year, lax: the choice is a display preference, not a credential.
       document.cookie = `${LOCALE_COOKIE}=${next}; path=/; max-age=31536000; samesite=lax`;
       document.documentElement.lang = LOCALE_TAGS[next];
-      router.refresh();
-      // The refresh is streamed in; clearing on a microtask keeps the button
-      // from flickering when the response is instant.
-      setTimeout(() => setIsSwitching(false), 400);
+      startSwitch(() => router.refresh());
     },
     [locale, router],
   );

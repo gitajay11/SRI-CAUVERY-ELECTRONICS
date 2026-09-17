@@ -1,29 +1,29 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { api } from '@/lib/http';
 import { useAdmin } from '@/components/providers/AdminProviders';
 import { Button } from '@/components/ui/Button';
 import { CheckIcon } from '@/components/ui/Icons';
+import { useNavigation } from '@/hooks/useNavigation';
 
 /** Marks every notification read for the signed-in member of staff only. */
 export function MarkAllRead() {
   const { t, online } = useAdmin();
-  const router = useRouter();
+  const { refresh, pending } = useNavigation();
   const [busy, setBusy] = useState(false);
 
   return (
     <Button
       variant="outline"
       size="sm"
-      loading={busy}
+      loading={busy || pending}
       disabled={!online}
       onClick={async () => {
         setBusy(true);
         try {
           await api.patch('/api/admin/notifications', {});
-          router.refresh();
+          refresh();
         } finally {
           setBusy(false);
         }

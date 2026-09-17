@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { ApiError, api } from '@/lib/http';
 import type { TranslationKey } from '@/i18n';
 import { useAdmin, useConfirm, useToast } from '@/components/providers/AdminProviders';
@@ -16,6 +15,7 @@ import {
   TextField,
 } from '@/components/ui/Field';
 import { PlusIcon, EditIcon, TrashIcon, ExternalIcon } from '@/components/ui/Icons';
+import { useNavigation } from '@/hooks/useNavigation';
 
 /**
  * Homepage content.
@@ -79,7 +79,7 @@ export function BannerManager({
   const { t, online } = useAdmin();
   const { toast } = useToast();
   const confirm = useConfirm();
-  const router = useRouter();
+  const { refresh, pending } = useNavigation();
 
   const [draft, setDraft] = useState<BannerRow | null>(null);
   const [busy, setBusy] = useState(false);
@@ -121,7 +121,7 @@ export function BannerManager({
       else await api.post('/api/admin/banners', payload);
       toast(t('content.saved'));
       setDraft(null);
-      router.refresh();
+      refresh();
     } catch (caught) {
       if (caught instanceof ApiError) {
         setError(caught.message);
@@ -143,7 +143,7 @@ export function BannerManager({
     try {
       await api.delete(`/api/admin/banners/${banner.id}`);
       toast(t('content.deleted'));
-      router.refresh();
+      refresh();
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : t('error.saveFailed'));
     }
@@ -308,7 +308,7 @@ export function BannerManager({
             />
 
             <div className="flex flex-wrap gap-2">
-              <Button loading={busy} onClick={() => void save()}>
+              <Button loading={busy || pending} onClick={() => void save()}>
                 {t('common.save')}
               </Button>
               <Button variant="ghost" onClick={() => setDraft(null)}>

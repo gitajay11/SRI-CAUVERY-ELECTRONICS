@@ -1,10 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { formatINR } from '@tamizh/core/money';
 import { ApiError, api } from '@/lib/http';
 import { useLocale } from '@/components/providers/LocaleProvider';
+import { useNavigation } from '@/hooks/useNavigation';
 import { useToast } from '@/components/providers/ToastProvider';
 import { Button } from '@/components/ui/Button';
 import { TextAreaField, FormError, Select } from '@/components/ui/Field';
@@ -37,7 +37,7 @@ export function RequestReturnForm({
 }) {
   const { t, locale } = useLocale();
   const { toast } = useToast();
-  const router = useRouter();
+  const { refresh, pending } = useNavigation();
 
   const [open, setOpen] = useState(false);
   const [chosen, setChosen] = useState<Record<string, number>>({});
@@ -79,7 +79,7 @@ export function RequestReturnForm({
       setChosen({});
       setReason('');
       setComment('');
-      router.refresh();
+      refresh();
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : t('error.body'));
     } finally {
@@ -185,7 +185,7 @@ export function RequestReturnForm({
         <Button
           type="submit"
           className="flex-1"
-          loading={busy}
+          loading={busy || pending}
           disabled={selected.length === 0 || reason.trim().length < 3}
         >
           {t('order.returnSubmit')}

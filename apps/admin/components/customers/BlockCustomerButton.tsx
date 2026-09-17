@@ -1,11 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { ApiError, api } from '@/lib/http';
 import { useAdmin, useConfirm, useToast } from '@/components/providers/AdminProviders';
 import { Button } from '@/components/ui/Button';
 import { FormError } from '@/components/ui/Field';
+import { useNavigation } from '@/hooks/useNavigation';
 
 /**
  * Blocks or unblocks a customer.
@@ -26,7 +26,7 @@ export function BlockCustomerButton({
   const { t, online } = useAdmin();
   const { toast } = useToast();
   const confirm = useConfirm();
-  const router = useRouter();
+  const { refresh, pending } = useNavigation();
 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -50,7 +50,7 @@ export function BlockCustomerButton({
         reason: typeof confirmed === 'string' ? confirmed : undefined,
       });
       toast(blocked ? t('customers.wasUnblocked') : t('customers.wasBlocked'));
-      router.refresh();
+      refresh();
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : t('error.saveFailed'));
     } finally {
@@ -63,7 +63,7 @@ export function BlockCustomerButton({
       {error ? <FormError>{error}</FormError> : null}
       <Button
         variant={blocked ? 'outline' : 'dangerGhost'}
-        loading={busy}
+        loading={busy || pending}
         disabled={!online}
         onClick={() => void run()}
       >

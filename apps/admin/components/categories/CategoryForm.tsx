@@ -2,13 +2,13 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { slugify } from '@tamizh/core/utils';
 import type { CategoryFormValues } from '@/lib/category-form';
 import { ApiError, api } from '@/lib/http';
 import { useAdmin, useToast } from '@/components/providers/AdminProviders';
 import { Panel } from '@/components/ui/Primitives';
 import { Button } from '@/components/ui/Button';
+import { useNavigation } from '@/hooks/useNavigation';
 import {
   CheckboxField,
   FieldGroup,
@@ -28,7 +28,7 @@ export function CategoryForm({
 }) {
   const { t, online } = useAdmin();
   const { toast } = useToast();
-  const router = useRouter();
+  const { push, pending } = useNavigation();
 
   const [values, setValues] = useState(initial);
   const [busy, setBusy] = useState(false);
@@ -72,8 +72,7 @@ export function CategoryForm({
         await api.put(`/api/admin/categories/${initial.id}`, payload);
         toast(t('categories.updated'));
       }
-      router.push('/categories');
-      router.refresh();
+      push('/categories', { refresh: true });
     } catch (caught) {
       if (caught instanceof ApiError) {
         setError(caught.message);
@@ -192,7 +191,7 @@ export function CategoryForm({
       </Panel>
 
       <div className="flex flex-wrap gap-2">
-        <Button type="submit" loading={busy}>
+        <Button type="submit" loading={busy || pending}>
           {isNew ? t('common.create') : t('common.save')}
         </Button>
         <Link

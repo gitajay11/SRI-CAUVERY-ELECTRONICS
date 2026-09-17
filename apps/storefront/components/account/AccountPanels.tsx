@@ -1,23 +1,23 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import type { AddressView, SessionUser } from '@tamizh/core/types';
 import { cn } from '@tamizh/core/utils';
 import { ApiError, api } from '@/lib/http';
 import { INDIAN_STATES, TAMIL_NADU_DISTRICTS } from '@/lib/india';
 import { useLocale } from '@/components/providers/LocaleProvider';
+import { useNavigation } from '@/hooks/useNavigation';
 import { useToast } from '@/components/providers/ToastProvider';
 import { Button } from '@/components/ui/Button';
 import { FormError, SelectField, TextField } from '@/components/ui/Field';
 import { Badge } from '@/components/ui/Primitives';
-import { MapPinIcon, TrashIcon } from '@/components/ui/Icons';
+import { MapPinIcon, SpinnerIcon, TrashIcon } from '@/components/ui/Icons';
 
 /** Name and phone. Email is the account identity and is not editable here. */
 export function ProfilePanel({ user }: { user: SessionUser }) {
   const { t } = useLocale();
   const { toast } = useToast();
-  const router = useRouter();
+  const { refresh, pending } = useNavigation();
   const [name, setName] = useState(user.name);
   const [phone, setPhone] = useState(user.phone ?? '');
   const [busy, setBusy] = useState(false);
@@ -35,7 +35,7 @@ export function ProfilePanel({ user }: { user: SessionUser }) {
         try {
           await api.patch('/api/account/profile', { name, phone });
           toast(t('account.updated'));
-          router.refresh();
+          refresh();
         } catch (caught) {
           if (caught instanceof ApiError) {
             setError(caught.message);
@@ -76,7 +76,7 @@ export function ProfilePanel({ user }: { user: SessionUser }) {
 
       {error ? <FormError>{error}</FormError> : null}
 
-      <Button type="submit" loading={busy}>
+      <Button type="submit" loading={busy || pending}>
         {t('common.save')}
       </Button>
     </form>
@@ -155,9 +155,12 @@ export function PasswordPanel() {
 export function AddressPanel({ addresses }: { addresses: AddressView[] }) {
   const { t } = useLocale();
   const { toast } = useToast();
-  const router = useRouter();
+  const { refresh, pending } = useNavigation();
   const [adding, setAdding] = useState(addresses.length === 0);
   const [busy, setBusy] = useState(false);
+  // Which address an action is working on, and which action, so the spinner
+  // appears on the link that was pressed and nowhere else.
+  const [acting, setActing] = useState<{ id: string; kind: 'default' | 'remove' } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [fields, setFields] = useState<Record<string, string>>({});
   const [form, setForm] = useState({
@@ -176,9 +179,10 @@ export function AddressPanel({ addresses }: { addresses: AddressView[] }) {
 
   const remove = async (id: string) => {
     setBusy(true);
+    setActing({ id, kind: 'remove' });
     try {
       await api.delete(`/api/account/addresses/${id}`);
-      router.refresh();
+      refresh();
     } catch (caught) {
       toast(caught instanceof ApiError ? caught.message : t('error.body'), {
         tone: 'error',
@@ -190,9 +194,10 @@ export function AddressPanel({ addresses }: { addresses: AddressView[] }) {
 
   const makeDefault = async (id: string) => {
     setBusy(true);
+    setActing({ id, kind: 'default' });
     try {
       await api.patch(`/api/account/addresses/${id}`);
-      router.refresh();
+      refresh();
     } catch (caught) {
       toast(caught instanceof ApiError ? caught.message : t('error.body'), {
         tone: 'error',
@@ -201,6 +206,11 @@ export function AddressPanel({ addresses }: { addresses: AddressView[] }) {
       setBusy(false);
     }
   };
+
+  // The action is over once the refreshed list is on screen.
+  const working = busy || pending;
+  const spinning = (id: string, kind: 'default' | 'remove') =>
+    working && acting?.id === id && acting.kind === kind;
 
   return (
     <section className="rounded-card border border-ink-100 bg-surface p-4 sm:p-5">
@@ -248,19 +258,24 @@ export function AddressPanel({ addresses }: { addresses: AddressView[] }) {
                   <button
                     type="button"
                     onClick={() => makeDefault(address.id)}
-                    disabled={busy}
-                    className="text-link hover:underline disabled:opacity-50"
+                    disabled={working}
+                    className="flex items-center gap-1 text-link hover:underline disabled:opacity-50"
                   >
+                    {spinning(address.id, 'default') ? <SpinnerIcon className="text-sm" /> : null}
                     {t('account.setDefault')}
                   </button>
                 ) : null}
                 <button
                   type="button"
                   onClick={() => remove(address.id)}
-                  disabled={busy}
+                  disabled={working}
                   className="flex items-center gap-1 text-danger-500 hover:underline disabled:opacity-50"
                 >
-                  <TrashIcon className="text-sm" />
+                  {spinning(address.id, 'remove') ? (
+                    <SpinnerIcon className="text-sm" />
+                  ) : (
+                    <TrashIcon className="text-sm" />
+                  )}
                   {t('common.delete')}
                 </button>
               </div>
@@ -295,7 +310,7 @@ export function AddressPanel({ addresses }: { addresses: AddressView[] }) {
                 state: 'Tamil Nadu',
                 pincode: '',
               });
-              router.refresh();
+              refresh();
             } catch (caught) {
               if (caught instanceof ApiError) {
                 setError(caught.message);
@@ -399,7 +414,7 @@ export function AddressPanel({ addresses }: { addresses: AddressView[] }) {
           ) : null}
 
           <div className="flex gap-2 sm:col-span-2">
-            <Button type="submit" loading={busy}>
+            <Button type="submit" loading={busy || pending}>
               {t('common.save')}
             </Button>
             {addresses.length > 0 ? (

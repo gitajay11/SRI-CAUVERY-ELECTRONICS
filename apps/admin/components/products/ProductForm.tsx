@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { BULK_QUANTITY_STEP } from '@tamizh/core/quantity';
 import type { ProductStatus } from '@tamizh/db/enums';
 import type { ProductFormValues } from '@/lib/product-form';
@@ -23,6 +22,7 @@ import {
 } from '@/components/ui/Field';
 import { CloseIcon, ExternalIcon, PlusIcon, UploadIcon } from '@/components/ui/Icons';
 import { Thumb } from '@/components/ui/Thumb';
+import { useNavigation } from '@/hooks/useNavigation';
 
 /**
  * Create and edit a product.
@@ -46,7 +46,7 @@ export function ProductForm({
 }) {
   const { t, online } = useAdmin();
   const { toast } = useToast();
-  const router = useRouter();
+  const { push, refresh, pending } = useNavigation();
 
   const [values, setValues] = useState(initial);
   const [busy, setBusy] = useState(false);
@@ -161,11 +161,11 @@ export function ProductForm({
       if (isNew) {
         const result = await api.post<{ id: string }>('/api/admin/products', payload);
         toast(t('products.created'));
-        router.push(`/products/${result.id}`);
+        push(`/products/${result.id}`);
       } else {
         await api.put(`/api/admin/products/${initial.id}`, payload);
         toast(t('products.updated'));
-        router.refresh();
+        refresh();
       }
     } catch (caught) {
       if (caught instanceof ApiError) {
@@ -604,7 +604,7 @@ export function ProductForm({
           </Panel>
 
           <div className="flex flex-col gap-2">
-            <Button type="submit" size="lg" fullWidth loading={busy}>
+            <Button type="submit" size="lg" fullWidth loading={busy || pending}>
               {isNew ? t('products.new') : t('common.save')}
             </Button>
             <Link

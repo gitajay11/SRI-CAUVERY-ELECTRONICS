@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import type { ReviewStatus } from '@tamizh/db/enums';
 import { formatDate } from '@tamizh/core/utils';
 import type { TranslationKey } from '@/i18n';
@@ -13,6 +12,7 @@ import { Badge } from '@/components/ui/Primitives';
 import { Thumb } from '@/components/ui/Thumb';
 import { FormError } from '@/components/ui/Field';
 import { CheckIcon, EyeOffIcon, StarIcon } from '@/components/ui/Icons';
+import { useNavigation } from '@/hooks/useNavigation';
 
 /**
  * One review, with the moderation controls beside it.
@@ -71,19 +71,25 @@ export function ReviewCard({
 }) {
   const { t, online } = useAdmin();
   const { toast } = useToast();
-  const router = useRouter();
+  const { refresh, pending } = useNavigation();
 
   const [replying, setReplying] = useState(false);
   const [reply, setReply] = useState(review.reply ?? '');
   const [busy, setBusy] = useState(false);
+  // Which button was pressed, so only that one spins. Held until the
+  // refreshed card is on screen.
+  const [acting, setActing] = useState<'approve' | 'hide' | 'reply' | null>(null);
+  const working = busy || pending;
+  const spinning = (kind: typeof acting) => working && acting === kind;
   const [error, setError] = useState<string | null>(null);
 
-  const run = async (work: () => Promise<void>) => {
+  const run = async (kind: NonNullable<typeof acting>, work: () => Promise<void>) => {
     setBusy(true);
+    setActing(kind);
     setError(null);
     try {
       await work();
-      router.refresh();
+      refresh();
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : t('error.saveFailed'));
     } finally {
@@ -92,13 +98,13 @@ export function ReviewCard({
   };
 
   const setStatus = (status: ReviewStatus) =>
-    run(async () => {
+    run(status === 'APPROVED' ? 'approve' : 'hide', async () => {
       await api.patch(`/api/admin/reviews/${review.id}`, { status });
       toast(t('reviews.moderated'));
     });
 
   const saveReply = () =>
-    run(async () => {
+    run('reply', async () => {
       await api.patch(`/api/admin/reviews/${review.id}`, { reply });
       toast(t('reviews.replied'));
       setReplying(false);
@@ -179,7 +185,7 @@ export function ReviewCard({
                 className="w-full resize-y rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500"
               />
               <div className="flex gap-2">
-                <Button size="sm" loading={busy} onClick={() => void saveReply()}>
+                <Button size="sm" loading={spinning('reply')} disabled={working} onClick={() => void saveReply()}>
                   {t('common.save')}
                 </Button>
                 <Button
@@ -208,10 +214,11 @@ export function ReviewCard({
                 <Button
                   size="sm"
                   variant="outline"
-                  disabled={!online || busy}
+                  loading={spinning('approve')}
+                  disabled={!online || working}
                   onClick={() => void setStatus('APPROVED')}
                 >
-                  <CheckIcon className="text-[1.05em] text-positive-600" />
+                  {spinning('approve') ? null : <CheckIcon className="text-[1.05em] text-positive-600" />}
                   {t('reviews.approve')}
                 </Button>
               ) : null}
@@ -219,10 +226,11 @@ export function ReviewCard({
                 <Button
                   size="sm"
                   variant="outline"
-                  disabled={!online || busy}
+                  loading={spinning('hide')}
+                  disabled={!online || working}
                   onClick={() => void setStatus('HIDDEN')}
                 >
-                  <EyeOffIcon className="text-[1.05em]" />
+                  {spinning('hide') ? null : <EyeOffIcon className="text-[1.05em]" />}
                   {t('reviews.hide')}
                 </Button>
               ) : null}

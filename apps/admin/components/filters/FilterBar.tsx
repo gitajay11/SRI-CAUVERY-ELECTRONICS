@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { cn } from '@tamizh/core/utils';
 import { buildQuery, first, type SearchParams } from '@/lib/query';
@@ -9,6 +8,7 @@ import { useAdmin } from '@/components/providers/AdminProviders';
 import { Select } from '@/components/ui/Field';
 import { SelectMenu } from '@/components/ui/SelectMenu';
 import { CloseIcon, FilterIcon, SearchIcon } from '@/components/ui/Icons';
+import { useNavigation } from '@/hooks/useNavigation';
 
 /**
  * Search and filters for every list screen.
@@ -58,12 +58,12 @@ export function FilterBar({
   action?: React.ReactNode;
 }) {
   const { t } = useAdmin();
-  const router = useRouter();
+  const { push } = useNavigation();
   const [term, setTerm] = useState(first(params.q) ?? '');
   const [open, setOpen] = useState(false);
 
   const go = (changes: Record<string, string | number | null>) => {
-    router.push(buildQuery(basePath, params, changes));
+    push(buildQuery(basePath, params, changes));
   };
 
   const activeCount =

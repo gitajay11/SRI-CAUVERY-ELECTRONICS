@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import type { ReturnStatus } from '@tamizh/db/enums';
 import { formatINR } from '@tamizh/core/money';
 import { cn } from '@tamizh/core/utils';
@@ -10,6 +9,7 @@ import { ApiError, api } from '@/lib/http';
 import { useAdmin, useToast } from '@/components/providers/AdminProviders';
 import { Button } from '@/components/ui/Button';
 import { FormError, TextAreaField, TextField } from '@/components/ui/Field';
+import { useNavigation } from '@/hooks/useNavigation';
 
 /**
  * Moves a return to its next state.
@@ -54,7 +54,7 @@ export function ReturnDecision({
 }) {
   const { t, online } = useAdmin();
   const { toast } = useToast();
-  const router = useRouter();
+  const { refresh, pending } = useNavigation();
 
   const [target, setTarget] = useState<ReturnStatus | null>(null);
   const [note, setNote] = useState('');
@@ -101,7 +101,7 @@ export function ReturnDecision({
       toast(t('returns.updated'));
       setTarget(null);
       setNote('');
-      router.refresh();
+      refresh();
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : t('error.saveFailed'));
     } finally {
@@ -208,7 +208,7 @@ export function ReturnDecision({
           />
           <Button
             fullWidth
-            loading={busy}
+            loading={busy || pending}
             disabled={!online}
             variant={target === 'REJECTED' ? 'danger' : 'primary'}
             onClick={() => void submit()}

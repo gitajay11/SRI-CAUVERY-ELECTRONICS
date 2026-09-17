@@ -4,6 +4,7 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { useLocale } from '@/components/providers/LocaleProvider';
 import { SpinnerIcon } from '@/components/ui/Icons';
+import { useLeavingPage } from '@/hooks/useNavigation';
 
 /**
  * A spinner for the gap between tapping a link and the next page arriving.
@@ -21,10 +22,11 @@ import { SpinnerIcon } from '@/components/ui/Icons';
  * not exist. The shop and search segments keep their own skeletons; this
  * covers everything else.
  *
- * Navigation is observed the only way it can be from outside: a click on an
- * internal link starts it, and the pathname changing ends it. Programmatic
- * navigations (after checkout, say) are covered by the component that starts
- * them, which knows far more about what is being waited on.
+ * Navigation is observed two ways. A click on an internal link starts it,
+ * and the pathname changing ends it. A programmatic push — sorting the shop,
+ * submitting a search, leaving for the checkout — goes through
+ * `useNavigation`, which announces it here for as long as it is in flight,
+ * so the shopper sees the same spinner however the page change began.
  */
 
 /** Long enough that an instant navigation never flashes a spinner. */
@@ -37,6 +39,7 @@ export function NavigationProgress() {
   const { t } = useLocale();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const leaving = useLeavingPage();
   const [pending, setPending] = useState(false);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
@@ -87,8 +90,15 @@ export function NavigationProgress() {
      is only observable after the render that carries it. */
   useEffect(() => {
     clearTimers();
+    if (leaving) {
+      // A programmatic page change: the same delay and the same give-up as
+      // a click, ended by the route arriving or the transition finishing.
+      timers.current.push(setTimeout(() => setPending(true), SHOW_AFTER_MS));
+      timers.current.push(setTimeout(() => setPending(false), GIVE_UP_AFTER_MS));
+      return;
+    }
     setPending(false);
-  }, [pathname, searchParams]);
+  }, [pathname, searchParams, leaving]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   if (!pending) return null;

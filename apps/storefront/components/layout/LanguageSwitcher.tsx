@@ -1,10 +1,11 @@
 'use client';
 
+import { useState } from 'react';
 import type { Locale } from '@tamizh/core/types';
 import { LOCALES, LOCALE_LABELS } from '@/i18n/config';
 import { cn } from '@tamizh/core/utils';
 import { useLocale } from '@/components/providers/LocaleProvider';
-import { GlobeIcon } from '@/components/ui/Icons';
+import { GlobeIcon, SpinnerIcon } from '@/components/ui/Icons';
 
 /**
  * Language toggle.
@@ -21,6 +22,14 @@ export function LanguageSwitcher({
   className?: string;
 }) {
   const { locale, setLocale, t, isSwitching } = useLocale();
+  // The language tapped, so the spinner can sit on that option and not on
+  // the one being left. Forgotten once the switch has landed.
+  const [target, setTarget] = useState<Locale | null>(null);
+  const choose = (code: Locale) => {
+    setTarget(code);
+    setLocale(code);
+  };
+  const switchingTo = (code: Locale) => isSwitching && target === code;
 
   if (variant === 'inline') {
     return (
@@ -36,10 +45,11 @@ export function LanguageSwitcher({
             ) : null}
             <button
               type="button"
-              onClick={() => setLocale(code)}
+              onClick={() => choose(code)}
+              disabled={isSwitching}
               aria-current={locale === code ? 'true' : undefined}
               className={cn(
-                'rounded px-1 text-sm transition-colors',
+                'inline-flex items-center gap-1 rounded px-1 text-sm transition-colors',
                 locale === code
                   ? 'font-bold text-link'
                   : 'text-ink-500 hover:text-ink-800',
@@ -47,6 +57,7 @@ export function LanguageSwitcher({
               )}
               lang={code}
             >
+              {switchingTo(code) ? <SpinnerIcon className="text-sm" /> : null}
               {LOCALE_LABELS[code]}
             </button>
           </span>
@@ -70,16 +81,18 @@ export function LanguageSwitcher({
           key={code}
           type="button"
           lang={code}
-          onClick={() => setLocale(code)}
+          onClick={() => choose(code)}
+          disabled={isSwitching}
           aria-pressed={locale === code}
           className={cn(
-            'min-h-8 rounded-full px-3 text-sm font-semibold transition-all duration-200',
+            'inline-flex min-h-8 items-center gap-1.5 rounded-full px-3 text-sm font-semibold transition-all duration-200',
             code === 'ta' && 'font-tamil',
             locale === code
               ? 'bg-surface text-link shadow-sm'
               : 'text-ink-500 hover:text-ink-800',
           )}
         >
+          {switchingTo(code) ? <SpinnerIcon className="text-sm" /> : null}
           {LOCALE_LABELS[code]}
         </button>
       ))}

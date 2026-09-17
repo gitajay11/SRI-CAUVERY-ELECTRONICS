@@ -1,13 +1,13 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { cn } from '@tamizh/core/utils';
 import { ApiError, api } from '@/lib/http';
 import { useAdmin, useToast } from '@/components/providers/AdminProviders';
 import { Button } from '@/components/ui/Button';
 import { FormError, TextAreaField } from '@/components/ui/Field';
 import { Alert } from '@/components/ui/Primitives';
+import { useNavigation } from '@/hooks/useNavigation';
 
 /**
  * Approve or reject a customer's cancellation request.
@@ -29,7 +29,7 @@ export function CancellationDecision({
 }) {
   const { t, online } = useAdmin();
   const { toast } = useToast();
-  const router = useRouter();
+  const { refresh, pending } = useNavigation();
 
   const [target, setTarget] = useState<Decision | null>(null);
   const [note, setNote] = useState('');
@@ -62,7 +62,7 @@ export function CancellationDecision({
       toast(t('cancellations.updated'));
       setTarget(null);
       setNote('');
-      router.refresh();
+      refresh();
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : t('error.saveFailed'));
     } finally {
@@ -128,7 +128,7 @@ export function CancellationDecision({
           <Button
             variant={target === 'REJECTED' ? 'danger' : 'primary'}
             fullWidth
-            loading={busy}
+            loading={busy || pending}
             onClick={() => void submit()}
           >
             {target === 'REJECTED' ? t('cancellations.reject') : t('cancellations.approve')}

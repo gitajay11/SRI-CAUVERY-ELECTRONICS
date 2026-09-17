@@ -1,13 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { formatDate } from '@tamizh/core/utils';
 import { ApiError, api } from '@/lib/http';
 import { useAdmin, useToast } from '@/components/providers/AdminProviders';
 import { Panel } from '@/components/ui/Primitives';
 import { Button } from '@/components/ui/Button';
 import { FormError, TextAreaField } from '@/components/ui/Field';
+import { useNavigation } from '@/hooks/useNavigation';
 
 /**
  * Staff-only notes on an order.
@@ -24,7 +24,7 @@ export function OrderNotes({
 }) {
   const { t, online } = useAdmin();
   const { toast } = useToast();
-  const router = useRouter();
+  const { refresh, pending } = useNavigation();
   const [body, setBody] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,7 +47,7 @@ export function OrderNotes({
             });
             toast(t('orders.noteAdded'));
             setBody('');
-            router.refresh();
+            refresh();
           } catch (caught) {
             setError(caught instanceof ApiError ? caught.message : t('error.saveFailed'));
           } finally {
@@ -62,7 +62,7 @@ export function OrderNotes({
           rows={2}
         />
         {error ? <FormError>{error}</FormError> : null}
-        <Button type="submit" size="sm" loading={busy} disabled={body.trim().length < 2}>
+        <Button type="submit" size="sm" loading={busy || pending} disabled={body.trim().length < 2}>
           {t('orders.addNote')}
         </Button>
       </form>

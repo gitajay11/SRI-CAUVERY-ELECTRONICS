@@ -12,7 +12,7 @@ import {
 import { useCart } from '@/components/providers/CartProvider';
 import { useLocale } from '@/components/providers/LocaleProvider';
 import { Button, type ButtonSize, type ButtonVariant } from '@/components/ui/Button';
-import { CartIcon, MinusIcon, PlusIcon } from '@/components/ui/Icons';
+import { CartIcon, MinusIcon, PlusIcon, SpinnerIcon } from '@/components/ui/Icons';
 
 /**
  * Add-to-cart control.
@@ -114,7 +114,8 @@ export function AddToCartButton({
           aria-live="polite"
           className="grid min-w-8 place-items-center px-1 text-sm font-bold tabular-nums"
         >
-          {line.quantity}
+          {/* The count is what is changing, so that is where the wait shows. */}
+          {busy ? <SpinnerIcon className="text-base" /> : line.quantity}
         </span>
 
         <button

@@ -1,11 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { ApiError, api } from '@/lib/http';
 import { useAdmin, useToast } from '@/components/providers/AdminProviders';
 import { Panel } from '@/components/ui/Primitives';
 import { Button } from '@/components/ui/Button';
+import { useNavigation } from '@/hooks/useNavigation';
 import {
   CheckboxField,
   FieldGroup,
@@ -55,7 +55,7 @@ export function SettingsForm({
 }) {
   const { t, online } = useAdmin();
   const { toast } = useToast();
-  const router = useRouter();
+  const { refresh, pending } = useNavigation();
 
   const [values, setValues] = useState(initial);
   const [busy, setBusy] = useState(false);
@@ -103,7 +103,7 @@ export function SettingsForm({
         pushNotificationsEnabled: values.pushNotificationsEnabled,
       });
       toast(t('settings.saved'));
-      router.refresh();
+      refresh();
     } catch (caught) {
       if (caught instanceof ApiError) {
         setError(caught.message);
@@ -323,7 +323,7 @@ export function SettingsForm({
       </Panel>
 
       {!readOnly ? (
-        <Button type="submit" size="lg" loading={busy}>
+        <Button type="submit" size="lg" loading={busy || pending}>
           {t('common.save')}
         </Button>
       ) : (

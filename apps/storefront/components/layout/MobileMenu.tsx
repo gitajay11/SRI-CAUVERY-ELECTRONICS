@@ -120,7 +120,7 @@ export function MobileMenu({
         onClick={() => setOpen(true)}
         aria-label={t('nav.menu')}
         aria-expanded={open}
-        className="grid size-11 place-items-center rounded-full text-ink-700 transition-colors hover:bg-ink-100 lg:hidden"
+        className="grid size-11 shrink-0 place-items-center rounded-full text-ink-700 transition-colors hover:bg-ink-100 lg:hidden"
       >
         <MenuIcon className="text-2xl" />
       </button>

@@ -2,9 +2,10 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { ApiError, api } from '@/lib/http';
 import { useLocale } from '@/components/providers/LocaleProvider';
+import { useNavigation } from '@/hooks/useNavigation';
 import { Button } from '@/components/ui/Button';
 import { FormError, PhoneField, TextField } from '@/components/ui/Field';
 import { BrandGlyph } from '@/components/layout/BrandMark';
@@ -18,7 +19,7 @@ import { BrandGlyph } from '@/components/layout/BrandMark';
  */
 export function AuthForm({ mode }: { mode: 'signin' | 'register' }) {
   const { t } = useLocale();
-  const router = useRouter();
+  const { push, pending } = useNavigation();
   const params = useSearchParams();
   const next = params.get('next') ?? '/';
 
@@ -51,9 +52,8 @@ export function AuthForm({ mode }: { mode: 'signin' | 'register' }) {
           password: form.password,
         });
       }
-      // A full refresh so the server components pick up the new session.
-      router.push(next.startsWith('/') ? next : '/');
-      router.refresh();
+      // With a refresh, so the server components pick up the new session.
+      push(next.startsWith('/') ? next : '/', { refresh: true });
     } catch (caught) {
       if (caught instanceof ApiError) {
         setError(caught.message);
@@ -129,7 +129,7 @@ export function AuthForm({ mode }: { mode: 'signin' | 'register' }) {
 
         {error ? <FormError>{error}</FormError> : null}
 
-        <Button type="submit" size="lg" fullWidth loading={busy}>
+        <Button type="submit" size="lg" fullWidth loading={busy || pending}>
           {isRegister ? t('auth.submitRegister') : t('auth.submitSignIn')}
         </Button>
       </form>

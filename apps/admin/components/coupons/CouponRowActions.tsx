@@ -1,18 +1,18 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ApiError, api } from '@/lib/http';
 import { useAdmin, useConfirm, useToast } from '@/components/providers/AdminProviders';
-import { EditIcon, TrashIcon } from '@/components/ui/Icons';
+import { EditIcon, SpinnerIcon, TrashIcon } from '@/components/ui/Icons';
+import { useNavigation } from '@/hooks/useNavigation';
 
 /** Edit and delete for one coupon row. */
 export function CouponRowActions({ id, code }: { id: string; code: string }) {
   const { t, online } = useAdmin();
   const { toast } = useToast();
   const confirm = useConfirm();
-  const router = useRouter();
+  const { refresh, pending } = useNavigation();
   const [busy, setBusy] = useState(false);
 
   const remove = async () => {
@@ -27,7 +27,7 @@ export function CouponRowActions({ id, code }: { id: string; code: string }) {
     try {
       const result = await api.delete<{ deactivated: boolean }>(`/api/admin/coupons/${id}`);
       toast(result.deactivated ? t('coupons.deactivated') : t('coupons.deleted'));
-      router.refresh();
+      refresh();
     } catch (caught) {
       toast(
         caught instanceof ApiError ? caught.message : t('error.saveFailed'),
@@ -50,11 +50,11 @@ export function CouponRowActions({ id, code }: { id: string; code: string }) {
       <button
         type="button"
         onClick={() => void remove()}
-        disabled={!online || busy}
+        disabled={!online || busy || pending}
         aria-label={`${t('common.delete')}: ${code}`}
         className="grid size-9 place-items-center rounded-lg text-slate-400 hover:bg-critical-50 hover:text-critical-600 disabled:opacity-40"
       >
-        <TrashIcon />
+        {busy || pending ? <SpinnerIcon className="text-critical-600" /> : <TrashIcon />}
       </button>
     </span>
   );

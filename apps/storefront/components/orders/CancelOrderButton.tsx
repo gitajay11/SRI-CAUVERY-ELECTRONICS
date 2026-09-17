@@ -1,11 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import type { OrderStatus } from '@tamizh/core/types';
 import { ApiError, api } from '@/lib/http';
 import { CANCELLABLE_STATUSES } from '@tamizh/core/pricing';
 import { useLocale } from '@/components/providers/LocaleProvider';
+import { useNavigation } from '@/hooks/useNavigation';
 import { useToast } from '@/components/providers/ToastProvider';
 import { Button } from '@/components/ui/Button';
 import { TextAreaField, FormError } from '@/components/ui/Field';
@@ -27,7 +27,7 @@ export function CancelOrderButton({
 }) {
   const { t } = useLocale();
   const { toast } = useToast();
-  const router = useRouter();
+  const { refresh, pending } = useNavigation();
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
@@ -58,7 +58,7 @@ export function CancelOrderButton({
           setOpen(false);
           // The order page reads the request back from the server and shows
           // "awaiting review" in place of this form.
-          router.refresh();
+          refresh();
         } catch (caught) {
           setError(caught instanceof ApiError ? caught.message : t('error.body'));
         } finally {
@@ -92,7 +92,7 @@ export function CancelOrderButton({
           type="submit"
           variant="danger"
           className="flex-1"
-          loading={busy}
+          loading={busy || pending}
           disabled={reason.trim().length < 3}
         >
           {t('order.cancelRequestSubmit')}
