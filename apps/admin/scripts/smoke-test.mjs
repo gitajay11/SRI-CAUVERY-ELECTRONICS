@@ -11,7 +11,43 @@
  * Anything it creates, it removes. It never edits seeded data destructively.
  */
 
+import { createHmac } from 'node:crypto';
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 const BASE = process.env.ADMIN_URL ?? 'http://localhost:3001';
+
+/**
+ * The customer order page's cancellation section as text.
+ *
+ * The page embeds the whole dictionary for the client, so every label is
+ * somewhere in the HTML; only the rendered section says what the customer
+ * is actually shown.
+ */
+function cancellationText(html) {
+  const clean = String(html).replace(/<script[\s\S]*?<\/script>/g, '');
+  const start = clean.indexOf('id="cancellation-title"');
+  if (start < 0) return '';
+  const end = clean.indexOf('</section>', start);
+  return clean
+    .slice(start, end < 0 ? undefined : end)
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ');
+}
+
+/** A value from the repository's .env, for what the shell did not export. */
+function readEnv(name) {
+  try {
+    const file = resolve(dirname(fileURLToPath(import.meta.url)), '../../../.env');
+    const line = readFileSync(file, 'utf8')
+      .split(/\r?\n/)
+      .find((entry) => entry.startsWith(`${name}=`));
+    return line ? line.slice(name.length + 1).trim().replace(/^["']|["']$/g, '') : undefined;
+  } catch {
+    return undefined;
+  }
+}
 /** The shop, for the flows that start with a customer. Skipped when it is down. */
 const STOREFRONT = (process.env.STOREFRONT_URL ?? 'http://localhost:3000').replace(/\/+$/, '');
 const OWNER = { email: 'owner@tamizhelectronics.in', password: 'Owner@Tamizh2026' };
@@ -383,7 +419,7 @@ async function main() {
 
   // The full flow needs a customer, so it needs the shop. A separate cookie
   // jar keeps the shopper's session apart from the owner's.
-  const shopJar = new Map();
+  const shopJar = new Map([['te_locale', 'en']]);
   const shop = async (path, { method = 'GET', json } = {}) => {
     const cookie = [...shopJar.entries()].map(([k, v]) => `${k}=${v}`).join('; ');
     const response = await fetch(`${STOREFRONT}${path}`, {
@@ -420,7 +456,10 @@ async function main() {
         phone: '9840012345',
       },
     });
-    const product = (await shop('/api/products?pageSize=1')).body?.data?.items?.[0];
+    // One that can actually be bought: in stock, and sold singly.
+    const product = (await shop('/api/products?pageSize=12')).body?.data?.items?.find?.(
+      (item) => item.stock > 0 && !item.minOrderQuantity,
+    );
     const stockOf = async () =>
       (await shop(`/api/products?q=${encodeURIComponent(product?.name ?? '')}&pageSize=5`)).body?.data?.items?.find?.(
         (item) => item.id === product?.id,
@@ -498,6 +537,16 @@ async function main() {
         afterReject?.cancellationRequest?.status === 'REJECTED' &&
           String(afterReject?.cancellationRequest?.decisionNote).includes('packed'),
       );
+      const deniedPage = await shop(`/order/${orderNumber}`);
+      const deniedText = cancellationText(deniedPage.body);
+      check(
+        '6. the customer order page says the request was denied, with no refund steps',
+        deniedPage.status === 200 &&
+          deniedText.includes('Denied') &&
+          deniedText.includes('packed') &&
+          !deniedText.includes('Refund'),
+        `status ${deniedPage.status}: ${deniedText.slice(0, 160)}`,
+      );
 
       // Rejected is not final for the customer: they may ask again.
       const askedAgain = await shop(`/api/orders/${orderNumber}/cancel`, {
@@ -528,6 +577,151 @@ async function main() {
         json: { productId: product.id, rating: 4, comment: 'Bought this but the order was cancelled.' },
       });
       check('a cancelled order confers no review rights', review.status === 403, `status ${review.status}`);
+
+      const approvedPage = await shop(`/order/${orderNumber}`);
+      const approvedText = cancellationText(approvedPage.body);
+      check(
+        'an approved cancellation of an unpaid order stops at "approved", with nothing to refund',
+        approvedPage.status === 200 &&
+          approvedText.includes('nothing to refund') &&
+          !approvedText.includes('Refund initiated'),
+        `status ${approvedPage.status}: ${approvedText.slice(0, 160)}`,
+      );
+    }
+
+    // -- the refund path: a paid order, cancelled, and the money's journey ---
+    // Needs an online payment, which needs the gateway's test keys. The
+    // signature Razorpay would send is forged here with the same secret the
+    // shop verifies with, which is what makes the order genuinely PAID.
+    section('Cancellation refunds');
+    const secret = process.env.RAZORPAY_KEY_SECRET ?? readEnv('RAZORPAY_KEY_SECRET');
+    const paidJar = new Map([['te_locale', 'en']]);
+    const paid = async (path, { method = 'GET', json } = {}) => {
+      const cookie = [...paidJar.entries()].map(([k, v]) => `${k}=${v}`).join('; ');
+      const response = await fetch(`${STOREFRONT}${path}`, {
+        method,
+        headers: {
+          ...(json !== undefined ? { 'Content-Type': 'application/json' } : {}),
+          ...(cookie ? { Cookie: cookie } : {}),
+        },
+        body: json !== undefined ? JSON.stringify(json) : undefined,
+      }).catch(() => null);
+      if (!response) return { status: 0, body: null };
+      for (const line of response.headers.getSetCookie?.() ?? []) {
+        const [pair] = line.split(';');
+        const i = pair.indexOf('=');
+        if (i > 0) paidJar.set(pair.slice(0, i).trim(), pair.slice(i + 1).trim());
+      }
+      const body = (response.headers.get('content-type') ?? '').includes('application/json')
+        ? await response.json().catch(() => null)
+        : await response.text();
+      return { status: response.status, body };
+    };
+    const stageOf = async (orderNumber) =>
+      (await paid('/api/orders')).body?.data?.orders?.find?.((o) => o.orderNumber === orderNumber);
+    const pageSays = async (orderNumber, text) => {
+      const page = await paid(`/order/${orderNumber}`);
+      return page.status === 200 && cancellationText(page.body).includes(text);
+    };
+
+    if (!secret) {
+      skip('cancellation refund flow', 'RAZORPAY_KEY_SECRET not available to forge a paid order');
+    } else {
+      const stamp = Date.now();
+      const email = `refund-smoke-${stamp}@example.com`;
+      const registered = await paid('/api/auth/register', {
+        method: 'POST',
+        json: { name: 'Refund Smoke', email, password: 'Str0ng!Pass123', phone: '9840012346' },
+      });
+      const product = (await paid('/api/products?pageSize=12')).body?.data?.items?.find?.(
+        (item) => item.stock > 0 && !item.minOrderQuantity && item.price >= 100,
+      );
+      await paid('/api/cart/items', { method: 'POST', json: { productId: product?.id, quantity: 1 } });
+      const placed = await paid('/api/checkout', {
+        method: 'POST',
+        json: {
+          customerName: 'Refund Smoke',
+          customerEmail: email,
+          customerPhone: '9840012346',
+          addressLine1: '2 Bazaar Road',
+          city: 'Madurai',
+          district: 'Madurai',
+          state: 'Tamil Nadu',
+          pincode: '625001',
+          paymentMethod: 'ONLINE',
+        },
+      });
+      const orderNumber = placed.body?.data?.order?.orderNumber;
+      const rzpOrderId = placed.body?.data?.payment?.razorpayOrderId;
+
+      if (registered.status !== 201 || !orderNumber || !rzpOrderId) {
+        skip(
+          'cancellation refund flow',
+          `could not place an online order (register ${registered.status}, checkout ${placed.status}: ${JSON.stringify(placed.body).slice(0, 160)})`,
+        );
+      } else {
+        const paymentId = `pay_smoke${stamp}`;
+        const signature = createHmac('sha256', secret).update(`${rzpOrderId}|${paymentId}`).digest('hex');
+        const verified = await paid('/api/payments/verify', {
+          method: 'POST',
+          json: { razorpay_order_id: rzpOrderId, razorpay_payment_id: paymentId, razorpay_signature: signature },
+        });
+        const paidOrder = await stageOf(orderNumber);
+        check('the order is paid', verified.status === 200 && paidOrder?.paymentStatus === 'PAID', `verify ${verified.status}, payment ${paidOrder?.paymentStatus}`);
+
+        const asked = await paid(`/api/orders/${orderNumber}/cancel`, {
+          method: 'POST',
+          json: { reason: 'Ordered the wrong colour' },
+        });
+        const requestNumber = asked.body?.data?.requestNumber;
+        check('1. the customer sees "Cancellation requested"', asked.status === 200 && (await pageSays(orderNumber, 'Cancellation requested')), `status ${asked.status}`);
+
+        const approved = await request(`/api/admin/cancellations/${requestNumber}`, {
+          method: 'PATCH',
+          json: { status: 'APPROVED', note: 'Cancelled as asked.' },
+        });
+        const refundId = approved.body?.data?.refundId;
+        const afterApprove = await stageOf(orderNumber);
+        check(
+          '2. approval on a paid order raises a refund the customer can see',
+          approved.status === 200 && typeof refundId === 'string' && afterApprove?.cancellationRequest?.refund?.status === 'PENDING',
+          `status ${approved.status}, refund ${JSON.stringify(afterApprove?.cancellationRequest?.refund)}`,
+        );
+        check('3. the customer sees "Refund initiated"', await pageSays(orderNumber, 'Refund initiated'));
+
+        const refundApproved = await request(`/api/admin/refunds/${refundId}`, { method: 'PATCH', json: { status: 'APPROVED' } });
+        check('an approved refund still reads as initiated to the customer', refundApproved.status === 200 && (await pageSays(orderNumber, 'Refund initiated')), `status ${refundApproved.status}`);
+
+        const processing = await request(`/api/admin/refunds/${refundId}`, { method: 'PATCH', json: { status: 'PROCESSING' } });
+        check('4. the customer sees "Refund processing"', processing.status === 200 && (await pageSays(orderNumber, 'Refund processing')), `status ${processing.status}`);
+
+        const completed = await request(`/api/admin/refunds/${refundId}`, {
+          method: 'PATCH',
+          json: { status: 'COMPLETED', method: 'Original payment method', reference: `rfnd_smoke${stamp}` },
+        });
+        const afterRefund = await stageOf(orderNumber);
+        check(
+          '5. the customer sees "Refunded", and the order reads refunded',
+          completed.status === 200 &&
+            (await pageSays(orderNumber, 'Refunded')) &&
+            afterRefund?.paymentStatus === 'REFUNDED' &&
+            afterRefund?.cancellationRequest?.refund?.status === 'COMPLETED',
+          `status ${completed.status}, payment ${afterRefund?.paymentStatus}, refund ${afterRefund?.cancellationRequest?.refund?.status}`,
+        );
+        const refundedPage = await paid(`/order/${orderNumber}`);
+        check(
+          'a refunded cancellation still reads as a cancelled order',
+          String(refundedPage.body).replace(/<script[\s\S]*?<\/script>/g, '').includes('This order has been cancelled'),
+        );
+
+        const adminDetail = await request(`/cancellations/${requestNumber}`);
+        const adminText = String(adminDetail.body).replace(/<script[\s\S]*?<\/script>/g, '').replace(/<[^>]+>/g, ' ');
+        check(
+          '7. the panel shows the same stage as the customer',
+          adminDetail.status === 200 && /Customer sees\s+Refunded/.test(adminText),
+          `status ${adminDetail.status}`,
+        );
+      }
     }
   }
 

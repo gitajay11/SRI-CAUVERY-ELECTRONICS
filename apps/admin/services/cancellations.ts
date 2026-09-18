@@ -5,6 +5,7 @@ import { AppError, notFound } from '@tamizh/core/api';
 import { CANCELLABLE_STATUSES } from '@tamizh/core/pricing';
 import { recordAudit } from '@/lib/audit';
 import type { AdminIdentity } from '@/lib/session';
+import { cancellationStage } from '@tamizh/core/cancellation';
 import { refundableAmount, requestRefund } from './money';
 import { updateOrderStatusWithin } from './orders';
 
@@ -68,6 +69,7 @@ export async function listCancellations(filters: CancellationFilters) {
         status: true,
         requestedAt: true,
         handledAt: true,
+        refundId: true,
         order: {
           select: {
             orderNumber: true,
@@ -85,6 +87,17 @@ export async function listCancellations(filters: CancellationFilters) {
     db.cancellationRequest.count({ where: { status: 'PENDING' } }),
   ]);
 
+  // The refunds these approvals raised, in one query, so each row can show
+  // where the money is — the same stage the customer's order page shows.
+  const refundIds = rows.map((row) => row.refundId).filter((id): id is string => id !== null);
+  const refunds = refundIds.length
+    ? await db.refund.findMany({
+        where: { id: { in: refundIds } },
+        select: { id: true, status: true },
+      })
+    : [];
+  const refundStatus = new Map(refunds.map((refund) => [refund.id, refund.status]));
+
   return {
     total,
     open,
@@ -93,6 +106,12 @@ export async function listCancellations(filters: CancellationFilters) {
       requestNumber: row.requestNumber,
       reason: row.reason,
       status: row.status,
+      stage: cancellationStage({
+        status: row.status,
+        refund: row.refundId && refundStatus.has(row.refundId)
+          ? { status: refundStatus.get(row.refundId)! }
+          : null,
+      }),
       requestedAt: row.requestedAt.toISOString(),
       handledAt: row.handledAt?.toISOString() ?? null,
       orderNumber: row.order.orderNumber,
@@ -267,6 +286,7 @@ export async function decideCancellation(
   // purpose: the cancellation is already true and must stay true even if
   // raising the refund fails — staff can raise it by hand from the order.
   // The refund path enforces its own ceiling and its own approval.
+  let refundId: string | null = null;
   if (outcome.refundRaised) {
     const { available } = await refundableAmount(outcome.request.order.id);
     if (available > 0) {
@@ -279,8 +299,9 @@ export async function decideCancellation(
         where: { id: outcome.request.id },
         data: { refundId: refund.id },
       });
+      refundId = refund.id;
     }
   }
 
-  return { requestNumber, status: decision.status };
+  return { requestNumber, status: decision.status, refundId };
 }

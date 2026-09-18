@@ -1,8 +1,10 @@
 import type {
+  CancellationStatus,
   OrderStatus,
   PaymentMethod,
   PaymentStatus,
   ProductStatus,
+  RefundStatus,
 } from '@tamizh/db/enums';
 
 /**
@@ -279,12 +281,25 @@ export interface OrderView {
 
 export interface CancellationRequestView {
   requestNumber: string;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  status: CancellationStatus;
   reason: string;
   requestedAt: string;
   /** Staff's note back to the customer, once decided. */
   decisionNote: string | null;
   handledAt: string | null;
+  /**
+   * The refund raised when the cancellation was approved on a paid order.
+   * Null until then, and for orders where no money had been taken.
+   */
+  refund: CancellationRefundView | null;
+}
+
+export interface CancellationRefundView {
+  status: RefundStatus;
+  /** Paise. */
+  amount: number;
+  /** When the money was sent back; only set once completed. */
+  processedAt: string | null;
 }
 
 export interface SessionUser {

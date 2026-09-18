@@ -1,6 +1,19 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import type { OrderStatus, OrderView, PaymentStatus } from '@tamizh/core/types';
+import type {
+  CancellationRequestView,
+  OrderStatus,
+  OrderView,
+  PaymentStatus,
+} from '@tamizh/core/types';
+import {
+  NO_REFUND_TRACK,
+  REFUND_TRACK,
+  cancellationStage,
+  isRefundProblem,
+  stageIndex,
+  type CancellationStage,
+} from '@tamizh/core/cancellation';
 import { cn, formatDate } from '@tamizh/core/utils';
 import { formatINR } from '@tamizh/core/money';
 import { getI18n } from '@/i18n/server';
@@ -35,6 +48,120 @@ export function paymentTone(status: PaymentStatus) {
   return 'warning' as const;
 }
 
+/**
+ * A cancellation's progress, from the request to the money coming back.
+ *
+ * The stage comes from the shared rule in `@tamizh/core/cancellation`, read
+ * from the request and its refund, so this page and the admin's agree by
+ * construction. A paid order walks five steps; an unpaid one stops at
+ * approved, since there is nothing to return. A denied request shows only
+ * that, with staff's note, and no refund steps at all.
+ */
+async function CancellationProgress({
+  request,
+  paid,
+}: {
+  request: CancellationRequestView;
+  paid: boolean;
+}) {
+  const { t } = await getI18n();
+  const stage = cancellationStage(request);
+  const denied = stage === 'DENIED';
+  const problem = isRefundProblem(stage);
+  // Whether a refund is part of this story: one was raised, or the order
+  // was paid and approval will raise one.
+  const expectsRefund = request.refund !== null || (paid && stage !== 'APPROVED');
+  const track = expectsRefund ? REFUND_TRACK : NO_REFUND_TRACK;
+  const current = stageIndex(stage, track);
+
+  const amount = request.refund ? formatINR(request.refund.amount) : '';
+  const note =
+    stage === 'APPROVED' && !expectsRefund
+      ? t('order.cancellation.note.APPROVED_NO_REFUND')
+      : t(`order.cancellation.note.${stage}` as `order.cancellation.note.${CancellationStage}`, {
+          amount,
+          date: request.refund?.processedAt ? formatDate(request.refund.processedAt) : '',
+        });
+
+  const tone = denied || problem ? 'danger' : stage === 'REFUNDED' ? 'success' : 'warning';
+
+  return (
+    <section
+      aria-labelledby="cancellation-title"
+      className={cn(
+        'rounded-card border p-4 sm:p-5',
+        tone === 'danger' && 'border-danger-500/25 bg-danger-50/60',
+        tone === 'success' && 'border-success-500/25 bg-success-50/60',
+        tone === 'warning' && 'border-warning-500/25 bg-warning-50',
+      )}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <h2 id="cancellation-title" className="text-sm font-bold text-ink-900">
+            {t('order.cancellation.title')}
+          </h2>
+          <p className="mt-0.5 font-mono text-xs text-ink-500">
+            {t('order.cancellation.request', { number: request.requestNumber })}
+          </p>
+        </div>
+        <Badge tone={tone}>
+          {t(`order.cancellation.stage.${stage}` as `order.cancellation.stage.${CancellationStage}`)}
+        </Badge>
+      </div>
+
+      {denied ? null : (
+        <ol className="mt-4 grid gap-2.5 sm:grid-flow-col sm:auto-cols-fr">
+          {track.map((step, index) => {
+            const done = current >= index;
+            const failedHere = problem && index === current;
+            return (
+              <li key={step} className="flex items-center gap-2 sm:block">
+                <span
+                  className={cn(
+                    'grid size-6 shrink-0 place-items-center rounded-full text-xs font-bold sm:mb-2',
+                    failedHere
+                      ? 'bg-danger-solid text-white'
+                      : done
+                        ? 'bg-brand-600 text-white'
+                        : 'bg-ink-100 text-ink-400',
+                  )}
+                >
+                  {failedHere ? '!' : index + 1}
+                </span>
+                <span
+                  className={cn(
+                    'block text-xs leading-tight',
+                    done ? 'font-semibold text-ink-800' : 'text-ink-400',
+                  )}
+                >
+                  {t(`order.cancellation.stage.${step}` as `order.cancellation.stage.${CancellationStage}`)}
+                </span>
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    'mt-2 hidden h-0.5 w-full rounded-full sm:block',
+                    failedHere ? 'bg-danger-solid' : done ? 'bg-brand-500' : 'bg-ink-100',
+                  )}
+                />
+              </li>
+            );
+          })}
+        </ol>
+      )}
+
+      <p className="mt-4 text-sm text-ink-700">{note}</p>
+      {request.decisionNote ? (
+        <p className="mt-1.5 text-sm text-ink-600">“{request.decisionNote}”</p>
+      ) : null}
+      {request.handledAt ? (
+        <p className="mt-1.5 text-xs text-ink-500">
+          {t('order.cancellation.decidedOn', { date: formatDate(request.handledAt) })}
+        </p>
+      ) : null}
+    </section>
+  );
+}
+
 /** The fulfilment steps a normal order passes through, for the tracker. */
 const TRACK_STEPS: OrderStatus[] = [
   'PENDING',
@@ -63,7 +190,13 @@ export async function OrderDetail({
   };
 }) {
   const { t, locale } = await getI18n();
-  const cancelled = order.status === 'CANCELLED';
+  // A cancellation approved on a paid order ends with the order REFUNDED, not
+  // CANCELLED — the refund settling is what moves it there. To the customer
+  // it is the same cancelled order, so the banner reads the request, not
+  // only the status.
+  const cancelled =
+    order.status === 'CANCELLED' ||
+    (order.status === 'REFUNDED' && order.cancellationRequest?.status === 'APPROVED');
   const currentStep = TRACK_STEPS.indexOf(order.status);
 
   return (
@@ -246,27 +379,14 @@ export async function OrderDetail({
             ) : null}
           </section>
 
-          {showCancel && !cancelled ? (
-            order.cancellationRequest?.status === 'PENDING' ? (
-              <p className="rounded-card border border-warning-500/25 bg-warning-50 px-4 py-3 text-sm text-ink-700">
-                <span className="block font-semibold text-warning-500">
-                  {t('order.cancelPending')}
-                </span>
-                {t('order.cancelPendingBody', { number: order.cancellationRequest.requestNumber })}
-              </p>
-            ) : (
-              <>
-                {order.cancellationRequest?.status === 'REJECTED' ? (
-                  <p className="rounded-card border border-ink-100 bg-ink-50/60 px-4 py-3 text-sm text-ink-600">
-                    <span className="block font-semibold text-ink-800">
-                      {t('order.cancelRejected')}
-                    </span>
-                    {order.cancellationRequest.decisionNote}
-                  </p>
-                ) : null}
-                <CancelOrderButton orderNumber={order.orderNumber} status={order.status} />
-              </>
-            )
+          {/* The cancellation, from request to money back, whoever is looking:
+              the state of a request is part of the order, not a control. */}
+          {order.cancellationRequest ? (
+            <CancellationProgress request={order.cancellationRequest} paid={order.paymentMethod !== 'COD'} />
+          ) : null}
+
+          {showCancel && !cancelled && order.cancellationRequest?.status !== 'PENDING' ? (
+            <CancelOrderButton orderNumber={order.orderNumber} status={order.status} />
           ) : null}
 
           {showCancel && returns ? (

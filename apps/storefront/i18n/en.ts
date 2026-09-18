@@ -313,6 +313,32 @@ export const en = {
   'order.cancelPendingBody':
     'Request {number} is being reviewed. Your order stays as it is until we confirm.',
   'order.cancelRejected': 'Cancellation request declined',
+  'order.cancellation.title': 'Cancellation',
+  'order.cancellation.request': 'Request {number}',
+  'order.cancellation.stage.REQUESTED': 'Cancellation requested',
+  'order.cancellation.stage.APPROVED': 'Approved',
+  'order.cancellation.stage.DENIED': 'Denied',
+  'order.cancellation.stage.REFUND_INITIATED': 'Refund initiated',
+  'order.cancellation.stage.REFUND_PROCESSING': 'Refund processing',
+  'order.cancellation.stage.REFUNDED': 'Refunded',
+  'order.cancellation.stage.REFUND_FAILED': 'Refund failed',
+  'order.cancellation.stage.REFUND_REJECTED': 'Refund not approved',
+  'order.cancellation.note.REQUESTED':
+    'We are reviewing your request. Your order stays as it is until we confirm.',
+  'order.cancellation.note.APPROVED': 'Your order has been cancelled.',
+  'order.cancellation.note.APPROVED_NO_REFUND':
+    'Your order has been cancelled. No payment was taken, so there is nothing to refund.',
+  'order.cancellation.note.DENIED': 'We were not able to cancel this order.',
+  'order.cancellation.note.REFUND_INITIATED':
+    'A refund of {amount} has been raised and is with our accounts team.',
+  'order.cancellation.note.REFUND_PROCESSING':
+    'Your refund of {amount} is being sent back to the payment method you used. This can take 5–7 working days to show.',
+  'order.cancellation.note.REFUNDED': 'Your refund of {amount} was sent on {date}.',
+  'order.cancellation.note.REFUND_FAILED':
+    'Your refund of {amount} could not be completed. We are looking into it — please contact us if you have not heard from us.',
+  'order.cancellation.note.REFUND_REJECTED':
+    'The refund of {amount} was not approved. Please contact us about this order.',
+  'order.cancellation.decidedOn': 'Decided on {date}',
   'order.cannotCancel': 'This order can no longer be cancelled. Please contact support.',
   'order.reorder': 'Order again',
   'order.needHelp': 'Need help with this order?',

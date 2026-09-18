@@ -1,3 +1,4 @@
+import { isRefundProblem, type CancellationStage } from '@tamizh/core/cancellation';
 import type {
   CancellationStatus,
   OrderStatus,
@@ -106,6 +107,33 @@ export function ReturnStatusBadge({
   return (
     <Badge tone={returnStatusTone(status)}>
       {dict[`return.${status}` as 'return.REQUESTED']}
+    </Badge>
+  );
+}
+
+/**
+ * Where a cancellation stands including its refund — the customer's view of
+ * it, from the same rule the storefront uses, so the two never disagree.
+ */
+export function CancellationStageBadge({
+  stage,
+  locale,
+}: {
+  stage: CancellationStage;
+  locale: Locale;
+}) {
+  const dict = getDictionary(locale);
+  const tone =
+    stage === 'DENIED' || isRefundProblem(stage)
+      ? 'critical'
+      : stage === 'REFUNDED'
+        ? 'positive'
+        : stage === 'REQUESTED'
+          ? 'caution'
+          : 'info';
+  return (
+    <Badge tone={tone}>
+      {dict[`cancellationStage.${stage}` as 'cancellationStage.REQUESTED']}
     </Badge>
   );
 }

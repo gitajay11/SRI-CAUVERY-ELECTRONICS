@@ -8,7 +8,7 @@ import { listCancellations } from '@/services/cancellations';
 import { PageHeader, Panel, Badge } from '@/components/ui/Primitives';
 import { DataTable, Pagination, type Column } from '@/components/ui/DataTable';
 import { FilterBar } from '@/components/filters/FilterBar';
-import { CancellationStatusBadge, OrderStatusBadge } from '@/components/orders/OrderBadges';
+import { CancellationStageBadge, OrderStatusBadge } from '@/components/orders/OrderBadges';
 import { BanIcon } from '@/components/ui/Icons';
 import { buildQuery, first, readPage, type SearchParams } from '@/lib/query';
 
@@ -85,7 +85,7 @@ export default async function CancellationsPage({
       header: t('cancellations.decision'),
       align: 'center',
       mobile: 'trailing',
-      cell: (row) => <CancellationStatusBadge status={row.status} locale={locale} />,
+      cell: (row) => <CancellationStageBadge stage={row.stage} locale={locale} />,
     },
     {
       key: 'date',

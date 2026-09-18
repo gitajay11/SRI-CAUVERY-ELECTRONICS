@@ -312,6 +312,32 @@ export const ta: Dictionary = {
   'order.cancelPendingBody':
     'கோரிக்கை {number} ஆய்வில் உள்ளது. நாங்கள் உறுதிப்படுத்தும் வரை உங்கள் ஆர்டர் அப்படியே இருக்கும்.',
   'order.cancelRejected': 'ரத்து கோரிக்கை நிராகரிக்கப்பட்டது',
+  'order.cancellation.title': 'ரத்து',
+  'order.cancellation.request': 'கோரிக்கை {number}',
+  'order.cancellation.stage.REQUESTED': 'ரத்து கோரப்பட்டது',
+  'order.cancellation.stage.APPROVED': 'ஒப்புதல் அளிக்கப்பட்டது',
+  'order.cancellation.stage.DENIED': 'நிராகரிக்கப்பட்டது',
+  'order.cancellation.stage.REFUND_INITIATED': 'திரும்பப் பணம் தொடங்கியது',
+  'order.cancellation.stage.REFUND_PROCESSING': 'திரும்பப் பணம் செயலாக்கத்தில்',
+  'order.cancellation.stage.REFUNDED': 'பணம் திரும்பப் பெறப்பட்டது',
+  'order.cancellation.stage.REFUND_FAILED': 'திரும்பப் பணம் தோல்வி',
+  'order.cancellation.stage.REFUND_REJECTED': 'திரும்பப் பணம் ஒப்புதல் அளிக்கப்படவில்லை',
+  'order.cancellation.note.REQUESTED':
+    'உங்கள் கோரிக்கையை ஆய்வு செய்கிறோம். நாங்கள் உறுதிப்படுத்தும் வரை உங்கள் ஆர்டர் அப்படியே இருக்கும்.',
+  'order.cancellation.note.APPROVED': 'உங்கள் ஆர்டர் ரத்து செய்யப்பட்டது.',
+  'order.cancellation.note.APPROVED_NO_REFUND':
+    'உங்கள் ஆர்டர் ரத்து செய்யப்பட்டது. பணம் எதுவும் பெறப்படவில்லை, எனவே திரும்பத் தர எதுவும் இல்லை.',
+  'order.cancellation.note.DENIED': 'இந்த ஆர்டரை எங்களால் ரத்து செய்ய முடியவில்லை.',
+  'order.cancellation.note.REFUND_INITIATED':
+    '{amount} திரும்பப் பணம் எழுப்பப்பட்டு எங்கள் கணக்குக் குழுவிடம் உள்ளது.',
+  'order.cancellation.note.REFUND_PROCESSING':
+    'உங்கள் {amount} திரும்பப் பணம் நீங்கள் பயன்படுத்திய கட்டண முறைக்கு அனுப்பப்படுகிறது. இது காண்பிக்க 5–7 வேலை நாட்கள் ஆகலாம்.',
+  'order.cancellation.note.REFUNDED': 'உங்கள் {amount} திரும்பப் பணம் {date} அன்று அனுப்பப்பட்டது.',
+  'order.cancellation.note.REFUND_FAILED':
+    'உங்கள் {amount} திரும்பப் பணத்தை முடிக்க முடியவில்லை. நாங்கள் ஆய்வு செய்கிறோம் — எங்களிடமிருந்து தகவல் வரவில்லை என்றால் தொடர்பு கொள்ளவும்.',
+  'order.cancellation.note.REFUND_REJECTED':
+    '{amount} திரும்பப் பணம் ஒப்புதல் அளிக்கப்படவில்லை. இந்த ஆர்டர் குறித்து எங்களைத் தொடர்பு கொள்ளவும்.',
+  'order.cancellation.decidedOn': '{date} அன்று முடிவு செய்யப்பட்டது',
   'order.cannotCancel': 'இந்த ஆர்டரை இனி ரத்து செய்ய முடியாது. ஆதரவுக் குழுவைத் தொடர்பு கொள்ளவும்.',
   'order.reorder': 'மீண்டும் ஆர்டர் செய்',
   'order.needHelp': 'இந்த ஆர்டரில் உதவி தேவையா?',

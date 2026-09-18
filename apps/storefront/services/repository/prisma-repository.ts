@@ -3,6 +3,7 @@ import { getPrisma } from '@tamizh/db';
 import type {
   AddressInput,
   AddressView,
+  CancellationRefundView,
   CancellationRequestView,
   CartItemView,
   CategoryView,
@@ -1231,6 +1232,15 @@ export class PrismaRepository implements Repository {
       requestedAt: Date;
       decisionNote: string | null;
       handledAt: Date | null;
+      refundId: string | null;
+    }[];
+    refunds?: {
+      id: string;
+      status: string;
+      amount: number;
+      returnRequestId: string | null;
+      requestedAt: Date;
+      processedAt: Date | null;
     }[];
     items: {
       id: string;
@@ -1282,6 +1292,7 @@ export class PrismaRepository implements Repository {
           requestedAt: latest.requestedAt.toISOString(),
           decisionNote: latest.decisionNote,
           handledAt: latest.handledAt?.toISOString() ?? null,
+          refund: this.refundForCancellation(latest, row.refunds ?? []),
         };
       })(),
       items: row.items.map((item) => ({
@@ -1300,6 +1311,40 @@ export class PrismaRepository implements Repository {
     };
   }
 
+  /**
+   * The refund that belongs to a cancellation.
+   *
+   * Approval records the refund it raised on the request. When it could not
+   * — the refund is raised after the approval commits, and can fail — staff
+   * raise one by hand from the order instead, and that one is unlinked. So a
+   * refund raised on the order after the decision, and not for a return, is
+   * taken to be the cancellation's. Without this the customer would sit at
+   * "approved" while their money was in fact on its way.
+   */
+  private refundForCancellation(
+    request: { status: string; handledAt: Date | null; refundId: string | null },
+    refunds: NonNullable<Parameters<PrismaRepository['toOrderView']>[0]['refunds']>,
+  ): CancellationRefundView | null {
+    if (request.status !== 'APPROVED') return null;
+    const linked = request.refundId ? refunds.find((r) => r.id === request.refundId) : undefined;
+    const chosen =
+      linked ??
+      refunds
+        .filter(
+          (r) =>
+            r.returnRequestId === null &&
+            request.handledAt !== null &&
+            r.requestedAt >= request.handledAt,
+        )
+        .sort((a, b) => b.requestedAt.getTime() - a.requestedAt.getTime())[0];
+    if (!chosen) return null;
+    return {
+      status: chosen.status as CancellationRefundView['status'],
+      amount: chosen.amount,
+      processedAt: chosen.processedAt?.toISOString() ?? null,
+    };
+  }
+
   private readonly orderInclude = {
     items: { include: { product: { select: { slug: true } } } },
     // Newest first, and only one: the order page needs to know the current
@@ -1314,6 +1359,19 @@ export class PrismaRepository implements Repository {
         requestedAt: true,
         decisionNote: true,
         handledAt: true,
+        refundId: true,
+      },
+    },
+    // For the cancellation's refund, matched up in refundForCancellation.
+    // Nothing that would identify who approved it, or how, leaves here.
+    refunds: {
+      select: {
+        id: true,
+        status: true,
+        amount: true,
+        returnRequestId: true,
+        requestedAt: true,
+        processedAt: true,
       },
     },
   } as const;

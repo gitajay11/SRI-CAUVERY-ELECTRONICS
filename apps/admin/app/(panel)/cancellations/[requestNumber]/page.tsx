@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { cancellationStage } from '@tamizh/core/cancellation';
 import { notFound } from 'next/navigation';
 import { formatINR } from '@tamizh/core/money';
 import { formatDate } from '@tamizh/core/utils';
@@ -13,6 +14,7 @@ import {
   DescriptionRow,
 } from '@/components/ui/Primitives';
 import {
+  CancellationStageBadge,
   CancellationStatusBadge,
   OrderStatusBadge,
   PaymentStatusBadge,
@@ -126,6 +128,15 @@ export default async function CancellationDetailPage({
                 </DescriptionRow>
                 <DescriptionRow label={t('cancellations.decidedBy')}>
                   {request.handledBy?.name ?? '—'}
+                </DescriptionRow>
+                <DescriptionRow label={t('cancellations.customerSees')}>
+                  <CancellationStageBadge
+                    stage={cancellationStage({
+                      status: request.status,
+                      refund: request.refund ? { status: request.refund.status } : null,
+                    })}
+                    locale={locale}
+                  />
                 </DescriptionRow>
                 {request.refund ? (
                   <DescriptionRow label={t('cancellations.refundRaised')}>
