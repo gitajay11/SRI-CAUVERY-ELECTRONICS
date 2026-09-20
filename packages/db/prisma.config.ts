@@ -8,6 +8,12 @@ import { defineConfig } from 'prisma/config';
  *
  * The URL below is used only by the Prisma CLI (migrate / studio). The runtime
  * client connects through the pg driver adapter in src/client.ts.
+ *
+ * Migrations want a direct connection: through Neon's pooler (PgBouncer in
+ * transaction mode) the advisory lock Prisma Migrate takes does not hold.
+ * So the CLI prefers DATABASE_URL_UNPOOLED — the name Neon itself writes —
+ * and falls back to DATABASE_URL where there is no pooler, such as the
+ * local development database.
  */
 const roots = [process.cwd(), path.join(process.cwd(), '..', '..')];
 for (const root of roots) {
@@ -24,7 +30,7 @@ export default defineConfig({
     seed: 'node --experimental-strip-types prisma/seed.ts',
   },
   datasource: {
-    url: process.env.DATABASE_URL ?? '',
+    url: process.env.DATABASE_URL_UNPOOLED ?? process.env.DATABASE_URL ?? '',
     shadowDatabaseUrl: process.env.SHADOW_DATABASE_URL,
   },
 });
