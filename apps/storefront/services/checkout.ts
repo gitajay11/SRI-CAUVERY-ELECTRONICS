@@ -10,7 +10,8 @@ import { isValidQuantity, quantityRuleFor } from '@tamizh/core/quantity';
 import { onlinePaymentAvailable, providerFor } from './payments';
 import { resolveCartOwner, setCouponCookie } from './cart';
 import { getShopSettings } from './settings';
-import { notifyAdmin, sendOrderConfirmation } from './notifications';
+import { after } from 'next/server';
+import { notifyAdmin, sendOrderEmails } from './notifications';
 
 /**
  * Order placement.
@@ -187,7 +188,18 @@ export async function placeOrder(input: CheckoutInput): Promise<PlaceOrderResult
     }
   }
 
-  await sendOrderConfirmation(order);
+  // The emails — the customer's confirmation and the shop's copy — go out
+  // once the order is a fact. Cash on delivery: now. Online: when the payment
+  // is confirmed, from payment-confirmation.ts; a "confirmed" email for an
+  // order that is still waiting on a payment that may never come would be a
+  // lie, and one the customer keeps.
+  //
+  // `after` runs this once the response has gone, so a slow mail server never
+  // keeps a shopper looking at a spinner — and, unlike a dropped promise, the
+  // platform keeps the function alive until it finishes.
+  if (intent.completed) {
+    after(() => sendOrderEmails(order));
+  }
 
   // Staff alert. Not awaited into the response: the order is committed, and a
   // slow notification host must not keep a shopper waiting on their receipt.

@@ -1,36 +1,22 @@
 import 'server-only';
 import type { OrderView } from '@tamizh/core/types';
 import { formatINR } from '@tamizh/core/money';
+import { shopConfig } from '@/lib/site';
+import { sendEmail } from './email-transport';
+import { orderConfirmationMail, orderNoticeMail } from './order-mail';
 
 /**
  * Outbound notifications (email / SMS).
  *
  * Both channels are behind this one module so that wiring a real provider is a
- * single, contained change. Until EMAIL_PROVIDER / SMS_PROVIDER are configured
- * the messages are logged, which keeps development quiet and honest: nothing
- * pretends a message was delivered when it was not.
+ * single, contained change: email goes out through email-transport.ts, SMS is
+ * still logged until SMS_PROVIDER is wired. Nothing here pretends a message
+ * was delivered when it was not.
  */
-
-interface EmailMessage {
-  to: string;
-  subject: string;
-  text: string;
-}
 
 interface SmsMessage {
   to: string;
   text: string;
-}
-
-async function sendEmail(message: EmailMessage): Promise<void> {
-  const provider = process.env.EMAIL_PROVIDER ?? 'console';
-  if (provider === 'console') {
-    console.info(`[email] to=${message.to} subject="${message.subject}"`);
-    return;
-  }
-  // Wire an SMTP/API transport here. Deliberately left unimplemented rather
-  // than half-implemented, so a misconfiguration fails loudly in review.
-  console.warn(`[email] EMAIL_PROVIDER="${provider}" is not implemented; message dropped.`);
 }
 
 async function sendSms(message: SmsMessage): Promise<void> {
@@ -42,50 +28,67 @@ async function sendSms(message: SmsMessage): Promise<void> {
   console.warn(`[sms] SMS_PROVIDER="${provider}" is not implemented; message dropped.`);
 }
 
-function orderSummaryText(order: OrderView): string {
-  const lines = order.items
-    .map((item) => `  ${item.quantity} × ${item.name} — ${formatINR(item.lineTotal)}`)
-    .join('\n');
-
-  return [
-    `Thank you for your order, ${order.customerName}.`,
-    '',
-    `Order number: ${order.orderNumber}`,
-    `Payment: ${order.paymentMethod === 'COD' ? 'Cash on delivery' : 'Paid online'}`,
-    '',
-    'Items',
-    lines,
-    '',
-    `Subtotal: ${formatINR(order.subtotal)}`,
-    order.discountTotal > 0 ? `Discount: -${formatINR(order.discountTotal)}` : null,
-    `Delivery: ${order.shippingFee === 0 ? 'FREE' : formatINR(order.shippingFee)}`,
-    `Total: ${formatINR(order.total)}`,
-    '',
-    'Delivering to',
-    `  ${order.addressLine1}${order.addressLine2 ? `, ${order.addressLine2}` : ''}`,
-    `  ${order.city}, ${order.district}, ${order.state} ${order.pincode}`,
-    '',
-    'Sri Cauvery Electronics — ஸ்ரீ காவேரி மின்னணுவியல்',
-  ]
-    .filter((line) => line !== null)
-    .join('\n');
-}
-
-/** Fire-and-forget: a notification failure must never fail an order. */
+/**
+ * The customer's confirmation: email, then SMS. Never fails an order — the
+ * order is already committed by the time this runs, and a mail server being
+ * down is the shop's problem to notice, not the customer's to be blocked by.
+ */
 export async function sendOrderConfirmation(order: OrderView): Promise<void> {
   try {
+    const mail = orderConfirmationMail(order);
     await sendEmail({
       to: order.customerEmail,
-      subject: `Order ${order.orderNumber} confirmed — Sri Cauvery Electronics`,
-      text: orderSummaryText(order),
+      subject: mail.subject,
+      text: mail.text,
+      html: mail.html,
+      replyTo: shopConfig.supportEmail,
     });
+  } catch (error) {
+    console.error(`[notifications] confirmation email for ${order.orderNumber} failed`, error);
+  }
+  try {
     await sendSms({
       to: order.customerPhone,
       text: `Sri Cauvery Electronics: order ${order.orderNumber} confirmed for ${formatINR(order.total)}. Track it in My Orders.`,
     });
   } catch (error) {
-    console.error('[notifications] order confirmation failed', error);
+    console.error(`[notifications] confirmation SMS for ${order.orderNumber} failed`, error);
   }
+}
+
+/**
+ * The shop's copy of the order, to ORDER_NOTIFY_EMAIL — the mailbox whoever
+ * packs the orders reads. Falls back to the support address, which is the
+ * shop's own; without either, nothing is sent and nothing is pretended.
+ *
+ * Replies go to the customer, so "is the blue one in stock?" is one click.
+ */
+export async function sendOrderToShop(order: OrderView): Promise<void> {
+  const to = process.env.ORDER_NOTIFY_EMAIL?.trim() || shopConfig.supportEmail;
+  if (!to) return;
+  try {
+    const mail = orderNoticeMail(order);
+    await sendEmail({
+      to,
+      subject: mail.subject,
+      text: mail.text,
+      html: mail.html,
+      replyTo: order.customerEmail,
+    });
+  } catch (error) {
+    console.error(`[notifications] shop email for ${order.orderNumber} failed`, error);
+  }
+}
+
+/**
+ * Both order emails, once the order is a fact: for cash on delivery that is
+ * the moment it is placed; for an online payment it is the moment the
+ * payment is confirmed. Sent one after the other, and each on its own —
+ * the shop's copy must still go out if the customer's address bounces.
+ */
+export async function sendOrderEmails(order: OrderView): Promise<void> {
+  await sendOrderConfirmation(order);
+  await sendOrderToShop(order);
 }
 
 export async function sendOrderStatusUpdate(order: OrderView): Promise<void> {
@@ -109,8 +112,9 @@ export async function sendContactEnquiry(input: {
   message: string;
 }): Promise<void> {
   await sendEmail({
-    to: process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? 'support@tamizhelectronics.in',
+    to: shopConfig.supportEmail,
     subject: `Website enquiry: ${input.subject}`,
+    replyTo: input.email,
     text: [
       `From: ${input.name} <${input.email}>`,
       input.phone ? `Phone: ${input.phone}` : null,

@@ -1,8 +1,11 @@
 import 'server-only';
 import { getPrisma } from '@tamizh/db';
 import { AppError } from '@tamizh/core/api';
+import { after } from 'next/server';
 import { getSessionUser } from '@/lib/auth';
 import { onlineProvider } from '@/services/payments';
+import { getRepository } from '@/services/repository';
+import { sendOrderEmails } from '@/services/notifications';
 
 /**
  * Confirming an online payment.
@@ -124,6 +127,15 @@ export async function confirmOnlinePayment(
         message: `Online payment received (${input.razorpayPaymentId})`,
       },
     });
+  });
+
+  // Now the order is a fact: the customer's confirmation and the shop's copy.
+  // Once, on this transition — the early return above keeps a second verify
+  // from sending them again. After the response, so the shopper sees their
+  // receipt before the mail server is even asked.
+  after(async () => {
+    const order = await getRepository().getOrderForUser(user.id, payment.order.orderNumber);
+    if (order) await sendOrderEmails(order);
   });
 
   return { orderNumber: payment.order.orderNumber, paymentStatus: 'PAID' };
