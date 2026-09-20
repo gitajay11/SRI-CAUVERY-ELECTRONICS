@@ -9,7 +9,8 @@ import nodemailer from 'nodemailer';
  *   console  — logs the envelope and sends nothing. The default, so a
  *              development machine never emails a real customer.
  *   smtp     — any mailbox with SMTP (the shop's own domain mail, Gmail with
- *              an app password, Zoho…), from SMTP_URL.
+ *              an app password, Zoho…), from SMTP_HOST / SMTP_USER /
+ *              SMTP_PASS, or from a single SMTP_URL.
  *   resend   — Resend's HTTP API, from RESEND_API_KEY; no ports to open.
  *
  * Misconfiguration fails loudly here rather than dropping mail on the
@@ -38,11 +39,36 @@ function from(): string {
 
 let transporter: nodemailer.Transporter | null = null;
 
+/**
+ * The SMTP settings, as separate fields or as one URL.
+ *
+ * Separate fields are the kinder shape for a Gmail app password, which
+ * Google hands out as four groups of letters with spaces between them: the
+ * spaces are dropped here, so it can be pasted exactly as shown. A URL
+ * would need them percent-encoded, and a mistake there fails in a way
+ * that is hard to see.
+ */
+function smtpSettings(): string | nodemailer.TransportOptions {
+  const host = process.env.SMTP_HOST?.trim();
+  if (!host) return required('SMTP_URL');
+  const port = Number(process.env.SMTP_PORT?.trim() || 465);
+  return {
+    host,
+    port,
+    // 465 is implicit TLS; 587 and the rest start plain and upgrade.
+    secure: (process.env.SMTP_SECURE?.trim() ?? (port === 465 ? 'true' : 'false')) === 'true',
+    auth: {
+      user: required('SMTP_USER'),
+      pass: required('SMTP_PASS').replace(/\s+/g, ''),
+    },
+  } as nodemailer.TransportOptions;
+}
+
 function smtp(): nodemailer.Transporter {
   // One connection pool per process. A serverless function that sends one
   // email and exits gets no benefit, but a long-running server does, and
   // neither is hurt.
-  transporter ??= nodemailer.createTransport(required('SMTP_URL'));
+  transporter ??= nodemailer.createTransport(smtpSettings());
   return transporter;
 }
 
