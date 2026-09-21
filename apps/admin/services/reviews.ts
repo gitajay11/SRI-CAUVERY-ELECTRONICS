@@ -5,6 +5,7 @@ import type { ReviewStatus } from '@tamizh/db/enums';
 import { notFound } from '@tamizh/core/api';
 import { recordAudit } from '@/lib/audit';
 import type { AdminIdentity } from '@/lib/session';
+import { refreshStorefrontCatalog } from './storefront-cache';
 
 /**
  * Review moderation.
@@ -123,6 +124,7 @@ export async function moderateReview(
   id: string,
   status: ReviewStatus,
 ) {
+  refreshStorefrontCatalog();
   const review = await db.review.findUnique({
     where: { id },
     select: {
@@ -159,6 +161,7 @@ export async function moderateReview(
 
 /** Publishes a shop reply beneath a review. */
 export async function replyToReview(actor: AdminIdentity, id: string, reply: string) {
+  refreshStorefrontCatalog();
   const review = await db.review.findUnique({
     where: { id },
     select: { id: true, product: { select: { name: true } } },

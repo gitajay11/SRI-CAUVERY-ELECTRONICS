@@ -6,6 +6,7 @@ import { AppError, notFound } from '@tamizh/core/api';
 import { canTransition } from '@tamizh/core/pricing';
 import { recordAudit } from '@/lib/audit';
 import type { AdminIdentity } from '@/lib/session';
+import { refreshStorefrontCatalog } from './storefront-cache';
 
 /**
  * Order operations.
@@ -197,6 +198,7 @@ export async function updateOrderStatus(
   orderNumber: string,
   input: OrderStatusInput,
 ) {
+  refreshStorefrontCatalog();
   return db.$transaction((tx) => updateOrderStatusWithin(tx, actor, orderNumber, input));
 }
 

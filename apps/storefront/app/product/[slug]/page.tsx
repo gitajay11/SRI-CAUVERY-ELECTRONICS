@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { cache } from 'react';
 import { notFound } from 'next/navigation';
 import { getI18n } from '@/i18n/server';
 import { getRepository } from '@/services/repository';
@@ -17,9 +18,15 @@ import { CheckIcon, ShieldIcon, TruckIcon } from '@/components/ui/Icons';
 
 type Params = Promise<{ slug: string }>;
 
+/**
+ * Once per request, however many times it is asked: the metadata and the
+ * page both need the product, and without this each ran its own lookup.
+ */
+const loadProduct = cache((slug: string) => getRepository().getProductBySlug(slug));
+
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { slug } = await params;
-  const product = await getRepository().getProductBySlug(slug);
+  const product = await loadProduct(slug);
   if (!product) return buildMetadata({ title: 'Product not found', noIndex: true });
 
   return buildMetadata({
@@ -36,7 +43,7 @@ export default async function ProductPage({ params }: { params: Params }) {
   const { t, locale } = await getI18n();
   const repo = getRepository();
 
-  const product = await repo.getProductBySlug(slug);
+  const product = await loadProduct(slug);
   if (!product) notFound();
 
   const user = await getSessionUser();

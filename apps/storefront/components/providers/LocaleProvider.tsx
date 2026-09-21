@@ -3,8 +3,8 @@
 import { createContext, useCallback, useContext, useMemo, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Locale } from '@tamizh/core/types';
-import type { Dictionary, TranslationKey } from '@/i18n/en';
-import { translate } from '@/i18n';
+import type { TranslationKey } from '@/i18n/en';
+import { getDictionary, translate } from '@/i18n';
 import { LOCALE_COOKIE, LOCALE_TAGS } from '@/i18n/config';
 
 interface LocaleContextValue {
@@ -19,19 +19,23 @@ interface LocaleContextValue {
 const LocaleContext = createContext<LocaleContextValue | null>(null);
 
 /**
- * The dictionary is resolved on the server and handed down, so the first paint
- * is already in the right language and no translation bundle is fetched on the
- * client. Switching writes a cookie and refreshes the server components.
+ * The server decides the locale and hands it down; the dictionary itself
+ * lives in the client bundle, both languages, downloaded once and cached.
+ * It used to travel inside every page instead — 25 to 50 KB of translations
+ * in each response and in each navigation's payload, for a store where the
+ * same shopper opens a dozen pages. The first paint is still in the right
+ * language: the bundle is on the server too, so server rendering of client
+ * components uses the same words. Switching writes a cookie and refreshes
+ * the server components.
  */
 export function LocaleProvider({
   locale,
-  dictionary,
   children,
 }: {
   locale: Locale;
-  dictionary: Dictionary;
   children: React.ReactNode;
 }) {
+  const dictionary = getDictionary(locale);
   const router = useRouter();
   // True from the tap until the page has re-rendered in the other language,
   // however long that takes: the switch is only done when the words change.

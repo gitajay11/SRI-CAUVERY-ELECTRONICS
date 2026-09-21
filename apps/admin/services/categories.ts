@@ -3,6 +3,7 @@ import { db } from '@tamizh/db';
 import { AppError, notFound } from '@tamizh/core/api';
 import { recordAudit, diff } from '@/lib/audit';
 import type { AdminIdentity } from '@/lib/session';
+import { refreshStorefrontCatalog } from './storefront-cache';
 
 /**
  * Categories.
@@ -149,6 +150,7 @@ async function assertSlugFree(slug: string, excludeId?: string) {
 }
 
 export async function createCategory(actor: AdminIdentity, input: CategoryInput) {
+  refreshStorefrontCatalog();
   await assertSlugFree(input.slug);
   const parentId = await validateParent(input.parentId);
 
@@ -191,6 +193,7 @@ export async function updateCategory(
   id: string,
   input: CategoryInput,
 ) {
+  refreshStorefrontCatalog();
   const existing = await db.category.findFirst({
     where: { id, deletedAt: null },
     select: {
@@ -255,6 +258,7 @@ export async function updateCategory(
  * catalogue, and neither is something a person clicking "delete" is asking for.
  */
 export async function removeCategory(actor: AdminIdentity, id: string) {
+  refreshStorefrontCatalog();
   const category = await db.category.findFirst({
     where: { id, deletedAt: null },
     select: {
@@ -311,6 +315,7 @@ export async function setCategoryActive(
   id: string,
   isActive: boolean,
 ) {
+  refreshStorefrontCatalog();
   const category = await db.category.findFirst({
     where: { id, deletedAt: null },
     select: { id: true, name: true, isActive: true },
@@ -349,6 +354,7 @@ export async function reorderCategories(
   actor: AdminIdentity,
   order: { id: string; sortOrder: number }[],
 ) {
+  refreshStorefrontCatalog();
   if (order.length === 0) return { updated: 0 };
   if (order.length > 200) {
     throw new AppError('Too many categories in one reorder.', 422, 'too_many');

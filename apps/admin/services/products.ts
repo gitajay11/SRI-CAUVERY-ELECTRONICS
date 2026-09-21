@@ -4,6 +4,7 @@ import type { ProductStatus } from '@tamizh/db/enums';
 import { AppError, notFound } from '@tamizh/core/api';
 import { recordAudit, diff } from '@/lib/audit';
 import type { AdminIdentity } from '@/lib/session';
+import { refreshStorefrontCatalog } from './storefront-cache';
 
 /**
  * Product catalogue management.
@@ -241,6 +242,7 @@ function validatePricing(input: Pick<ProductInput, 'price' | 'mrp'>) {
 }
 
 export async function createProduct(actor: AdminIdentity, input: ProductInput) {
+  refreshStorefrontCatalog();
   await assertUnique(input.sku, input.slug);
   validatePricing(input);
   await validateCategory(input);
@@ -321,6 +323,7 @@ export async function updateProduct(
   id: string,
   input: ProductInput,
 ) {
+  refreshStorefrontCatalog();
   const existing = await db.product.findFirst({
     where: { id, deletedAt: null },
     select: {
@@ -475,6 +478,7 @@ export async function updateProduct(
  * orders pointing at nothing. Only an untouched product is actually removed.
  */
 export async function removeProduct(actor: AdminIdentity, id: string) {
+  refreshStorefrontCatalog();
   const product = await db.product.findFirst({
     where: { id, deletedAt: null },
     select: { id: true, name: true, sku: true, _count: { select: { orderItems: true } } },
@@ -515,6 +519,7 @@ export async function setProductStatus(
   id: string,
   status: ProductStatus,
 ) {
+  refreshStorefrontCatalog();
   const product = await db.product.findFirst({
     where: { id, deletedAt: null },
     select: { id: true, name: true, status: true },
@@ -545,6 +550,7 @@ export async function setProductStatus(
 
 /** Copies a product as a draft, so a similar item is a minute's work. */
 export async function duplicateProduct(actor: AdminIdentity, id: string) {
+  refreshStorefrontCatalog();
   const source = await db.product.findFirst({
     where: { id, deletedAt: null },
     include: { images: { orderBy: { sortOrder: 'asc' } } },

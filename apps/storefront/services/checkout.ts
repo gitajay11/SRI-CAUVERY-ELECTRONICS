@@ -4,7 +4,7 @@ import type { CheckoutInput } from '@/lib/validation';
 import { AppError } from '@tamizh/core/api';
 import { formatINR } from '@tamizh/core/money';
 import { getSessionUser } from '@/lib/auth';
-import { getRepository } from './repository';
+import { forgetCatalog, getRepository } from './repository';
 import { calculateTotals, evaluateCoupon, generateOrderNumber } from '@tamizh/core/pricing';
 import { isValidQuantity, quantityRuleFor } from '@tamizh/core/quantity';
 import { onlinePaymentAvailable, providerFor } from './payments';
@@ -167,6 +167,8 @@ export async function placeOrder(input: CheckoutInput): Promise<PlaceOrderResult
 
   // The order exists; the cart and the coupon have served their purpose.
   await repo.clearCart(owner);
+  // Stock moved, so every cached listing and product page is stale.
+  forgetCatalog();
   await setCouponCookie(null);
 
   if (input.saveAddress) {

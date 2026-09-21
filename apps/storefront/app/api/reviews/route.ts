@@ -3,7 +3,7 @@ import { AppError, created, handleRouteError, readJson } from '@tamizh/core/api'
 import { clientKey, consume, LIMITS } from '@tamizh/core/rate-limit';
 import { requireUser } from '@/lib/auth';
 import { reviewSchema } from '@/lib/validation';
-import { getRepository } from '@/services/repository';
+import { forgetCatalog, getRepository } from '@/services/repository';
 
 /**
  * POST /api/reviews — write or update a product review.
@@ -28,6 +28,8 @@ export async function POST(request: Request): Promise<NextResponse> {
       );
     }
 
+    // A rating changes the product's average, which the cards show.
+    forgetCatalog();
     await repo.upsertReview(user.id, user.name, {
       productId: body.productId,
       rating: body.rating,

@@ -5,6 +5,7 @@ import { AppError, notFound } from '@tamizh/core/api';
 import { recordAudit } from '@/lib/audit';
 import type { AdminIdentity } from '@/lib/session';
 import { notifyStaff } from './notifications';
+import { refreshStorefrontCatalog } from './storefront-cache';
 
 /**
  * Payments, returns and refunds.
@@ -260,6 +261,7 @@ export async function progressReturn(
   returnNumber: string,
   decision: ReturnDecision,
 ) {
+  refreshStorefrontCatalog();
   const request = await db.returnRequest.findUnique({
     where: { returnNumber },
     select: {

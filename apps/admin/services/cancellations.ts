@@ -8,6 +8,7 @@ import type { AdminIdentity } from '@/lib/session';
 import { cancellationStage } from '@tamizh/core/cancellation';
 import { refundableAmount, requestRefund } from './money';
 import { updateOrderStatusWithin } from './orders';
+import { refreshStorefrontCatalog } from './storefront-cache';
 
 /**
  * Customer cancellation requests.
@@ -186,6 +187,7 @@ export async function decideCancellation(
   requestNumber: string,
   decision: CancellationDecision,
 ) {
+  refreshStorefrontCatalog();
   const note = decision.note?.trim() || '';
   if (decision.status === 'REJECTED' && note.length < 3) {
     throw new AppError(

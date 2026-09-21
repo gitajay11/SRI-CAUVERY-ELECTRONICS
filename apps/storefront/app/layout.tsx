@@ -4,7 +4,6 @@ import { Manrope, Noto_Sans_Tamil } from 'next/font/google';
 import './globals.css';
 
 import { getI18n } from '@/i18n/server';
-import { getDictionary } from '@/i18n';
 import { LOCALE_TAGS } from '@/i18n/config';
 import { getSessionUser } from '@/lib/auth';
 import { getRepository } from '@/services/repository';
@@ -112,7 +111,7 @@ export default async function RootLayout({
         <JsonLd data={organizationJsonLd()} />
         <JsonLd data={websiteJsonLd()} />
 
-        <LocaleProvider locale={locale} dictionary={getDictionary(locale)}>
+        <LocaleProvider locale={locale}>
           <ToastProvider>
             <InstallProvider>
             <CartProvider

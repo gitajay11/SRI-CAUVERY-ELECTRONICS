@@ -5,6 +5,7 @@ import { AppError, notFound } from '@tamizh/core/api';
 import { recordAudit } from '@/lib/audit';
 import type { AdminIdentity } from '@/lib/session';
 import { maybeNotifyLowStock } from './notifications';
+import { refreshStorefrontCatalog } from './storefront-cache';
 
 /**
  * Stock.
@@ -168,6 +169,7 @@ export interface AdjustInput {
  * would hide that.
  */
 export async function adjustStock(actor: AdminIdentity, input: AdjustInput) {
+  refreshStorefrontCatalog();
   const result = await db.$transaction(async (tx) => {
     const product = await tx.product.findUnique({
       where: { id: input.productId },

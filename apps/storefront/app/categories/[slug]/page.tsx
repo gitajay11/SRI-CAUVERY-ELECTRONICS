@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { cache } from 'react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getI18n } from '@/i18n/server';
@@ -11,13 +12,16 @@ import { CategoryIcon } from '@/components/ui/CategoryIcon';
 
 type Params = Promise<{ slug: string }>;
 
+/** Once per request, shared by the metadata and the page. */
+const loadCategory = cache((slug: string) => getRepository().getCategoryBySlug(slug));
+
 export async function generateMetadata({
   params,
 }: {
   params: Params;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const category = await getRepository().getCategoryBySlug(slug);
+  const category = await loadCategory(slug);
   if (!category) return buildMetadata({ title: 'Category', noIndex: true });
 
   return buildMetadata({
@@ -41,7 +45,7 @@ export default async function CategoryPage({
   const { t, locale } = await getI18n();
   const repo = getRepository();
 
-  const category = await repo.getCategoryBySlug(slug);
+  const category = await loadCategory(slug);
   if (!category) notFound();
 
   const query = parseProductSearchParams(search, { category: slug });

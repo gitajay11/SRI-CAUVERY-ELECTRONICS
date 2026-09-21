@@ -1,8 +1,10 @@
 import 'server-only';
 import { PrismaRepository } from './prisma-repository';
+import { withCatalogCache } from './cached';
 import type { Repository } from './types';
 
 export type { Repository, CartOwner, ResolvedCart } from './types';
+export { forgetCatalog } from './cached';
 
 /**
  * The storefront's data access.
@@ -26,6 +28,8 @@ export type { Repository, CartOwner, ResolvedCart } from './types';
 let repository: Repository | undefined;
 
 export function getRepository(): Repository {
-  repository ??= new PrismaRepository();
+  // The catalogue reads come back from the data cache when they can; see
+  // cached.ts for what is cached and what never is.
+  repository ??= withCatalogCache(new PrismaRepository());
   return repository;
 }
