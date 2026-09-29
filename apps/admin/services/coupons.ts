@@ -1,6 +1,7 @@
 import 'server-only';
 import { db } from '@tamizh/db';
 import { AppError, notFound } from '@tamizh/core/api';
+import { fromShopDateInput } from '@tamizh/core/utils';
 import { recordAudit, diff } from '@/lib/audit';
 import type { AdminIdentity } from '@/lib/session';
 
@@ -189,6 +190,29 @@ export interface CouponInput {
   productIds: string[];
 }
 
+/**
+ * The schedule as instants. The editor sends calendar days; a start opens at
+ * midnight in India and an end closes at the last moment of its day, so a
+ * coupon "ending on the 30th" still works at 11 pm on the 30th — and a
+ * one-day coupon (same start and end) is valid.
+ */
+function scheduleOf(input: CouponInput): { startsAt: Date | null; endsAt: Date | null } {
+  const startsAt = input.startsAt ? fromShopDateInput(input.startsAt, 'start') : null;
+  const endsAt = input.endsAt ? fromShopDateInput(input.endsAt, 'end') : null;
+  if (input.startsAt && !startsAt) {
+    throw new AppError('Enter a valid start date.', 422, 'invalid_dates', { startsAt: 'Enter a valid date.' });
+  }
+  if (input.endsAt && !endsAt) {
+    throw new AppError('Enter a valid end date.', 422, 'invalid_dates', { endsAt: 'Enter a valid date.' });
+  }
+  if (startsAt && endsAt && endsAt <= startsAt) {
+    throw new AppError('The end date must be after the start date.', 422, 'invalid_dates', {
+      endsAt: 'Must be after the start date.',
+    });
+  }
+  return { startsAt, endsAt };
+}
+
 function validate(input: CouponInput) {
   if (input.value <= 0) {
     throw new AppError('Enter a discount above zero.', 422, 'invalid_value', {
@@ -198,11 +222,6 @@ function validate(input: CouponInput) {
   if (input.type === 'PERCENT' && input.value > 10_000) {
     throw new AppError('A percentage discount cannot exceed 100%.', 422, 'invalid_value', {
       value: 'At most 100%.',
-    });
-  }
-  if (input.endsAt && input.startsAt && new Date(input.endsAt) <= new Date(input.startsAt)) {
-    throw new AppError('The end date must be after the start date.', 422, 'invalid_dates', {
-      endsAt: 'Must be after the start date.',
     });
   }
 }
@@ -222,6 +241,7 @@ async function assertCodeFree(code: string, excludeId?: string) {
 export async function createCoupon(actor: AdminIdentity, input: CouponInput) {
   await assertCodeFree(input.code);
   validate(input);
+  const schedule = scheduleOf(input);
 
   return db.$transaction(async (tx) => {
     const coupon = await tx.coupon.create({
@@ -232,8 +252,8 @@ export async function createCoupon(actor: AdminIdentity, input: CouponInput) {
         value: input.value,
         minOrder: input.minOrder,
         maxDiscount: input.maxDiscount ?? null,
-        startsAt: input.startsAt ? new Date(input.startsAt) : new Date(),
-        endsAt: input.endsAt ? new Date(input.endsAt) : null,
+        startsAt: schedule.startsAt ?? new Date(),
+        endsAt: schedule.endsAt,
         usageLimit: input.usageLimit ?? null,
         perUserLimit: input.perUserLimit ?? null,
         isActive: input.isActive,
@@ -279,6 +299,7 @@ export async function updateCoupon(actor: AdminIdentity, id: string, input: Coup
 
   await assertCodeFree(input.code, id);
   validate(input);
+  const schedule = scheduleOf(input);
 
   // Changing what a used coupon means would rewrite history for the orders
   // that already claimed it, so the discount itself is frozen once redeemed.
@@ -304,8 +325,8 @@ export async function updateCoupon(actor: AdminIdentity, id: string, input: Coup
         value: input.value,
         minOrder: input.minOrder,
         maxDiscount: input.maxDiscount ?? null,
-        startsAt: input.startsAt ? new Date(input.startsAt) : undefined,
-        endsAt: input.endsAt ? new Date(input.endsAt) : null,
+        startsAt: schedule.startsAt ?? undefined,
+        endsAt: schedule.endsAt,
         usageLimit: input.usageLimit ?? null,
         perUserLimit: input.perUserLimit ?? null,
         isActive: input.isActive,

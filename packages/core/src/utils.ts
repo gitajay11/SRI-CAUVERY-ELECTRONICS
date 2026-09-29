@@ -118,6 +118,25 @@ export function parseShopDate(value: string | undefined | null): Date | null {
   return shopMidnight(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
 }
 
+/**
+ * A date input's "YYYY-MM-DD" as the instant a schedule turns on or off: the
+ * first millisecond of that shop day for a start, the last for an end, so a
+ * coupon or banner ending on the 30th runs through the whole of the 30th
+ * here. Anything else that parses as a date (an ISO timestamp from an API
+ * client) is taken as given; null when it is neither.
+ */
+export function fromShopDateInput(value: string, edge: 'start' | 'end'): Date | null {
+  const day = parseShopDate(value);
+  if (day) return edge === 'start' ? day : new Date(day.getTime() + MS_PER_DAY - 1);
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+/** The "YYYY-MM-DD" a date input shows for a stored instant, in the shop's zone. */
+export function toShopDateInput(value: Date | null | undefined): string {
+  return value ? shopDateKey(value) : '';
+}
+
 /** "2026-09-29 16:44:23" in the shop's zone, for exports and logs. */
 export function formatShopTimestamp(value: Date): string {
   return new Date(value.getTime() + SHOP_OFFSET_MS).toISOString().slice(0, 19).replace('T', ' ');

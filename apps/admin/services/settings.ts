@@ -1,6 +1,7 @@
 import 'server-only';
 import { db } from '@tamizh/db';
-import { notFound } from '@tamizh/core/api';
+import { AppError, notFound } from '@tamizh/core/api';
+import { fromShopDateInput } from '@tamizh/core/utils';
 import { recordAudit, diff } from '@/lib/audit';
 import type { AdminIdentity } from '@/lib/session';
 
@@ -231,6 +232,22 @@ export async function saveBanner(
   id: string | null,
   input: BannerInput,
 ) {
+  // Calendar days in India: shown from midnight on the start date until the
+  // last moment of the end date.
+  const startsAt = input.startsAt ? fromShopDateInput(input.startsAt, 'start') : null;
+  const endsAt = input.endsAt ? fromShopDateInput(input.endsAt, 'end') : null;
+  if ((input.startsAt && !startsAt) || (input.endsAt && !endsAt)) {
+    throw new AppError('Enter valid dates.', 422, 'invalid_dates', {
+      ...(input.startsAt && !startsAt ? { startsAt: 'Enter a valid date.' } : {}),
+      ...(input.endsAt && !endsAt ? { endsAt: 'Enter a valid date.' } : {}),
+    });
+  }
+  if (startsAt && endsAt && endsAt <= startsAt) {
+    throw new AppError('The end date must be after the start date.', 422, 'invalid_dates', {
+      endsAt: 'Must be after the start date.',
+    });
+  }
+
   const data = {
     placement: input.placement,
     title: input.title,
@@ -243,8 +260,8 @@ export async function saveBanner(
     ctaHref: input.ctaHref || null,
     isActive: input.isActive,
     sortOrder: input.sortOrder,
-    startsAt: input.startsAt ? new Date(input.startsAt) : null,
-    endsAt: input.endsAt ? new Date(input.endsAt) : null,
+    startsAt,
+    endsAt,
   };
 
   const banner = await db.$transaction(async (tx) => {

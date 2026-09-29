@@ -1,4 +1,5 @@
 import { requirePermission } from '@/lib/session';
+import { toShopDateInput } from '@tamizh/core/utils';
 import { getI18n } from '@/i18n/server';
 import { listBanners } from '@/services/settings';
 import { storefrontUrl } from '@/lib/env';
@@ -32,8 +33,8 @@ export default async function ContentPage() {
           ctaHref: banner.ctaHref ?? '',
           isActive: banner.isActive,
           sortOrder: banner.sortOrder,
-          startsAt: banner.startsAt ? banner.startsAt.toISOString().slice(0, 10) : '',
-          endsAt: banner.endsAt ? banner.endsAt.toISOString().slice(0, 10) : '',
+          startsAt: toShopDateInput(banner.startsAt),
+          endsAt: toShopDateInput(banner.endsAt),
         }))}
       />
     </>

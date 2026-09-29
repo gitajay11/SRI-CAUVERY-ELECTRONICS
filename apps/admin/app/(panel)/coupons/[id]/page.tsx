@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { db } from '@tamizh/db';
 import { formatINR, paiseToRupees } from '@tamizh/core/money';
-import { formatDate } from '@tamizh/core/utils';
+import { formatDate, toShopDateInput } from '@tamizh/core/utils';
 import { requirePermission } from '@/lib/session';
 import { getI18n } from '@/i18n/server';
 import { getCoupon } from '@/services/coupons';
@@ -45,8 +45,8 @@ export default async function EditCouponPage({
     minOrder: String(paiseToRupees(coupon.minOrder)),
     maxDiscount:
       coupon.maxDiscount === null ? '' : String(paiseToRupees(coupon.maxDiscount)),
-    startsAt: coupon.startsAt.toISOString().slice(0, 10),
-    endsAt: coupon.endsAt ? coupon.endsAt.toISOString().slice(0, 10) : '',
+    startsAt: toShopDateInput(coupon.startsAt),
+    endsAt: toShopDateInput(coupon.endsAt),
     usageLimit: coupon.usageLimit === null ? '' : String(coupon.usageLimit),
     perUserLimit: coupon.perUserLimit === null ? '' : String(coupon.perUserLimit),
     isActive: coupon.isActive,
