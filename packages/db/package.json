@@ -16,6 +16,7 @@
     "deploy": "prisma migrate deploy",
     "seed": "node --experimental-strip-types prisma/seed.ts",
     "reset": "node --experimental-strip-types scripts/reset.ts",
+    "create-owner": "node --experimental-strip-types scripts/create-owner.ts",
     "studio": "prisma studio",
     "start": "node --experimental-strip-types scripts/serve.ts",
     "typecheck": "tsc --noEmit"
