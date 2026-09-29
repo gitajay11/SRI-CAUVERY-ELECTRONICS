@@ -1,4 +1,5 @@
 import 'server-only';
+import { formatShopTimestamp, shopDateKey, startOfShopDay } from '@tamizh/core/utils';
 import { db } from '@tamizh/db';
 import type { OrderStatus } from '@tamizh/db/enums';
 import type { DateRange } from './dashboard';
@@ -97,7 +98,7 @@ export async function getSalesReport(range: DateRange): Promise<SalesReport> {
   // -- by day ---------------------------------------------------------------
   const days = new Map<string, { revenue: number; orders: number }>();
   for (const order of orders) {
-    const key = order.placedAt.toISOString().slice(0, 10);
+    const key = shopDateKey(order.placedAt);
     const entry = days.get(key) ?? { revenue: 0, orders: 0 };
     entry.revenue += order.total;
     entry.orders += 1;
@@ -107,11 +108,11 @@ export async function getSalesReport(range: DateRange): Promise<SalesReport> {
   // Fill the gaps so a quiet Tuesday reads as zero rather than disappearing.
   const byDay: SalesReport['byDay'] = [];
   for (
-    let cursor = new Date(range.from);
+    let cursor = startOfShopDay(range.from);
     cursor <= range.to;
-    cursor.setDate(cursor.getDate() + 1)
+    cursor = new Date(cursor.getTime() + 86_400_000)
   ) {
-    const key = cursor.toISOString().slice(0, 10);
+    const key = shopDateKey(cursor);
     const entry = days.get(key);
     byDay.push({ date: key, revenue: entry?.revenue ?? 0, orders: entry?.orders ?? 0 });
   }
@@ -253,7 +254,8 @@ export async function ordersCsv(range: DateRange): Promise<string> {
     ],
     orders.map((order) => [
       order.orderNumber,
-      order.placedAt.toISOString(),
+      // Shop time, which is what a spreadsheet opened in the shop expects.
+      formatShopTimestamp(order.placedAt),
       order.status,
       order.paymentStatus,
       order.paymentMethod,

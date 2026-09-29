@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { formatINR } from '@tamizh/core/money';
-import { formatDate } from '@tamizh/core/utils';
+import { formatDate, shopClock } from '@tamizh/core/utils';
 import { requireAdmin } from '@/lib/session';
 import { defaultRouteFor } from '@/lib/navigation';
 import { getI18n } from '@/i18n/server';
@@ -52,7 +52,7 @@ export default async function DashboardPage({
   const range = resolveRange(rangeKey, params.from, params.to);
   const data = await getDashboard(range);
 
-  const hour = new Date().getHours();
+  const { hour } = shopClock();
   const greetingKey =
     hour < 12 ? 'dash.greeting' : hour < 17 ? 'dash.greetingAfternoon' : 'dash.greetingEvening';
   const firstName = identity.name.split(' ')[0] ?? identity.name;

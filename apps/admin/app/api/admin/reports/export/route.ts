@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { shopDateKey } from '@tamizh/core/utils';
 import { handleRouteError, fail } from '@tamizh/core/api';
 import { requirePermission } from '@/lib/session';
 import { recordAudit } from '@/lib/audit';
@@ -40,10 +41,10 @@ export async function GET(request: Request): Promise<NextResponse> {
       action: 'report.exported',
       entityType: 'Report',
       entityId: report,
-      summary: `Exported the ${report} report (${range.from.toISOString().slice(0, 10)} to ${range.to.toISOString().slice(0, 10)})`,
+      summary: `Exported the ${report} report (${shopDateKey(range.from)} to ${shopDateKey(range.to)})`,
     });
 
-    const stamp = new Date().toISOString().slice(0, 10);
+    const stamp = shopDateKey();
     return new NextResponse(csv, {
       headers: {
         'Content-Type': 'text/csv; charset=utf-8',

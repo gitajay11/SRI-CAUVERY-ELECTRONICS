@@ -291,8 +291,13 @@ export async function updateOrderStatusWithin(
         confirmedAt:
           input.status === 'CONFIRMED' && !order.confirmedAt ? now : order.confirmedAt,
         shippedAt: input.status === 'SHIPPED' && !order.shippedAt ? now : order.shippedAt,
-        deliveredAt: input.status === 'DELIVERED' ? now : order.deliveredAt,
-        cancelledAt: input.status === 'CANCELLED' ? now : order.cancelledAt,
+        // Each milestone is recorded once, when it first happens. Saving
+        // the order again at the same status — to add a tracking number,
+        // say — must not move the time it was delivered.
+        deliveredAt:
+          input.status === 'DELIVERED' && !order.deliveredAt ? now : order.deliveredAt,
+        cancelledAt:
+          input.status === 'CANCELLED' && !order.cancelledAt ? now : order.cancelledAt,
         // Cash is collected on the doorstep, so delivery is the moment a COD
         // order becomes paid.
         paymentStatus:

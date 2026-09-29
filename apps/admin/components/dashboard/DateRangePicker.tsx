@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { cn } from '@tamizh/core/utils';
+import { cn, shopDateKey } from '@tamizh/core/utils';
 import { useAdmin } from '@/components/providers/AdminProviders';
 import type { TranslationKey } from '@/i18n/en';
 import { Button } from '@/components/ui/Button';
@@ -57,7 +57,7 @@ export function DateRangePicker({
     push(`${basePath}?range=${key}`);
   };
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = shopDateKey();
 
   return (
     <div className="flex flex-col items-stretch gap-2 sm:items-end">

@@ -1,3 +1,4 @@
+import { shopDateKey } from '@tamizh/core/utils';
 /** The shape the coupon editor works in — strings, as typed. */
 export interface CouponFormValues {
   id?: string;
@@ -24,7 +25,7 @@ export function emptyCoupon(): CouponFormValues {
     value: '',
     minOrder: '0',
     maxDiscount: '',
-    startsAt: new Date().toISOString().slice(0, 10),
+    startsAt: shopDateKey(),
     endsAt: '',
     usageLimit: '',
     perUserLimit: '1',

@@ -1,4 +1,12 @@
 import 'server-only';
+import {
+  endOfShopDay,
+  parseShopDate,
+  shopClock,
+  shopDateKey,
+  shopMidnight,
+  startOfShopDay,
+} from '@tamizh/core/utils';
 import { db } from '@tamizh/db';
 import type { OrderStatus } from '@tamizh/db/enums';
 
@@ -31,17 +39,10 @@ export interface DateRange {
   key: RangeKey;
 }
 
-function startOfDay(date: Date): Date {
-  const copy = new Date(date);
-  copy.setHours(0, 0, 0, 0);
-  return copy;
-}
-
-function endOfDay(date: Date): Date {
-  const copy = new Date(date);
-  copy.setHours(23, 59, 59, 999);
-  return copy;
-}
+// Days begin at the shop's midnight, not the server's (UTC): "today" on
+// the dashboard is the day in Madurai.
+const startOfDay = startOfShopDay;
+const endOfDay = endOfShopDay;
 
 /** Resolves a range key (or an explicit pair of dates) into a window. */
 export function resolveRange(
@@ -59,8 +60,7 @@ export function resolveRange(
       to = endOfDay(now);
       break;
     case 'yesterday': {
-      const yesterday = new Date(now);
-      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterday = new Date(startOfDay(now).getTime() - 1);
       from = startOfDay(yesterday);
       to = endOfDay(yesterday);
       break;
@@ -69,24 +69,24 @@ export function resolveRange(
       from = startOfDay(new Date(now.getTime() - 6 * 86_400_000));
       to = endOfDay(now);
       break;
-    case 'thisMonth':
-      from = new Date(now.getFullYear(), now.getMonth(), 1);
+    case 'thisMonth': {
+      const today = shopClock(now);
+      from = shopMidnight(today.year, today.month, 1);
       to = endOfDay(now);
       break;
-    case 'previousMonth':
-      from = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-      to = endOfDay(new Date(now.getFullYear(), now.getMonth(), 0));
+    }
+    case 'previousMonth': {
+      const today = shopClock(now);
+      from = shopMidnight(today.year, today.month - 1, 1);
+      to = new Date(shopMidnight(today.year, today.month, 1).getTime() - 1);
       break;
+    }
     case 'custom': {
-      const parsedFrom = customFrom ? new Date(customFrom) : null;
-      const parsedTo = customTo ? new Date(customTo) : null;
+      const parsedFrom = parseShopDate(customFrom);
+      const parsedTo = parseShopDate(customTo);
       // Fall back to the last 30 days rather than throwing on a bad URL.
-      from =
-        parsedFrom && !Number.isNaN(parsedFrom.getTime())
-          ? startOfDay(parsedFrom)
-          : startOfDay(new Date(now.getTime() - 29 * 86_400_000));
-      to =
-        parsedTo && !Number.isNaN(parsedTo.getTime()) ? endOfDay(parsedTo) : endOfDay(now);
+      from = parsedFrom ?? startOfDay(new Date(now.getTime() - 29 * 86_400_000));
+      to = parsedTo ? endOfDay(parsedTo) : endOfDay(now);
       break;
     }
     case 'last30':
@@ -305,11 +305,12 @@ export async function getDashboard(range: DateRange): Promise<DashboardData> {
       (order) => order.placedAt >= cursor && order.placedAt < next,
     );
     days.push({
-      date: cursor.toISOString().slice(0, 10),
+      date: shopDateKey(cursor),
       revenue: inDay.reduce((sum, order) => sum + order.total, 0),
       orders: inDay.length,
     });
-    cursor.setDate(cursor.getDate() + 1);
+    // A day is always 24 hours in the shop's zone: India has no DST.
+    cursor.setTime(next.getTime());
   }
 
   const revenue = revenueNow._sum.total ?? 0;
