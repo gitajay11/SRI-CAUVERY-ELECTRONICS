@@ -93,6 +93,13 @@ const paths: Record<string, React.ReactNode> = {
       <path d="M9 6.5 9.5 3h5l.5 3.5M9 17.5 9.5 21h5l.5-3.5" />
     </>
   ),
+  rings: (
+    <>
+      <circle cx="9" cy="14.5" r="5.5" />
+      <circle cx="15" cy="14.5" r="5.5" />
+      <path d="M10.5 5 12 3l1.5 2L12 7Z" />
+    </>
+  ),
   cake: (
     <>
       <path d="M4 20.5h16v-6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2Z" />
