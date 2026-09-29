@@ -34,6 +34,24 @@ const paths: Record<string, React.ReactNode> = {
       <path d="M10.5 18.5h3" />
     </>
   ),
+  tablet: (
+    <>
+      <rect x="4.5" y="2.5" width="15" height="19" rx="2.5" />
+      <path d="M11 18.5h2" />
+    </>
+  ),
+  tv: (
+    <>
+      <rect x="2.5" y="4" width="19" height="12.5" rx="2" />
+      <path d="M8 20.5h8M12 16.5v4" />
+    </>
+  ),
+  laptop: (
+    <>
+      <rect x="4.5" y="4.5" width="15" height="10.5" rx="1.5" />
+      <path d="M2 19h20l-1.5-4h-17Z" />
+    </>
+  ),
   bolt: <path d="M13.5 3 6 13.2h5L10.5 21 18 10.8h-5Z" />,
   cable: (
     <>
