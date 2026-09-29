@@ -46,8 +46,9 @@ function passwordProblem(password: string): string | null {
 }
 
 /**
- * One line from the terminal. Raw mode, so hidden answers are never echoed;
- * visible ones are echoed by hand. Ctrl+C quits.
+ * One line from the terminal. Raw mode, so hidden answers are never echoed —
+ * each character shows as a star, so a paste that never arrived is visible
+ * as no stars; visible ones are echoed by hand. Ctrl+C quits.
  */
 function ask(question: string, { hidden = false } = {}): Promise<string> {
   return new Promise((resolve) => {
@@ -68,19 +69,26 @@ function ask(question: string, { hidden = false } = {}): Promise<string> {
           stdin.setRawMode(false);
           stdin.pause();
           process.stdout.write('\n');
-          resolve(value.trim());
+          // Terminals with bracketed paste wrap a paste in ESC[200~ … ESC[201~;
+          // the ESC is dropped below, so drop what follows it here.
+          resolve(value.replace(/\[20[01]~/g, '').trim());
           return;
         }
         if (char === '\u007f' || char === '\b') {
           if (value.length > 0) {
             value = value.slice(0, -1);
-            if (!hidden) process.stdout.write('\b \b');
+            process.stdout.write('\b \b');
           }
+          continue;
+        }
+        if (char === '\u0016') {
+          // Some terminals hand Ctrl+V to the program instead of pasting.
+          process.stdout.write('\n(Ctrl+V did not paste here — right-click to paste instead.)\n' + question + '*'.repeat(hidden ? value.length : 0) + (hidden ? '' : value));
           continue;
         }
         if (char < ' ') continue;
         value += char;
-        if (!hidden) process.stdout.write(char);
+        process.stdout.write(hidden ? '*' : char);
       }
     };
     stdin.on('data', onData);
@@ -111,15 +119,21 @@ async function main(): Promise<void> {
   );
   const pasted = await ask(
     fromEnv
-      ? 'Paste a different connection string, or press Enter to use that one (hidden): '
-      : 'Paste the connection string (hidden): ',
+      ? 'Paste a different connection string (shows as stars), or press Enter to use that one: '
+      : 'Paste the connection string (shows as stars): ',
     { hidden: true },
   );
-  const connectionString = pasted || fromEnv;
-  if (!connectionString || !/^postgres(ql)?:\/\//.test(connectionString)) {
+  // Neon's "Connect" dialog also offers the string inside a psql command.
+  const connectionString = pasted
+    ? /postgres(?:ql)?:\/\/[^\s'"]+/.exec(pasted)?.[0]
+    : fromEnv;
+  if (!connectionString) {
     console.error('That is not a PostgreSQL connection string. Nothing was changed.');
     process.exit(1);
   }
+  console.log(
+    `Using ${hostOf(connectionString)} (${pasted ? 'the string you pasted' : 'from .env'}).\n`,
+  );
 
   const email = (await ask('Email: ')).toLowerCase();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
