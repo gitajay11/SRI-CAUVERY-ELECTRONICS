@@ -11,6 +11,7 @@ import { ThemeToggle } from './ThemeToggle';
 import { InstallButton } from '@/components/pwa/InstallButton';
 import { CategoryMenu } from './CategoryMenu';
 import { MobileMenu } from './MobileMenu';
+import { AnchorLink } from '@/components/motion/AnchorLink';
 import { HeaderActions } from './HeaderActions';
 import { BoltIcon, MapPinIcon, PhoneIcon, TruckIcon } from '@/components/ui/Icons';
 
@@ -35,7 +36,11 @@ export async function Header({
   const { t } = await getI18n();
 
   return (
-    <header className="sticky top-0 z-50 border-b border-ink-100 bg-surface/95 backdrop-blur supports-[backdrop-filter]:bg-surface/80">
+    <header
+      className="sticky top-0 z-50 border-b border-ink-100 bg-surface/95 backdrop-blur supports-[backdrop-filter]:bg-surface/80"
+      // Named so page transitions leave it where it is (see globals.css).
+      style={{ viewTransitionName: 'site-header' }}
+    >
       {/* Trust strip */}
       <div className="hidden bg-brand-800 text-brand-50 lg:block">
         <div className="container-page flex h-9 items-center justify-between text-xs">
@@ -57,10 +62,14 @@ export async function Header({
               <PhoneIcon className="text-sm text-gold-300" />
               {shopConfig.supportPhone}
             </a>
-            <Link href="/contact#visit-store" className="flex items-center gap-1.5 hover:text-white">
+            <AnchorLink
+              href="/contact#visit-store"
+              className="flex items-center gap-1.5 hover:text-white"
+              activeClassName="text-white underline underline-offset-4"
+            >
               <MapPinIcon className="text-sm text-gold-300" />
               {t('nav.visitStore')}
-            </Link>
+            </AnchorLink>
             <Link href="/orders" className="hover:text-white">
               {t('order.myOrders')}
             </Link>

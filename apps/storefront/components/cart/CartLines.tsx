@@ -50,13 +50,20 @@ function CartLine({ item }: { item: CartItemView }) {
   // refreshing, which is when the page shows the result.
   const [action, setAction] = useState<'remove' | 'quantity' | null>(null);
   const busy = action !== null;
+  // Optimistic: the quantity asked for shows at once, until the refreshed
+  // cart arrives with the server's figure (or the change is refused).
+  const [asked, setAsked] = useState<number | null>(null);
+  const quantity = asked ?? item.quantity;
   const name = pick(item.name, item.nameTa);
 
   /* eslint-disable react-hooks/set-state-in-effect --
      The refresh finishing is the event this row is waiting on, and it is
      only observable once the provider has rendered it. */
   useEffect(() => {
-    if (!pending) setAction(null);
+    if (!pending) {
+      setAction(null);
+      setAsked(null);
+    }
   }, [pending]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
@@ -74,15 +81,19 @@ function CartLine({ item }: { item: CartItemView }) {
         ? 'below_minimum'
         : quantityProblem(typedNumber, rule, item.availableStock);
 
-  const change = async (quantity: number) => {
-    setAction(quantity === 0 ? 'remove' : 'quantity');
-    const ok = await setQuantity(item.id, quantity);
+  const change = async (next: number) => {
+    setAction(next === 0 ? 'remove' : 'quantity');
+    if (next > 0) setAsked(next);
+    const ok = await setQuantity(item.id, next);
     // A refused change refreshes nothing, so nothing else will clear this.
-    if (!ok) setAction(null);
+    if (!ok) {
+      setAction(null);
+      setAsked(null);
+    }
   };
 
   const commitTyped = async () => {
-    if (typedNumber === null || typedProblem || typedNumber === item.quantity) {
+    if (typedNumber === null || typedProblem || typedNumber === quantity) {
       if (!typedProblem) setTyped(null);
       return;
     }
@@ -154,7 +165,7 @@ function CartLine({ item }: { item: CartItemView }) {
               type="button"
               // Below the minimum there is nothing to buy: the line goes.
               onClick={() =>
-                change(item.quantity <= rule.min ? 0 : stepDown(item.quantity, rule))
+                change(quantity <= rule.min ? 0 : stepDown(quantity, rule))
               }
               disabled={busy}
               aria-label={t('product.decrease')}
@@ -172,7 +183,7 @@ function CartLine({ item }: { item: CartItemView }) {
                   min={rule.min}
                   max={max}
                   step={rule.step}
-                  value={typed ?? String(item.quantity)}
+                  value={typed ?? String(quantity)}
                   disabled={busy}
                   aria-label={t('product.bulk.quantityLabel')}
                   aria-invalid={typedProblem ? true : undefined}
@@ -187,25 +198,21 @@ function CartLine({ item }: { item: CartItemView }) {
                   className={cn(
                     'w-16 border-x bg-transparent py-1.5 text-center text-sm font-bold tabular-nums outline-none',
                     typedProblem ? 'border-danger-500 text-danger-500' : 'border-ink-200 text-ink-900',
-                    action === 'quantity' && 'text-transparent',
                   )}
                 />
-                {action === 'quantity' ? (
-                  <SpinnerIcon className="pointer-events-none absolute inset-0 m-auto text-base text-ink-700" />
-                ) : null}
               </span>
             ) : (
               <span
                 aria-live="polite"
                 className="grid w-9 place-items-center text-center text-sm font-bold tabular-nums"
               >
-                {action === 'quantity' ? <SpinnerIcon className="text-base" /> : item.quantity}
+                {quantity}
               </span>
             )}
             <button
               type="button"
-              onClick={() => change(stepUp(item.quantity, rule, item.availableStock))}
-              disabled={busy || item.quantity >= max}
+              onClick={() => change(stepUp(quantity, rule, item.availableStock))}
+              disabled={busy || quantity >= max}
               aria-label={t('product.increase')}
               className="grid size-9 place-items-center rounded-full text-ink-700 transition-colors hover:bg-ink-100 disabled:opacity-35"
             >
@@ -215,11 +222,11 @@ function CartLine({ item }: { item: CartItemView }) {
 
           <div className="text-right">
             <p className="text-base font-bold text-ink-900">
-              {formatINR(item.lineTotal)}
+              {formatINR(item.unitPrice * quantity)}
             </p>
             {item.mrp > item.unitPrice ? (
               <p className="text-xs text-ink-400">
-                <span className="line-through">{formatINR(item.mrp * item.quantity)}</span>
+                <span className="line-through">{formatINR(item.mrp * quantity)}</span>
               </p>
             ) : null}
           </div>

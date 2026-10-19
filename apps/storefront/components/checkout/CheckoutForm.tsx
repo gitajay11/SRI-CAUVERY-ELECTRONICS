@@ -23,6 +23,7 @@ import {
 import { CartSummary } from '@/components/cart/CartSummary';
 import { OnlinePaymentSoonDialog } from './OnlinePaymentSoonDialog';
 import { OrderReviewSheet, type CheckoutRequest } from './OrderReviewSheet';
+import { usePresence } from '@/hooks/usePresence';
 import { Alert, LoadingState } from '@/components/ui/Primitives';
 import { CheckIcon, ShieldIcon, TruckIcon, WifiOffIcon } from '@/components/ui/Icons';
 
@@ -86,6 +87,16 @@ export function CheckoutForm({
   // "Place order" opens the review; only "Confirm order" in it places
   // anything. The request is fixed when the review opens.
   const [reviewRequest, setReviewRequest] = useState<CheckoutRequest | null>(null);
+  // The review animates out after closing, still showing what it showed.
+  const review = usePresence(reviewRequest !== null);
+  const [shownRequest, setShownRequest] = useState<CheckoutRequest | null>(null);
+  // Each opening is its own sheet, with its own idempotency key — even one
+  // reopened while the last is still animating away.
+  const [openings, setOpenings] = useState(0);
+  if (reviewRequest && reviewRequest !== shownRequest) {
+    setShownRequest(reviewRequest);
+    setOpenings(openings + 1);
+  }
   const placeOrderRef = useRef<HTMLButtonElement>(null);
   const addressRef = useRef<HTMLFieldSetElement>(null);
   // Where focus goes when the review closes: back to "Place order", unless
@@ -439,9 +450,11 @@ export function CheckoutForm({
           phone={shopConfig.supportPhone}
         />
 
-        {reviewRequest ? (
+        {review.mounted && shownRequest ? (
           <OrderReviewSheet
-            request={reviewRequest}
+            key={openings}
+            request={shownRequest}
+            closing={review.closing}
             cartItems={cart.items}
             returnFocusRef={reviewReturnFocus}
             onClose={closeReview}

@@ -6,7 +6,8 @@ import { getSessionUser } from '@/lib/auth';
 import { getRepository } from '@/services/repository';
 import { buildMetadata } from '@/lib/seo';
 import { OrderDetail } from '@/components/orders/OrderDetail';
-import { ButtonLink } from '@/components/ui/Button';
+import { ButtonLink, buttonClass } from '@/components/ui/Button';
+import { AnchorLink } from '@/components/motion/AnchorLink';
 import { formatINR } from '@tamizh/core/money';
 
 export const metadata: Metadata = buildMetadata({
@@ -129,9 +130,9 @@ export default async function OrderPage({
           </div>
 
           <div className="mt-5 flex flex-col justify-center gap-2.5 sm:flex-row">
-            <ButtonLink href="#order-tracking" variant="primary">
+            <AnchorLink href="#order-tracking" className={buttonClass('primary', 'md')}>
               {t('order.success.track')}
-            </ButtonLink>
+            </AnchorLink>
             <ButtonLink href="/shop" variant="outline">
               {t('order.continueShopping')}
             </ButtonLink>

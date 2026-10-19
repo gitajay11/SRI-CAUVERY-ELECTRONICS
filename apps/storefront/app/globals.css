@@ -25,8 +25,13 @@
   html {
     -webkit-text-size-adjust: 100%;
     scroll-behavior: smooth;
-    /* Keeps content clear of the iOS home indicator in standalone mode. */
-    scroll-padding-top: 5rem;
+    /* In-page jumps — #visit-store, #order-tracking — land clear of the
+       sticky header, whose height changes at the lg breakpoint. */
+    scroll-padding-top: 8.5rem;
+
+    @media (width >= 64rem) {
+      scroll-padding-top: 11.5rem;
+    }
   }
 
   body {
@@ -89,13 +94,24 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
+    /* Nothing travels: transitions keep only what fades or recolours, and
+       every animation becomes a single short fade (its keyframes are
+       swapped for opacity-only ones further down). */
     *,
     *::before,
     *::after {
-      animation-duration: 0.001ms !important;
+      animation-duration: 120ms !important;
+      animation-delay: 0ms !important;
       animation-iteration-count: 1 !important;
-      transition-duration: 0.001ms !important;
+      transition-duration: 120ms !important;
+      transition-delay: 0ms !important;
+      transition-property: opacity, color, background-color, border-color, outline-color,
+        fill, stroke !important;
       scroll-behavior: auto !important;
+    }
+
+    .skeleton {
+      animation: none !important;
     }
 
     /* A spinner is the one animation that carries information: it is how a
@@ -189,17 +205,27 @@
 }
 
 /* --------------------------------------------------------------------------
-   Component-level animations
+   Motion
+   Every animation below takes its timing from the motion tokens in
+   packages/core/styles/theme.css, and moves only transform and opacity.
    -------------------------------------------------------------------------- */
+
+@keyframes te-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes te-fade-out {
+  to {
+    opacity: 0;
+  }
+}
 
 @keyframes te-fade-up {
   from {
     opacity: 0;
     transform: translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
   }
 }
 
@@ -212,93 +238,204 @@
   }
 }
 
-/** The drawer enters from the edge it is anchored to, not from below. */
-@keyframes te-slide-in {
+/* Sheets rise from the bottom edge; the drawer enters from its own edge. */
+@keyframes te-sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes te-sheet-out {
+  to {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes te-drawer-in {
   from {
     transform: translateX(-100%);
   }
+}
+
+@keyframes te-drawer-out {
   to {
-    transform: none;
+    transform: translateX(-100%);
   }
 }
 
-@keyframes te-slide-up {
+/* Modals grow from 96% as they fade in, and shrink back as they go. */
+@keyframes te-modal-in {
   from {
-    transform: translateY(100%);
-  }
-  to {
-    transform: none;
-  }
-}
-
-/**
- * Springs for the order review: the sheet rises past its resting point and
- * settles, the desktop modal grows in the same way. Reduced motion collapses
- * both, like every animation here, through the rule in the base layer.
- */
-@keyframes te-sheet-spring {
-  0% {
-    transform: translateY(100%);
-  }
-  60% {
-    transform: translateY(-1.5%);
-  }
-  80% {
-    transform: translateY(0.5%);
-  }
-  100% {
-    transform: none;
-  }
-}
-
-@keyframes te-pop-spring {
-  0% {
     opacity: 0;
-    transform: translateY(12px) scale(0.96);
-  }
-  55% {
-    opacity: 1;
-    transform: translateY(-2px) scale(1.01);
-  }
-  100% {
-    opacity: 1;
-    transform: none;
+    transform: scale(0.96);
   }
 }
 
-/** The order-placed tick: the circle pops, then the check draws itself. */
-@keyframes te-check-draw {
-  from {
-    stroke-dashoffset: 24;
-  }
+@keyframes te-modal-out {
   to {
-    stroke-dashoffset: 0;
+    opacity: 0;
+    transform: scale(0.96);
   }
 }
 
-@utility animate-sheet-spring {
-  animation: te-sheet-spring 0.5s cubic-bezier(0.32, 0.72, 0, 1) both;
+/* The cart badge: a quick bump when something is added. */
+@keyframes te-bump {
+  40% {
+    transform: scale(1.3);
+  }
 }
 
-@utility animate-pop-spring {
-  animation: te-pop-spring 0.42s cubic-bezier(0.32, 0.72, 0, 1) both;
+/* A section, or a card in a grid, arriving as it scrolls into view. */
+@keyframes te-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
 }
 
+/* The fallback page entrance, for browsers without view transitions. */
+@keyframes te-page-in-forward {
+  from {
+    opacity: 0;
+    transform: translateX(var(--motion-page-offset));
+  }
+}
+
+@keyframes te-page-in-back {
+  from {
+    opacity: 0;
+    transform: translateX(calc(var(--motion-page-offset) * -1));
+  }
+}
+
+@keyframes te-page-out-forward {
+  to {
+    opacity: 0;
+    transform: translateX(calc(var(--motion-page-offset) * -0.33));
+  }
+}
+
+@keyframes te-page-out-back {
+  to {
+    opacity: 0;
+    transform: translateX(calc(var(--motion-page-offset) * 0.33));
+  }
+}
+
+/* Reduced motion keeps the same names but nothing travels: only opacity. */
+@media (prefers-reduced-motion: reduce) {
+  @keyframes te-fade-up {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes te-sheet-in {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes te-sheet-out {
+    to {
+      opacity: 0;
+    }
+  }
+  @keyframes te-drawer-in {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes te-drawer-out {
+    to {
+      opacity: 0;
+    }
+  }
+  @keyframes te-modal-in {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes te-modal-out {
+    to {
+      opacity: 0;
+    }
+  }
+  @keyframes te-bump {
+    40% {
+      opacity: 0.6;
+    }
+  }
+  @keyframes te-reveal {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes te-page-in-forward {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes te-page-in-back {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes te-page-out-forward {
+    to {
+      opacity: 0;
+    }
+  }
+  @keyframes te-page-out-back {
+    to {
+      opacity: 0;
+    }
+  }
+}
+
+/* Overlays. Opening uses the spring; closing is quicker and eases out. */
+@utility animate-backdrop-in {
+  animation: te-fade-in var(--motion-base) var(--ease-enter) both;
+}
+@utility animate-backdrop-out {
+  animation: te-fade-out var(--motion-base-exit) var(--ease-exit) both;
+}
+@utility animate-sheet-in {
+  animation: te-sheet-in var(--motion-spring-time) var(--ease-spring) both;
+}
+@utility animate-sheet-out {
+  animation: te-sheet-out var(--motion-spring-exit) var(--ease-exit) both;
+}
+@utility animate-drawer-in {
+  animation: te-drawer-in var(--motion-spring-time) var(--ease-spring) both;
+}
+@utility animate-drawer-out {
+  animation: te-drawer-out var(--motion-spring-exit) var(--ease-exit) both;
+}
+@utility animate-modal-in {
+  animation: te-modal-in var(--motion-spring-time) var(--ease-spring) both;
+}
+@utility animate-modal-out {
+  animation: te-modal-out var(--motion-spring-exit) var(--ease-exit) both;
+}
+
+/** The order-placed tick: the circle springs in, then the check follows. */
 @utility animate-check-pop {
-  animation: te-pop-spring 0.45s cubic-bezier(0.32, 0.72, 0, 1) both;
+  animation: te-modal-in var(--motion-spring-time) var(--ease-spring) both;
 }
-
 @utility animate-check-draw {
-  stroke-dasharray: 24;
-  animation: te-check-draw 0.4s 0.25s ease-out both;
+  transform-origin: center;
+  animation: te-modal-in var(--motion-spring-time) var(--ease-spring) var(--motion-fast) both;
 }
 
+@utility animate-bump {
+  animation: te-bump var(--motion-base) var(--ease-spring);
+}
+
+/** Small things appearing: menus, toasts, a switched tab's panel. */
 @utility animate-fade-up {
-  animation: te-fade-up 0.35s var(--ease-out-soft) both;
+  animation: te-fade-up var(--motion-base) var(--ease-enter) both;
 }
-
-@utility animate-slide-up {
-  animation: te-slide-up 0.28s var(--ease-out-soft) both;
+@utility animate-fade-in {
+  animation: te-fade-in var(--motion-base) var(--ease-enter) both;
 }
 
 /** Loading placeholder. */
@@ -312,4 +449,162 @@
   background-size: 200% 100%;
   animation: te-shimmer 1.4s ease-in-out infinite;
   border-radius: 0.5rem;
+}
+
+/* --------------------------------------------------------------------------
+   Sections arriving as they scroll into view
+   RevealObserver marks [data-reveal] elements: "pending" while below the
+   fold, "in" once they enter it. Anything already on screen, or anything on
+   a back navigation, is simply shown. A grid card's --reveal-index staggers
+   it by its column, so a row arrives left to right.
+   -------------------------------------------------------------------------- */
+
+/* A new page's heading takes focus (NavigationMotion); a pointer user
+   needs no ring for it, a keyboard user still gets one. */
+#main h1[tabindex='-1']:focus:not(:focus-visible) {
+  outline: none;
+}
+
+[data-reveal-state='pending'] {
+  opacity: 0;
+}
+
+[data-reveal-state='in'] {
+  animation: te-reveal var(--motion-base) var(--ease-enter)
+    calc(var(--reveal-index, 0) * var(--motion-stagger)) both;
+}
+
+/* --------------------------------------------------------------------------
+   Page transitions (View Transitions API, through React's <ViewTransition>)
+
+   Every page sits in a PageTransition boundary with the class "page". Its
+   direction comes from <html data-nav>, which NavigationMotion sets from
+   where a navigation goes: deeper slides in from the right, back from the
+   left, and a bottom-tab switch only crossfades. The header and the bottom
+   bar are named and held still, so only the content moves.
+   -------------------------------------------------------------------------- */
+
+::view-transition {
+  /* Taps during a transition reach the live page: navigation stays
+     interruptible. */
+  pointer-events: none;
+}
+
+/* Everything outside a named boundary swaps at once, under the content. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+}
+
+::view-transition-group(site-header),
+::view-transition-group(bottom-nav) {
+  animation: none;
+  z-index: 100;
+}
+::view-transition-old(site-header),
+::view-transition-old(bottom-nav) {
+  display: none;
+}
+::view-transition-new(site-header),
+::view-transition-new(bottom-nav) {
+  animation: none;
+}
+
+/* Deeper: the new page arrives from the right; the old one eases left and
+   fades out underneath it. */
+::view-transition-new(.page) {
+  animation: te-page-in-forward var(--motion-page) var(--ease-enter) both;
+}
+::view-transition-old(.page) {
+  animation: te-page-out-forward var(--motion-page-exit) var(--ease-exit) both;
+}
+
+/* Back: the mirror image. */
+html[data-nav='back']::view-transition-new(.page) {
+  animation-name: te-page-in-back;
+}
+html[data-nav='back']::view-transition-old(.page) {
+  animation-name: te-page-out-back;
+}
+
+/* Bottom tabs, and anything sideways: a quick crossfade, no slide. */
+html[data-nav='tab']::view-transition-new(.page),
+html[data-nav='fade']::view-transition-new(.page) {
+  animation: te-fade-in var(--motion-base) var(--ease-enter) both;
+}
+html[data-nav='tab']::view-transition-old(.page),
+html[data-nav='fade']::view-transition-old(.page) {
+  animation: te-fade-out var(--motion-base-exit) var(--ease-exit) both;
+}
+
+/* Shared elements — a product image, a category tile — morph on the spring. */
+::view-transition-group(.morph) {
+  animation-duration: var(--motion-spring-time);
+  animation-timing-function: var(--ease-spring);
+}
+::view-transition-old(.morph),
+::view-transition-new(.morph) {
+  /* Both snapshots fill the moving box, so neither stretches. */
+  height: 100%;
+  object-fit: cover;
+  animation-duration: var(--motion-spring-time);
+}
+
+/* A skeleton hands over to its content with a crossfade. */
+::view-transition-old(.skeleton-out) {
+  animation: te-fade-out var(--motion-fast) var(--ease-exit) both;
+}
+::view-transition-new(.content-in) {
+  animation: te-fade-in var(--motion-base) var(--ease-enter) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* No slides and no morphs: the new state fades in over 120ms. */
+  ::view-transition-group(*) {
+    animation: none !important;
+  }
+  ::view-transition-old(*) {
+    animation: te-fade-out 120ms linear both !important;
+  }
+  ::view-transition-new(*) {
+    animation: te-fade-in 120ms linear both !important;
+  }
+  ::view-transition-old(root),
+  ::view-transition-new(root),
+  ::view-transition-old(site-header),
+  ::view-transition-new(site-header),
+  ::view-transition-old(bottom-nav),
+  ::view-transition-new(bottom-nav) {
+    animation: none !important;
+  }
+}
+
+/* The CSS entrance: the new page slides or fades in from the same
+   direction, and the old one simply goes. Used where view transitions are
+   missing, and for the browser's back and forward buttons everywhere —
+   React commits those at once, without a view transition, so the browser
+   can restore the scroll position (NavigationMotion sets data-nav-css).
+   Nothing plays on the first load, before any navigation. */
+html[data-nav-css] .page-transition {
+  animation: te-page-in-forward var(--motion-page) var(--ease-enter) both;
+}
+html[data-nav-css][data-nav='back'] .page-transition {
+  animation-name: te-page-in-back;
+}
+html[data-nav-css][data-nav='tab'] .page-transition,
+html[data-nav-css][data-nav='fade'] .page-transition {
+  animation: te-fade-in var(--motion-base) var(--ease-enter) both;
+}
+
+@supports not (view-transition-name: none) {
+  html[data-nav] .page-transition {
+    animation: te-page-in-forward var(--motion-page) var(--ease-enter) both;
+  }
+  html[data-nav='back'] .page-transition {
+    animation-name: te-page-in-back;
+  }
+  html[data-nav='tab'] .page-transition,
+  html[data-nav='fade'] .page-transition {
+    animation: te-fade-in var(--motion-base) var(--ease-enter) both;
+  }
 }

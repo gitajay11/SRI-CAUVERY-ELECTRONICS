@@ -5,6 +5,8 @@ import { useLocale } from '@/components/providers/LocaleProvider';
 import { BrandGlyph } from '@/components/layout/BrandMark';
 import { CloseIcon, DownloadIcon } from '@/components/ui/Icons';
 import { useInstall } from './InstallProvider';
+import { cn } from '@tamizh/core/utils';
+import { usePresence } from '@/hooks/usePresence';
 
 /**
  * "Add to home screen" prompt.
@@ -24,6 +26,7 @@ export function InstallPrompt() {
   const { t } = useLocale();
   const { platform, install } = useInstall();
   const [visible, setVisible] = useState(false);
+  const prompt = usePresence(visible);
 
   useEffect(() => {
     // Only the browser-prompt path is offered unasked. On iOS the menu's
@@ -52,13 +55,16 @@ export function InstallPrompt() {
     }
   };
 
-  if (!visible || platform !== 'prompt') return null;
+  if (!prompt.mounted || platform !== 'prompt') return null;
 
   return (
     <div
       role="dialog"
       aria-label={t('pwa.installTitle')}
-      className="fixed inset-x-3 bottom-20 z-50 mx-auto max-w-md animate-slide-up rounded-2xl border border-ink-100 bg-surface p-4 shadow-card-hover sm:bottom-6"
+      className={cn(
+        'fixed inset-x-3 bottom-20 z-50 mx-auto max-w-md rounded-2xl border border-ink-100 bg-surface p-4 shadow-card-hover sm:bottom-6',
+        prompt.closing ? 'pointer-events-none animate-sheet-out' : 'animate-sheet-in',
+      )}
     >
       <div className="flex items-start gap-3">
         <BrandGlyph className="size-12 shrink-0" />

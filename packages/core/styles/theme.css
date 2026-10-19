@@ -79,6 +79,59 @@
 }
 
 /* --------------------------------------------------------------------------
+   Motion. One set of durations and curves for every transition: pages,
+   tabs, sections, sheets and modals. Only transform and opacity move.
+   Leaving is quicker than arriving — each exit runs at 70% of its entry.
+   -------------------------------------------------------------------------- */
+
+:root {
+  --motion-fast: 150ms; /* buttons, chips, badges */
+  --motion-base: 250ms; /* tabs, sections, backdrops */
+  --motion-page: 320ms; /* page and screen changes */
+  --motion-spring-time: 320ms; /* sheets, modals, menus, shared elements */
+
+  --motion-fast-exit: 105ms;
+  --motion-base-exit: 175ms;
+  --motion-page-exit: 224ms;
+  --motion-spring-exit: 224ms;
+
+  --ease-enter: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  /* A spring with stiffness 380 and damping 32 (mass 1), sampled: it
+     settles in about 320ms with a 1% overshoot. */
+  --ease-spring: linear(
+    0, 0.041, 0.138, 0.2612, 0.3908, 0.5145, 0.6253, 0.72, 0.7979, 0.8599, 0.9076,
+    0.9431, 0.9688, 0.9865, 0.9981, 1.0052, 1.0091, 1.0107, 1.0109, 1.0102, 1
+  );
+
+  --motion-page-offset: 24px;
+  --motion-stagger: 30ms;
+}
+
+/* Browsers without linear() get the entry curve instead of the spring. */
+@supports not (transition-timing-function: linear(0, 1)) {
+  :root {
+    --ease-spring: var(--ease-enter);
+  }
+}
+
+/* Reduced motion: every movement becomes a plain 120ms fade. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-fast: 120ms;
+    --motion-base: 120ms;
+    --motion-page: 120ms;
+    --motion-spring-time: 120ms;
+    --motion-fast-exit: 120ms;
+    --motion-base-exit: 120ms;
+    --motion-page-exit: 120ms;
+    --motion-spring-exit: 120ms;
+    --motion-page-offset: 0px;
+    --motion-stagger: 0ms;
+  }
+}
+
+/* --------------------------------------------------------------------------
    Theme-relative tokens.
 
    `@theme inline` keeps these as live `var()` references rather than baking a

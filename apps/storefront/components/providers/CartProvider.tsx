@@ -4,7 +4,9 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
+  useRef,
   useState,
   useTransition,
 } from 'react';
@@ -85,6 +87,12 @@ export function CartProvider({
   );
   const [wishlistIds, setWishlistIds] = useState(() => new Set(initialWishlistIds));
   const [busy, setBusy] = useState(false);
+
+  // The cart as last rendered, so an optimistic change can be rolled back.
+  const current = useRef({ count, lines });
+  useEffect(() => {
+    current.current = { count, lines };
+  });
   const [isRefreshing, startRefresh] = useTransition();
 
   const refresh = useCallback(() => {
@@ -119,6 +127,16 @@ export function CartProvider({
 
   const addItem = useCallback<CartContextValue['addItem']>(
     async (productId, quantity = 1, productName) => {
+      // Optimistic: the badge and the button show it at once; the server's
+      // answer then replaces the guess, or the guess is taken back.
+      const before = current.current;
+      const key = lineKey(productId);
+      const existing = before.lines[key];
+      setCount(before.count + quantity);
+      setLines({
+        ...before.lines,
+        [key]: { itemId: existing?.itemId ?? '', quantity: (existing?.quantity ?? 0) + quantity },
+      });
       setBusy(true);
       try {
         const cart = await api.post<CartView>('/api/cart/items', {
@@ -132,6 +150,8 @@ export function CartProvider({
         refresh();
         return true;
       } catch (error) {
+        setCount(before.count);
+        setLines(before.lines);
         handleError(error);
         return false;
       } finally {
@@ -143,6 +163,17 @@ export function CartProvider({
 
   const setQuantity = useCallback<CartContextValue['setQuantity']>(
     async (itemId, quantity) => {
+      // Optimistic, as for adding: the number changes under the thumb.
+      const before = current.current;
+      const entry = Object.entries(before.lines).find(([, line]) => line.itemId === itemId);
+      if (entry) {
+        const [key, line] = entry;
+        const next = { ...before.lines };
+        if (quantity <= 0) delete next[key];
+        else next[key] = { ...line, quantity };
+        setLines(next);
+        setCount(Math.max(0, before.count + quantity - line.quantity));
+      }
       setBusy(true);
       try {
         const cart = await api.patch<CartView>('/api/cart/items', { itemId, quantity });
@@ -150,6 +181,8 @@ export function CartProvider({
         refresh();
         return true;
       } catch (error) {
+        setCount(before.count);
+        setLines(before.lines);
         handleError(error);
         return false;
       } finally {

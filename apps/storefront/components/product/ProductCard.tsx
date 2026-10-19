@@ -9,6 +9,8 @@ import { useLocale } from '@/components/providers/LocaleProvider';
 import { StarRating } from '@/components/ui/Primitives';
 import { AddToCartButton } from './AddToCartButton';
 import { WishlistButton } from './WishlistButton';
+import { SharedElementSource } from '@/components/motion/SharedElement';
+import { productImageName } from '@/lib/motion';
 
 /**
  * Product card.
@@ -21,11 +23,14 @@ import { WishlistButton } from './WishlistButton';
 export function ProductCard({
   product,
   priority = false,
+  revealIndex,
   className,
 }: {
   product: ProductCardView;
   /** Set on the first row so the LCP image is not lazy-loaded. */
   priority?: boolean;
+  /** Position in its row, to stagger the card's entrance as it scrolls in. */
+  revealIndex?: number;
   className?: string;
 }) {
   const { t, pick } = useLocale();
@@ -35,6 +40,10 @@ export function ProductCard({
 
   return (
     <article
+      // The tapped card's image carries over to the product page.
+      data-shared-scope=""
+      data-reveal={revealIndex === undefined ? undefined : ''}
+      style={revealIndex === undefined ? undefined : ({ '--reveal-index': revealIndex } as React.CSSProperties)}
       className={cn(
         'group relative flex flex-col overflow-hidden rounded-card border border-ink-100 bg-surface',
         'shadow-card transition-[box-shadow,transform] duration-300 hover:shadow-card-hover',
@@ -43,20 +52,29 @@ export function ProductCard({
       )}
     >
       <div className="relative aspect-square overflow-hidden bg-ink-50">
-        <Link href={`/product/${product.slug}`} className="block size-full" tabIndex={-1}>
+        <Link
+          href={`/product/${product.slug}`}
+          className="block size-full"
+          tabIndex={-1}
+          // Viewport prefetch brings the page's shell; a hover or a press
+          // fetches the whole page, so the image can morph into it.
+          unstable_dynamicOnHover
+        >
           {product.image ? (
-            <Image
-              src={product.image.url}
-              alt={product.image.alt || name}
-              fill
-              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-              priority={priority}
-              loading={priority ? undefined : 'lazy'}
-              className={cn(
-                'object-cover transition-transform duration-500 ease-[var(--ease-out-soft)] group-hover:scale-[1.04]',
-                outOfStock && 'opacity-55 saturate-50',
-              )}
-            />
+            <SharedElementSource name={productImageName(product.id)} className="relative size-full">
+              <Image
+                src={product.image.url}
+                alt={product.image.alt || name}
+                fill
+                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                priority={priority}
+                loading={priority ? undefined : 'lazy'}
+                className={cn(
+                  'object-cover transition-transform duration-500 ease-[var(--ease-out-soft)] group-hover:scale-[1.04]',
+                  outOfStock && 'opacity-55 saturate-50',
+                )}
+              />
+            </SharedElementSource>
           ) : (
             <div className="grid size-full place-items-center text-ink-300">—</div>
           )}
@@ -90,6 +108,7 @@ export function ProductCard({
           <Link
             href={`/product/${product.slug}`}
             className="line-clamp-2 after:absolute after:inset-0 after:content-[''] hover:text-link"
+            unstable_dynamicOnHover
           >
             {name}
           </Link>

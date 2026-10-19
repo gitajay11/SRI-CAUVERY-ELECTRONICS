@@ -78,6 +78,7 @@ export default async function ProductPage({ params }: { params: Params }) {
       <div className="grid gap-8 lg:grid-cols-2 lg:gap-12">
         <ProductGallery
           images={product.images}
+          productId={product.id}
           productName={product.name}
           badge={
             product.discountPercent > 0 ? (

@@ -19,6 +19,8 @@ import { ToastProvider } from '@/components/providers/ToastProvider';
 import { CartProvider } from '@/components/providers/CartProvider';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
+import { NavigationMotion } from '@/components/motion/NavigationMotion';
+import { RevealObserver } from '@/components/motion/RevealObserver';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { NavigationProgress } from '@/components/layout/NavigationProgress';
 import { ServiceWorkerRegistrar } from '@/components/pwa/ServiceWorkerRegistrar';
@@ -104,6 +106,10 @@ export default async function RootLayout({
     <html
       lang={LOCALE_TAGS[locale]}
       data-theme={themeAttribute(theme)}
+      // In-page anchors scroll smoothly (globals.css); this tells the router
+      // to make page changes jump instead, so a new page starts at the top
+      // and a returning one at its old position, at once.
+      data-scroll-behavior="smooth"
       className={`${manrope.variable} ${notoTamil.variable}`}
       suppressHydrationWarning
     >
@@ -138,6 +144,8 @@ export default async function RootLayout({
 
               <Footer categories={categories} />
               <BottomNav />
+              <NavigationMotion />
+              <RevealObserver />
 
               {/* Reads the search params, which needs a Suspense boundary so a
                   page can still be statically prerendered around it. */}

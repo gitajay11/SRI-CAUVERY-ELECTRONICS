@@ -5,6 +5,8 @@ import { useRef, useState } from 'react';
 import type { ProductImageView } from '@tamizh/core/types';
 import { cn } from '@tamizh/core/utils';
 import { useLocale } from '@/components/providers/LocaleProvider';
+import { SharedElementTarget } from '@/components/motion/SharedElement';
+import { productImageName } from '@/lib/motion';
 
 /**
  * Product image gallery.
@@ -15,10 +17,13 @@ import { useLocale } from '@/components/providers/LocaleProvider';
  */
 export function ProductGallery({
   images,
+  productId,
   productName,
   badge,
 }: {
   images: ProductImageView[];
+  /** Pairs the main image with the product card it was opened from. */
+  productId: string;
   productName: string;
   badge?: React.ReactNode;
 }) {
@@ -78,43 +83,46 @@ export function ProductGallery({
       ) : null}
 
       <div className="relative min-w-0 flex-1">
-        {/* Mobile: swipeable rail */}
-        <div
-          ref={railRef}
-          className="snap-rail -mx-4 gap-0 rounded-none sm:mx-0 sm:rounded-card lg:hidden"
-          onScroll={(event) => {
-            const element = event.currentTarget;
-            const index = Math.round(element.scrollLeft / element.clientWidth);
-            if (index !== active) setActive(index);
-          }}
-        >
-          {images.map((image, index) => (
-            <div key={image.url} className="w-full">
-              <div className="relative aspect-square w-full overflow-hidden bg-ink-50 sm:rounded-card">
-                <Image
-                  src={image.url}
-                  alt={index === 0 ? image.alt || productName : ''}
-                  fill
-                  sizes="100vw"
-                  priority={index === 0}
-                  className="object-cover"
-                />
+        {/* The images, as one box: the tapped card's image morphs into it. */}
+        <SharedElementTarget name={productImageName(productId)}>
+          {/* Mobile: swipeable rail */}
+          <div
+            ref={railRef}
+            className="snap-rail -mx-4 gap-0 rounded-none sm:mx-0 sm:rounded-card lg:hidden"
+            onScroll={(event) => {
+              const element = event.currentTarget;
+              const index = Math.round(element.scrollLeft / element.clientWidth);
+              if (index !== active) setActive(index);
+            }}
+          >
+            {images.map((image, index) => (
+              <div key={image.url} className="w-full">
+                <div className="relative aspect-square w-full overflow-hidden bg-ink-50 sm:rounded-card">
+                  <Image
+                    src={image.url}
+                    alt={index === 0 ? image.alt || productName : ''}
+                    fill
+                    sizes="100vw"
+                    priority={index === 0}
+                    className="object-cover"
+                  />
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
 
-        {/* Desktop: single large image */}
-        <div className="relative hidden aspect-square overflow-hidden rounded-card border border-ink-100 bg-ink-50 lg:block">
-          <Image
-            src={images[active]?.url ?? images[0]!.url}
-            alt={images[active]?.alt || productName}
-            fill
-            sizes="(max-width: 1280px) 45vw, 520px"
-            priority
-            className="object-cover"
-          />
-        </div>
+          {/* Desktop: single large image */}
+          <div className="relative hidden aspect-square overflow-hidden rounded-card border border-ink-100 bg-ink-50 lg:block">
+            <Image
+              src={images[active]?.url ?? images[0]!.url}
+              alt={images[active]?.alt || productName}
+              fill
+              sizes="(max-width: 1280px) 45vw, 520px"
+              priority
+              className="object-cover"
+            />
+          </div>
+        </SharedElementTarget>
 
         {badge ? <div className="absolute left-4 top-4 z-10">{badge}</div> : null}
 

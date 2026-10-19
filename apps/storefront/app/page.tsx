@@ -51,7 +51,7 @@ export default async function HomePage() {
       <Hero showcase={showcase} />
 
       {/* Categories */}
-      <section className="container-page py-10 lg:py-14">
+      <section data-reveal="" className="container-page py-10 lg:py-14">
         <SectionHeading
           title={t('home.categories.title')}
           subtitle={t('home.categories.subtitle')}
@@ -71,7 +71,7 @@ export default async function HomePage() {
 
       {/* Featured */}
       {featured.length > 0 ? (
-        <section className="container-page pb-10 lg:pb-14">
+        <section data-reveal="" className="container-page pb-10 lg:pb-14">
           <SectionHeading
             title={t('home.featured.title')}
             subtitle={t('home.featured.subtitle')}
@@ -86,7 +86,7 @@ export default async function HomePage() {
       ) : null}
 
       {/* Offers */}
-      <section className="container-page pb-10 lg:pb-14">
+      <section data-reveal="" className="container-page pb-10 lg:pb-14">
         <OfferStrip
           locale={locale}
           title={t('home.offers.title')}
@@ -105,7 +105,7 @@ export default async function HomePage() {
 
       {/* Best sellers */}
       {bestSellers.length > 0 ? (
-        <section className="container-page pb-10 lg:pb-14">
+        <section data-reveal="" className="container-page pb-10 lg:pb-14">
           <SectionHeading
             title={t('home.bestSellers.title')}
             subtitle={t('home.bestSellers.subtitle')}
@@ -143,7 +143,7 @@ export default async function HomePage() {
 
       {/* New arrivals */}
       {newArrivals.length > 0 ? (
-        <section className="container-page py-10 lg:py-14">
+        <section data-reveal="" className="container-page py-10 lg:py-14">
           <SectionHeading
             title={t('home.newArrivals.title')}
             subtitle={t('home.newArrivals.subtitle')}
@@ -162,13 +162,13 @@ export default async function HomePage() {
       ) : null}
 
       {/* Why us */}
-      <section className="container-page pb-10 lg:pb-14">
+      <section data-reveal="" className="container-page pb-10 lg:pb-14">
         <SectionHeading title={t('home.why.title')} />
         <WhyChooseUs />
       </section>
 
       {/* Testimonials */}
-      <section className="container-page pb-10 lg:pb-14">
+      <section data-reveal="" className="container-page pb-10 lg:pb-14">
         <SectionHeading
           title={t('home.testimonials.title')}
           subtitle={t('home.testimonials.subtitle')}
@@ -177,7 +177,7 @@ export default async function HomePage() {
       </section>
 
       {/* Bulk enquiry */}
-      <section className="container-page pb-12 lg:pb-16">
+      <section data-reveal="" className="container-page pb-12 lg:pb-16">
         <BulkEnquiryBanner />
       </section>
     </>

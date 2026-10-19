@@ -9,6 +9,8 @@ import { parseProductSearchParams, type SearchParamsInput } from '@/lib/product-
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs';
 import { ProductBrowser } from '@/components/shop/ProductBrowser';
 import { CategoryIcon } from '@/components/ui/CategoryIcon';
+import { SharedElementTarget } from '@/components/motion/SharedElement';
+import { categoryTileName } from '@/lib/motion';
 
 type Params = Promise<{ slug: string }>;
 
@@ -69,9 +71,11 @@ export default async function CategoryPage({
       />
 
       <header className="mb-6 flex items-start gap-4">
-        <span className="grid size-14 shrink-0 place-items-center rounded-2xl bg-success-50 text-link sm:size-16">
-          <CategoryIcon name={category.icon} className="size-7 sm:size-8" />
-        </span>
+        <SharedElementTarget name={categoryTileName(category.slug)} className="shrink-0">
+          <span className="grid size-14 shrink-0 place-items-center rounded-2xl bg-success-50 text-link sm:size-16">
+            <CategoryIcon name={category.icon} className="size-7 sm:size-8" />
+          </span>
+        </SharedElementTarget>
         <div className="min-w-0">
           <h1 lang={locale} className="text-2xl font-extrabold text-ink-900 sm:text-3xl">
             {name}

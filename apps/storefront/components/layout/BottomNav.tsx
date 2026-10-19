@@ -6,6 +6,7 @@ import { cn } from '@tamizh/core/utils';
 import { useCart } from '@/components/providers/CartProvider';
 import { useLocale } from '@/components/providers/LocaleProvider';
 import { CartIcon, GridIcon, HeartIcon, HomeIcon, UserIcon } from '@/components/ui/Icons';
+import { useBump } from '@/hooks/useBump';
 
 /**
  * Mobile bottom navigation.
@@ -18,6 +19,7 @@ export function BottomNav() {
   const pathname = usePathname();
   const { count } = useCart();
   const { t } = useLocale();
+  const bump = useBump(count);
 
   const hidden = pathname.startsWith('/admin') || pathname.startsWith('/checkout');
   if (hidden) return null;
@@ -36,7 +38,8 @@ export function BottomNav() {
     <nav
       aria-label={t('nav.menu')}
       className="fixed inset-x-0 bottom-0 z-40 border-t border-ink-200 bg-surface/95 backdrop-blur lg:hidden"
-      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+      // Named so page transitions leave it where it is (see globals.css).
+      style={{ paddingBottom: 'env(safe-area-inset-bottom)', viewTransitionName: 'bottom-nav' }}
     >
       <ul className="flex">
         {items.map((item) => {
@@ -58,7 +61,13 @@ export function BottomNav() {
                 <span className="relative text-[1.35rem]">
                   {item.icon}
                   {item.badge && item.badge > 0 ? (
-                    <span className="absolute -right-2 -top-1 grid min-w-[1.05rem] place-items-center rounded-full bg-gold-500 px-1 text-[0.62rem] font-bold leading-[1.05rem] text-on-action">
+                    <span
+                      key={bump}
+                      className={cn(
+                        'absolute -right-2 -top-1 grid min-w-[1.05rem] place-items-center rounded-full bg-gold-500 px-1 text-[0.62rem] font-bold leading-[1.05rem] text-on-action',
+                        bump > 0 && 'animate-bump',
+                      )}
+                    >
                       {item.badge > 99 ? '99+' : item.badge}
                     </span>
                   ) : null}

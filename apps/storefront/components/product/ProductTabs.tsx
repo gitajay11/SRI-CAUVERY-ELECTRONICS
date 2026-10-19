@@ -24,7 +24,14 @@ export function ProductTabs({
   isSignedIn: boolean;
 }) {
   const { t, pick, locale } = useLocale();
-  const [active, setActive] = useState<'description' | 'specs' | 'reviews'>('description');
+  const [active, setActiveTab] = useState<'description' | 'specs' | 'reviews'>('description');
+  // The first panel is simply there; a switched-to panel fades in.
+  const [switched, setSwitched] = useState(false);
+  const setActive = (id: typeof active) => {
+    setSwitched(true);
+    setActiveTab(id);
+  };
+  const panelMotion = switched ? 'animate-fade-in' : undefined;
 
   const specEntries = Object.entries(product.specs);
   const tabs = [
@@ -87,7 +94,7 @@ export function ProductTabs({
             role="tabpanel"
             aria-labelledby="tab-description"
             lang={locale}
-            className="max-w-3xl space-y-4 text-[0.95rem] leading-relaxed text-ink-700"
+            className={cn('max-w-3xl space-y-4 text-[0.95rem] leading-relaxed text-ink-700', panelMotion)}
           >
             {pick(product.description, product.descriptionTa)
               .split('\n')
@@ -116,7 +123,7 @@ export function ProductTabs({
             id="panel-specs"
             role="tabpanel"
             aria-labelledby="tab-specs"
-            className="max-w-3xl overflow-hidden rounded-card border border-ink-100"
+            className={cn('max-w-3xl overflow-hidden rounded-card border border-ink-100', panelMotion)}
           >
             <table className="w-full text-sm">
               <caption className="sr-only">{t('product.specifications')}</caption>
@@ -157,7 +164,7 @@ export function ProductTabs({
             id="panel-reviews"
             role="tabpanel"
             aria-labelledby="tab-reviews"
-            className="max-w-3xl"
+            className={cn('max-w-3xl', panelMotion)}
           >
             {product.reviews.length > 0 ? (
               <div className="mb-8 flex flex-wrap items-center gap-6 rounded-card border border-ink-100 bg-surface p-5">

@@ -1,4 +1,5 @@
 import { ProductGridSkeleton, Skeleton } from '@/components/ui/Primitives';
+import { SkeletonHandoff } from '@/components/motion/SkeletonHandoff';
 
 /**
  * Streaming placeholder for search results.
@@ -10,23 +11,25 @@ import { ProductGridSkeleton, Skeleton } from '@/components/ui/Primitives';
  */
 export default function Loading() {
   return (
-    <div className="container-page py-6 lg:py-10" aria-busy="true" aria-live="polite">
-      <span className="sr-only">Loading search results…</span>
-      <Skeleton className="mb-3 h-4 w-48" />
-      <Skeleton className="mb-2 h-8 w-64" />
-      <Skeleton className="mb-8 h-4 w-80 max-w-full" />
-      <div className="grid gap-6 lg:grid-cols-[16rem_1fr] lg:gap-8">
-        <div className="hidden space-y-4 lg:block">
-          {Array.from({ length: 5 }, (_, index) => (
-            <div key={index} className="space-y-2">
-              <Skeleton className="h-4 w-24" />
-              <Skeleton className="h-9 w-full" />
-              <Skeleton className="h-9 w-full" />
-            </div>
-          ))}
+    <SkeletonHandoff>
+      <div className="container-page py-6 lg:py-10" aria-busy="true" aria-live="polite">
+        <span className="sr-only">Loading search results…</span>
+        <Skeleton className="mb-3 h-4 w-48" />
+        <Skeleton className="mb-2 h-8 w-64" />
+        <Skeleton className="mb-8 h-4 w-80 max-w-full" />
+        <div className="grid gap-6 lg:grid-cols-[16rem_1fr] lg:gap-8">
+          <div className="hidden space-y-4 lg:block">
+            {Array.from({ length: 5 }, (_, index) => (
+              <div key={index} className="space-y-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-9 w-full" />
+                <Skeleton className="h-9 w-full" />
+              </div>
+            ))}
+          </div>
+          <ProductGridSkeleton count={8} />
         </div>
-        <ProductGridSkeleton count={8} />
       </div>
-    </div>
+    </SkeletonHandoff>
   );
 }

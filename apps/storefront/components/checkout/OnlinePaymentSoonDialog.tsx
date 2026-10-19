@@ -2,6 +2,8 @@
 
 import { useEffect, useId, useRef, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
+import { cn } from '@tamizh/core/utils';
+import { usePresence } from '@/hooks/usePresence';
 import { useLocale } from '@/components/providers/LocaleProvider';
 import { Button, buttonClass } from '@/components/ui/Button';
 import { CloseIcon, PhoneIcon, ShieldIcon } from '@/components/ui/Icons';
@@ -32,6 +34,7 @@ export function OnlinePaymentSoonDialog({
   phone: string;
 }) {
   const { t } = useLocale();
+  const { mounted, closing } = usePresence(open);
   const titleId = useId();
   const bodyId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
@@ -81,16 +84,24 @@ export function OnlinePaymentSoonDialog({
     };
   }, [open, returnFocusRef]);
 
-  if (!open) return null;
+  if (!mounted) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[80] flex items-end justify-center p-4 sm:items-center">
+    <div
+      className={cn(
+        'fixed inset-0 z-[80] flex items-end justify-center p-4 sm:items-center',
+        // On its way out it no longer takes taps.
+        closing && 'pointer-events-none',
+      )}
+    >
       {/* Pointer-only: keyboard users have Escape and the close button. */}
       <div
         aria-hidden="true"
         onClick={onClose}
-        className="absolute inset-0 bg-carbon-950/45 backdrop-blur-sm"
-        style={{ animation: 'te-fade-up 0.2s var(--ease-out-soft) both' }}
+        className={cn(
+          'absolute inset-0 bg-carbon-950/45 backdrop-blur-sm',
+          closing ? 'animate-backdrop-out' : 'animate-backdrop-in',
+        )}
       />
       <div
         ref={panelRef}
@@ -98,11 +109,12 @@ export function OnlinePaymentSoonDialog({
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={bodyId}
-        className="relative w-full max-w-sm rounded-card border border-ink-100/70 bg-surface/80 p-5 shadow-overlay backdrop-blur-xl backdrop-saturate-150 sm:p-6"
-        style={{
-          animation: 'te-fade-up 0.24s var(--ease-out-soft) both',
-          marginBottom: 'env(safe-area-inset-bottom)',
-        }}
+        className={cn(
+          'relative w-full max-w-sm rounded-card border border-ink-100/70 bg-surface/80 p-5 shadow-overlay backdrop-blur-xl backdrop-saturate-150 sm:p-6',
+          // A sheet from below on a phone, a modal from tablet width up.
+          closing ? 'animate-sheet-out sm:animate-modal-out' : 'animate-sheet-in sm:animate-modal-in',
+        )}
+        style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
       >
         <button
           type="button"

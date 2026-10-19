@@ -1,5 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import { SharedElementSource } from '@/components/motion/SharedElement';
+import { categoryTileName } from '@/lib/motion';
 import type { CategoryView, Locale } from '@tamizh/core/types';
 import { CategoryIcon } from '@/components/ui/CategoryIcon';
 
@@ -29,25 +31,30 @@ export function CategoryShowcase({
       {categories.map((category) => (
         <section
           key={category.id}
+          data-reveal=""
           className="overflow-hidden rounded-card border border-ink-100 bg-surface shadow-card transition-shadow hover:shadow-card-hover"
         >
           <Link
             href={`/categories/${category.slug}`}
             className="group relative flex items-center gap-4 bg-success-50/70 p-4 sm:p-5"
+            unstable_dynamicOnHover
           >
-            {category.imageUrl ? (
-              <Image
-                src={category.imageUrl}
-                alt=""
-                width={96}
-                height={96}
-                className="size-16 shrink-0 rounded-xl object-cover shadow-sm sm:size-20"
-              />
-            ) : (
-              <span className="grid size-16 shrink-0 place-items-center rounded-xl bg-surface text-link shadow-sm sm:size-20">
-                <CategoryIcon name={category.icon} className="size-8" />
-              </span>
-            )}
+            {/* Morphs into the category page's header tile. */}
+            <SharedElementSource name={categoryTileName(category.slug)} className="shrink-0">
+              {category.imageUrl ? (
+                <Image
+                  src={category.imageUrl}
+                  alt=""
+                  width={96}
+                  height={96}
+                  className="size-16 shrink-0 rounded-xl object-cover shadow-sm sm:size-20"
+                />
+              ) : (
+                <span className="grid size-16 shrink-0 place-items-center rounded-xl bg-surface text-link shadow-sm sm:size-20">
+                  <CategoryIcon name={category.icon} className="size-8" />
+                </span>
+              )}
+            </SharedElementSource>
             <span className="min-w-0 flex-1">
               <span className="block text-lg font-bold text-ink-900 group-hover:text-link">
                 {label(category)}

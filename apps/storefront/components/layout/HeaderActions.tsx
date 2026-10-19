@@ -8,6 +8,7 @@ import { api } from '@/lib/http';
 import { useCart } from '@/components/providers/CartProvider';
 import { useLocale } from '@/components/providers/LocaleProvider';
 import { useNavigation } from '@/hooks/useNavigation';
+import { useBump } from '@/hooks/useBump';
 import {
   CartIcon,
   ChevronDownIcon,
@@ -28,6 +29,7 @@ export function HeaderActions({
 }) {
   const { t } = useLocale();
   const { count } = useCart();
+  const bump = useBump(count);
 
   return (
     <div className="flex items-center gap-0.5 sm:gap-1">
@@ -51,16 +53,24 @@ export function HeaderActions({
         aria-label={`${t('nav.cart')}${count > 0 ? ` (${count})` : ''}`}
       >
         <CartIcon className="text-xl" />
-        {count > 0 ? <Dot>{count}</Dot> : null}
+        {count > 0 ? (
+          <Dot key={bump} bump={bump > 0}>
+            {count}
+          </Dot>
+        ) : null}
       </Link>
     </div>
   );
 }
 
-function Dot({ children }: { children: number }) {
+function Dot({ children, bump = false }: { children: number; bump?: boolean }) {
   return (
     <span
-      className="absolute right-1 top-1 grid min-w-[1.15rem] place-items-center rounded-full bg-gold-500 px-1 text-[0.68rem] font-bold leading-[1.15rem] text-on-action"
+      className={cn(
+        'absolute right-1 top-1 grid min-w-[1.15rem] place-items-center rounded-full bg-gold-500 px-1 text-[0.68rem] font-bold leading-[1.15rem] text-on-action',
+        // Replayed by a new key each time something is added.
+        bump && 'animate-bump',
+      )}
       aria-hidden="true"
     >
       {children > 99 ? '99+' : children}

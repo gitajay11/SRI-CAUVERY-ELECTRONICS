@@ -26,6 +26,7 @@ export async function VisitStore() {
   return (
     <section
       id="visit-store"
+      data-reveal=""
       aria-labelledby="visit-store-title"
       className="mt-10 scroll-mt-32 lg:mt-14 lg:scroll-mt-44"
     >

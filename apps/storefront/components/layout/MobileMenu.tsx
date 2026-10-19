@@ -27,6 +27,7 @@ import {
 import { CategoryIcon } from '@/components/ui/CategoryIcon';
 import { useInstall } from '@/components/pwa/InstallProvider';
 import { useToast } from '@/components/providers/ToastProvider';
+import { usePresence } from '@/hooks/usePresence';
 
 /**
  * Slide-in navigation drawer for phones and tablets.
@@ -64,6 +65,8 @@ export function MobileMenu({
   const [openedOn, setOpenedOn] = useState<string | null>(null);
   const open = openedOn === pathname;
   const setOpen = (next: boolean) => setOpenedOn(next ? pathname : null);
+  // Slides out (quicker than it came in) before it unmounts.
+  const drawer = usePresence(open);
 
   const [expanded, setExpanded] = useState<string | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -144,24 +147,28 @@ export function MobileMenu({
 
       {/* The drawer only opens from a click, so by the time this runs the
           document exists — no mounted flag needed to make the portal safe. */}
-      {open
+      {drawer.mounted
         ? createPortal(
-        <div className="fixed inset-0 z-[60] lg:hidden">
+        <div className={cn('fixed inset-0 z-[60] lg:hidden', drawer.closing && 'pointer-events-none')}>
           <button
             type="button"
             aria-label={t('common.close')}
             onClick={() => setOpen(false)}
-            className="absolute inset-0 bg-carbon-950/55 backdrop-blur-[2px]"
-            style={{ animation: 'te-fade-up 0.2s var(--ease-out-soft) both' }}
+            className={cn(
+              'absolute inset-0 bg-carbon-950/55 backdrop-blur-[2px]',
+              drawer.closing ? 'animate-backdrop-out' : 'animate-backdrop-in',
+            )}
           />
           <div
             ref={panelRef}
             role="dialog"
             aria-modal="true"
             aria-label={t('nav.menu')}
-            className="absolute inset-y-0 left-0 flex w-[88%] max-w-sm flex-col bg-paper shadow-2xl"
+            className={cn(
+              'absolute inset-y-0 left-0 flex w-[88%] max-w-sm flex-col bg-paper shadow-2xl',
+              drawer.closing ? 'animate-drawer-out' : 'animate-drawer-in',
+            )}
             style={{
-              animation: 'te-slide-in 0.26s var(--ease-out-soft) both',
               // Notched phones: the drawer runs edge to edge, so its own
               // padding has to clear the cutout and the home indicator.
               paddingTop: 'env(safe-area-inset-top)',

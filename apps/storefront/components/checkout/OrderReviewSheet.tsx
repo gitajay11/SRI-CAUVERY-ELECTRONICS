@@ -36,6 +36,7 @@ type Failure = { message: string; retry: 'confirm' | 'review' };
  */
 export function OrderReviewSheet({
   request,
+  closing = false,
   cartItems,
   returnFocusRef,
   onClose,
@@ -45,6 +46,8 @@ export function OrderReviewSheet({
   onPlaced,
 }: {
   request: CheckoutRequest;
+  /** True while it animates out; it is already closed for focus and input. */
+  closing?: boolean;
   /** The cart as the checkout page showed it: the first baseline. */
   cartItems: CartItemView[];
   returnFocusRef: RefObject<HTMLElement | null>;
@@ -84,7 +87,7 @@ export function OrderReviewSheet({
   const inFlight = useRef(false);
 
   const requestClose = useModalDialog({
-    open: true,
+    open: !closing,
     onClose,
     panelRef,
     returnFocusRef,
@@ -185,13 +188,20 @@ export function OrderReviewSheet({
   const confirmBlocked = !review || loading || !accepted;
 
   return createPortal(
-    <div className="fixed inset-0 z-[80] flex items-end justify-center [-webkit-tap-highlight-color:transparent] md:items-center md:p-6">
+    <div
+      className={cn(
+        'fixed inset-0 z-[80] flex items-end justify-center [-webkit-tap-highlight-color:transparent] md:items-center md:p-6',
+        closing && 'pointer-events-none',
+      )}
+    >
       {/* Pointer-only: keyboard users have Escape and the close button. */}
       <div
         aria-hidden="true"
         onClick={() => requestClose()}
-        className="absolute inset-0 bg-carbon-950/50 backdrop-blur-sm"
-        style={{ animation: 'te-fade-up 0.2s var(--ease-out-soft) both' }}
+        className={cn(
+          'absolute inset-0 bg-carbon-950/50 backdrop-blur-sm',
+          closing ? 'animate-backdrop-out' : 'animate-backdrop-in',
+        )}
       />
       <div
         ref={panelRef}
@@ -200,7 +210,10 @@ export function OrderReviewSheet({
         aria-labelledby={titleId}
         aria-busy={loading || confirming || undefined}
         tabIndex={-1}
-        className="relative flex max-h-[92dvh] w-full flex-col rounded-t-[1.5rem] border border-ink-100/70 bg-surface/85 shadow-overlay backdrop-blur-xl backdrop-saturate-150 outline-none animate-sheet-spring md:max-h-[88dvh] md:max-w-xl md:rounded-card md:animate-pop-spring"
+        className={cn(
+          'relative flex max-h-[92dvh] w-full flex-col rounded-t-[1.5rem] border border-ink-100/70 bg-surface/85 shadow-overlay backdrop-blur-xl backdrop-saturate-150 outline-none md:max-h-[88dvh] md:max-w-xl md:rounded-card',
+          closing ? 'animate-sheet-out md:animate-modal-out' : 'animate-sheet-in md:animate-modal-in',
+        )}
       >
         <span aria-hidden="true" className="mx-auto mt-2.5 h-1.5 w-10 shrink-0 rounded-full bg-ink-200 md:hidden" />
         <header className="flex shrink-0 items-center justify-between gap-3 px-5 pb-2 pt-3 md:pt-5">

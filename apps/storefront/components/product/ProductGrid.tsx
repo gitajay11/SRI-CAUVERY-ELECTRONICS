@@ -26,6 +26,8 @@ export function ProductGrid({
           key={product.id}
           product={product}
           priority={index < priorityCount}
+          // A row arrives left to right; four columns at most.
+          revealIndex={index % 4}
         />
       ))}
     </div>
@@ -60,6 +62,7 @@ export function ProductRail({
             <ProductCard
               product={product}
               priority={index < priorityCount}
+              revealIndex={Math.min(index, 3)}
               className="h-full lg:w-56"
             />
           </li>

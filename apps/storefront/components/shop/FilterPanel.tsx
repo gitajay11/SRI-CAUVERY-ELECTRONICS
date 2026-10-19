@@ -12,6 +12,7 @@ import {
 } from '@/lib/product-query';
 import { useLocale } from '@/components/providers/LocaleProvider';
 import { useNavigation } from '@/hooks/useNavigation';
+import { usePresence } from '@/hooks/usePresence';
 import { Button } from '@/components/ui/Button';
 import { CheckIcon, CloseIcon, FilterIcon, SpinnerIcon, StarIcon } from '@/components/ui/Icons';
 
@@ -337,6 +338,8 @@ function PriceFilter({
 function MobileFilterSheet(props: FilterProps) {
   const { t } = useLocale();
   const [open, setOpen] = useState(false);
+  // Slides down (quicker than it rose) before it unmounts.
+  const sheet = usePresence(open);
 
   return (
     <>
@@ -355,19 +358,25 @@ function MobileFilterSheet(props: FilterProps) {
         ) : null}
       </Button>
 
-      {open ? (
-        <div className="fixed inset-0 z-[60] lg:hidden">
+      {sheet.mounted ? (
+        <div className={cn('fixed inset-0 z-[60] lg:hidden', sheet.closing && 'pointer-events-none')}>
           <button
             type="button"
             aria-label={t('common.close')}
             onClick={() => setOpen(false)}
-            className="absolute inset-0 bg-carbon-900/45"
+            className={cn(
+              'absolute inset-0 bg-carbon-900/45 backdrop-blur-[2px]',
+              sheet.closing ? 'animate-backdrop-out' : 'animate-backdrop-in',
+            )}
           />
           <div
             role="dialog"
             aria-modal="true"
             aria-label={t('shop.filters')}
-            className="absolute inset-x-0 bottom-0 flex max-h-[85dvh] animate-slide-up flex-col rounded-t-3xl bg-paper"
+            className={cn(
+              'absolute inset-x-0 bottom-0 flex max-h-[85dvh] flex-col rounded-t-3xl bg-paper',
+              sheet.closing ? 'animate-sheet-out' : 'animate-sheet-in',
+            )}
           >
             <div className="flex items-center justify-between border-b border-ink-100 px-4 py-3">
               <h2 className="text-base font-bold">{t('shop.filters')}</h2>
