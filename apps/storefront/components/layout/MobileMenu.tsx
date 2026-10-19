@@ -19,6 +19,7 @@ import {
   CloseIcon,
   DownloadIcon,
   HeartIcon,
+  MapPinIcon,
   MenuIcon,
   PhoneIcon,
   UserIcon,
@@ -111,6 +112,22 @@ export function MobileMenu({
 
   const label = (category: CategoryView) =>
     locale === 'ta' ? category.nameTa : category.name;
+
+  /**
+   * "Visit store" from /contact itself changes only the hash, so the route
+   * stays the same and the drawer has to close itself. The jump to the
+   * section also happens while the drawer still holds the page's scroll
+   * lock, so it is repeated once the drawer has gone — as a jump, the same
+   * as arriving from another page: a smooth scroll started straight after
+   * the lock lifts can be dropped by the browser.
+   */
+  const goToVisitStore = () => {
+    setOpen(false);
+    if (pathname !== '/contact') return;
+    window.setTimeout(() => {
+      document.getElementById('visit-store')?.scrollIntoView();
+    });
+  };
 
   return (
     <>
@@ -274,6 +291,12 @@ export function MobileMenu({
                 <li>
                   <DrawerLink href="/contact">{t('nav.contact')}</DrawerLink>
                 </li>
+                <li>
+                  <DrawerLink href="/contact#visit-store" onClick={goToVisitStore}>
+                    <MapPinIcon className="size-5 text-ink-400" />
+                    {t('nav.visitStore')}
+                  </DrawerLink>
+                </li>
               </ul>
             </nav>
 
@@ -323,14 +346,17 @@ function DrawerLink({
   href,
   children,
   variant = 'top',
+  onClick,
 }: {
   href: string;
   children: React.ReactNode;
   variant?: 'top' | 'child';
+  onClick?: () => void;
 }) {
   return (
     <Link
       href={href}
+      onClick={onClick}
       className={cn(
         'flex items-center gap-3 rounded-xl px-3 py-3 hover:bg-ink-100',
         variant === 'top'

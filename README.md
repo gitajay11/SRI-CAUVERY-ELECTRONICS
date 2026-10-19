@@ -249,27 +249,11 @@ saved.
 
 ## Payments
 
-`services/payments.ts` is a provider interface, not a gateway integration.
-
-- `cod` — cash on delivery, always available
-- `mock` — default off the live site; exercises the full online-payment path
-  with no credentials and never claims money was captured. The live site
-  refuses it, even by name: there, anything but `razorpay` means cash on
-  delivery only
-- `razorpay` — set `PAYMENT_PROVIDER=razorpay` plus `RAZORPAY_KEY_ID`,
-  `RAZORPAY_KEY_SECRET` and `RAZORPAY_WEBHOOK_SECRET`
-
-Checkout code does not change when you switch. Secrets are read on the server
-only; the publishable key id is the sole value that reaches the browser. Online
-payment is hidden from checkout until the gateway is actually configured.
-
-A Razorpay payment is confirmed two ways, and whichever arrives first wins: the
-browser posts Checkout's signed handshake to `/api/payments/verify`, and
-Razorpay itself calls `/api/payments/webhook`. The webhook is what saves the
-order when the shopper closes the tab the moment their bank says yes. In the
-Razorpay dashboard (Settings → Webhooks), point a webhook at
-`<site>/api/payments/webhook` with the `RAZORPAY_WEBHOOK_SECRET` value and the
-events `payment.captured`, `payment.failed` and `order.paid`.
+The shop takes cash on delivery, or payment at the store. There is no online
+payment gateway. Checkout still shows "Pay online", but it opens a "coming
+soon" dialog that offers cash on delivery or a call to the shop, and
+`/api/checkout` refuses an `ONLINE` order. Older online orders and their
+payment rows are kept as they were.
 
 ---
 

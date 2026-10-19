@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import type { CategoryView } from '@tamizh/core/types';
 import { getI18n } from '@/i18n/server';
-import { shopConfig, formattedAddress, whatsappLink } from '@/lib/site';
+import { shopConfig, whatsappLink } from '@/lib/site';
 import { BrandMark } from './BrandMark';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { NewsletterForm } from './NewsletterForm';
@@ -57,10 +57,15 @@ export async function Footer({ categories }: { categories: CategoryView[] }) {
             </p>
 
             <address className="mt-5 space-y-2.5 text-sm not-italic text-ink-600">
-              <span className="flex items-start gap-2.5">
-                <MapPinIcon className="mt-0.5 shrink-0 text-base text-brand-500" />
-                {formattedAddress()}
-              </span>
+              <a
+                href={shopConfig.location.directionsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2.5 hover:text-link"
+              >
+                <MapPinIcon className="shrink-0 text-base text-brand-500" />
+                {t('store.area')}
+              </a>
               <a
                 href={`tel:${shopConfig.supportPhone.replace(/\s/g, '')}`}
                 className="flex items-center gap-2.5 hover:text-link"

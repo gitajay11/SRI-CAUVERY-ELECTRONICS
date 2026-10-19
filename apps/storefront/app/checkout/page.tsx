@@ -4,7 +4,6 @@ import { getI18n } from '@/i18n/server';
 import { getCartView } from '@/services/cart';
 import { getRepository } from '@/services/repository';
 import { getSessionUser } from '@/lib/auth';
-import { onlinePaymentAvailable } from '@/services/payments';
 import { buildMetadata } from '@/lib/seo';
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs';
 import { CheckoutForm } from '@/components/checkout/CheckoutForm';
@@ -58,12 +57,7 @@ export default async function CheckoutPage() {
         </div>
       ) : null}
 
-      <CheckoutForm
-        cart={cart}
-        user={user}
-        addresses={addresses}
-        onlinePaymentAvailable={onlinePaymentAvailable()}
-      />
+      <CheckoutForm cart={cart} user={user} addresses={addresses} />
     </div>
   );
 }

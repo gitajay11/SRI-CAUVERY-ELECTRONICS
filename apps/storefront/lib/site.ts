@@ -17,12 +17,21 @@ export const shopConfig = {
   whatsapp: process.env.NEXT_PUBLIC_WHATSAPP ?? '919361670148',
 
   address: {
-    line1: '18/3, Bazaar Main Road',
-    line2: 'Near Bus Stand',
-    city: 'Madurai',
-    district: 'Madurai',
+    line1: 'SPD Nagar, No:15, Kumbakonam Main Road',
+    line2: 'Sabapathy Nagar, Vadakuthu',
+    city: 'Neyveli',
+    district: 'Cuddalore',
     state: 'Tamil Nadu',
-    pincode: '625001',
+    pincode: '607308',
+  },
+
+  /** The shop on a map. Directions open Google Maps navigation on a phone. */
+  location: {
+    latitude: 11.6110215,
+    longitude: 79.5497598,
+    mapUrl: 'https://maps.app.goo.gl/tDZ5CeSUYh5tUKCE6',
+    directionsUrl: 'https://www.google.com/maps/dir/?api=1&destination=11.6110215,79.5497598',
+    embedUrl: 'https://www.google.com/maps?q=11.6110215,79.5497598&z=17&output=embed',
   },
 
   hoursEn: 'Monday to Saturday, 9:30 am – 8:30 pm',
@@ -40,5 +49,5 @@ export function whatsappLink(message?: string): string {
 
 export function formattedAddress(): string {
   const { line1, line2, city, district, state, pincode } = shopConfig.address;
-  return `${line1}, ${line2}, ${city}, ${district} ${pincode}, ${state}, India`;
+  return `${line1}, ${line2}, ${city}, ${district} District, ${state} ${pincode}`;
 }

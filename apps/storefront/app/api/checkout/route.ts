@@ -18,10 +18,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     const body = checkoutSchema.parse(await readJson(request));
     const result = await placeOrder(body);
 
-    return created({
-      order: result.order,
-      payment: result.paymentClientConfig,
-    });
+    return created({ order: result.order });
   } catch (error) {
     return handleRouteError(error);
   }

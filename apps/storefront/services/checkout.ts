@@ -7,7 +7,6 @@ import { getSessionUser } from '@/lib/auth';
 import { forgetCatalog, getRepository } from './repository';
 import { calculateTotals, evaluateCoupon, generateOrderNumber } from '@tamizh/core/pricing';
 import { isValidQuantity, quantityRuleFor } from '@tamizh/core/quantity';
-import { onlinePaymentAvailable, providerFor } from './payments';
 import { resolveCartOwner, setCouponCookie } from './cart';
 import { getShopSettings } from './settings';
 import { after } from 'next/server';
@@ -24,8 +23,6 @@ import { notifyAdmin, sendOrderEmails } from './notifications';
 
 export interface PlaceOrderResult {
   order: OrderView;
-  /** Non-null when the browser must complete a gateway step. */
-  paymentClientConfig: Record<string, string | number> | null;
 }
 
 export async function placeOrder(input: CheckoutInput): Promise<PlaceOrderResult> {
@@ -122,9 +119,11 @@ export async function placeOrder(input: CheckoutInput): Promise<PlaceOrderResult
     );
   }
 
-  if (input.paymentMethod === 'ONLINE' && !onlinePaymentAvailable()) {
+  // The shop takes no payment online. The checkout shows the option as
+  // "coming soon" and never sends it, but the endpoint can be called directly.
+  if (input.paymentMethod === 'ONLINE') {
     throw new AppError(
-      'Online payment is not available right now. Please choose cash on delivery.',
+      'Online payment is not available yet. Please choose cash on delivery.',
       409,
       'online_payment_unavailable',
       { paymentMethod: 'Choose cash on delivery to continue.' },
@@ -132,13 +131,6 @@ export async function placeOrder(input: CheckoutInput): Promise<PlaceOrderResult
   }
 
   const orderNumber = generateOrderNumber();
-  const provider = providerFor(input.paymentMethod);
-  const intent = await provider.createIntent({
-    amount: totals.total,
-    orderNumber,
-    customerEmail: input.customerEmail,
-    customerPhone: input.customerPhone,
-  });
 
   const order = await repo.placeOrder({
     userId: sessionUser.id,
@@ -152,7 +144,7 @@ export async function placeOrder(input: CheckoutInput): Promise<PlaceOrderResult
     state: input.state,
     pincode: input.pincode,
     paymentMethod: input.paymentMethod,
-    paymentStatus: intent.status,
+    paymentStatus: 'COD_PENDING',
     notes: input.notes || undefined,
     coupon,
     items,
@@ -161,8 +153,8 @@ export async function placeOrder(input: CheckoutInput): Promise<PlaceOrderResult
     shippingFee: totals.shippingFee,
     total: totals.total,
     orderNumber,
-    paymentProvider: intent.provider,
-    paymentProviderOrderId: intent.providerOrderId,
+    paymentProvider: 'cod',
+    paymentProviderOrderId: null,
   });
 
   // The order exists; the cart and the coupon have served their purpose.
@@ -191,17 +183,12 @@ export async function placeOrder(input: CheckoutInput): Promise<PlaceOrderResult
   }
 
   // The emails — the customer's confirmation and the shop's copy — go out
-  // once the order is a fact. Cash on delivery: now. Online: when the payment
-  // is confirmed, from payment-confirmation.ts; a "confirmed" email for an
-  // order that is still waiting on a payment that may never come would be a
-  // lie, and one the customer keeps.
+  // once the order is a fact, which for cash on delivery is now.
   //
   // `after` runs this once the response has gone, so a slow mail server never
   // keeps a shopper looking at a spinner — and, unlike a dropped promise, the
   // platform keeps the function alive until it finishes.
-  if (intent.completed) {
-    after(() => sendOrderEmails(order));
-  }
+  after(() => sendOrderEmails(order));
 
   // Staff alert. Not awaited into the response: the order is committed, and a
   // slow notification host must not keep a shopper waiting on their receipt.
@@ -214,8 +201,5 @@ export async function placeOrder(input: CheckoutInput): Promise<PlaceOrderResult
     url: `/orders/${order.orderNumber}`,
   });
 
-  return {
-    order,
-    paymentClientConfig: intent.completed ? null : intent.clientConfig,
-  };
+  return { order };
 }

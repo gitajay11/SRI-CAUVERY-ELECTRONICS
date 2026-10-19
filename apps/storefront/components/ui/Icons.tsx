@@ -219,6 +219,20 @@ export const MapPinIcon = (p: IconProps) => (
   </Icon>
 );
 
+export const ClockIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <circle cx="12" cy="12" r="8.5" />
+    <path d="M12 7.5V12l3 2" />
+  </Icon>
+);
+
+/** A navigation arrow, for "Get directions". */
+export const DirectionsIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M20.5 3.5 3.5 10.6l7.1 2.8 2.8 7.1 7.1-17Z" />
+  </Icon>
+);
+
 export const WhatsAppIcon = (p: IconProps) => (
   <Icon {...p} strokeWidth={1.6}>
     <path d="M20.2 11.6a8.2 8.2 0 0 1-12.1 7.2L3.8 20l1.3-4.1a8.2 8.2 0 1 1 15.1-4.3Z" />

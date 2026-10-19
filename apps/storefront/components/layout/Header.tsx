@@ -12,7 +12,7 @@ import { InstallButton } from '@/components/pwa/InstallButton';
 import { CategoryMenu } from './CategoryMenu';
 import { MobileMenu } from './MobileMenu';
 import { HeaderActions } from './HeaderActions';
-import { BoltIcon, PhoneIcon, TruckIcon } from '@/components/ui/Icons';
+import { BoltIcon, MapPinIcon, PhoneIcon, TruckIcon } from '@/components/ui/Icons';
 
 /**
  * Site header.
@@ -57,6 +57,10 @@ export async function Header({
               <PhoneIcon className="text-sm text-gold-300" />
               {shopConfig.supportPhone}
             </a>
+            <Link href="/contact#visit-store" className="flex items-center gap-1.5 hover:text-white">
+              <MapPinIcon className="text-sm text-gold-300" />
+              {t('nav.visitStore')}
+            </Link>
             <Link href="/orders" className="hover:text-white">
               {t('order.myOrders')}
             </Link>

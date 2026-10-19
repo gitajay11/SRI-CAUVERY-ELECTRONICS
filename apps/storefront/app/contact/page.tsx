@@ -2,10 +2,11 @@ import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import { getI18n } from '@/i18n/server';
 import { buildMetadata } from '@/lib/seo';
-import { shopConfig, formattedAddress, whatsappLink } from '@/lib/site';
+import { shopConfig, whatsappLink } from '@/lib/site';
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs';
 import { ContactForm } from '@/components/content/ContactForm';
-import { MailIcon, MapPinIcon, PhoneIcon, WhatsAppIcon } from '@/components/ui/Icons';
+import { VisitStore } from '@/components/content/VisitStore';
+import { MailIcon, PhoneIcon, WhatsAppIcon } from '@/components/ui/Icons';
 
 export const metadata: Metadata = buildMetadata({
   title: 'Contact us',
@@ -15,7 +16,7 @@ export const metadata: Metadata = buildMetadata({
 });
 
 export default async function ContactPage() {
-  const { t, locale } = await getI18n();
+  const { t } = await getI18n();
 
   return (
     <div className="container-page py-6 lg:py-10">
@@ -68,23 +69,6 @@ export default async function ContactPage() {
             </div>
           </section>
 
-          <section className="rounded-card border border-ink-100 bg-surface p-5">
-            <h2 className="flex items-center gap-2 text-base font-bold text-ink-900">
-              <MapPinIcon className="text-lg text-link" />
-              {t('contact.visit')}
-            </h2>
-            <address className="mt-2.5 text-sm not-italic leading-relaxed text-ink-600">
-              {formattedAddress()}
-            </address>
-            <div className="mt-3 border-t border-ink-100 pt-3 text-sm">
-              <p className="font-semibold text-ink-800">{t('contact.hours')}</p>
-              <p className="mt-1 text-ink-600">
-                {locale === 'ta' ? shopConfig.hoursTa : shopConfig.hoursEn}
-              </p>
-              <p className="text-ink-600">{t('contact.sunday')}</p>
-            </div>
-          </section>
-
           <section className="rounded-card border border-action-edge/40 bg-success-50 p-5">
             <h2 className="text-base font-bold text-link">
               {t('contact.bulkTitle')}
@@ -95,6 +79,9 @@ export default async function ContactPage() {
           </section>
         </aside>
       </div>
+
+      {/* Address, hours and the map; the header's "Visit store" lands here. */}
+      <VisitStore />
     </div>
   );
 }

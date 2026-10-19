@@ -75,11 +75,15 @@ export function buildMetadata({
 // JSON-LD
 // ---------------------------------------------------------------------------
 
+/**
+ * The shop as a LocalBusiness — an ElectronicsStore, with its address, map
+ * position and hours — so search and maps can show it as a place to visit.
+ */
 export function organizationJsonLd() {
-  const { address } = shopConfig;
+  const { address, location } = shopConfig;
   return {
     '@context': 'https://schema.org',
-    '@type': 'Store',
+    '@type': 'ElectronicsStore',
     '@id': `${siteUrl()}/#organization`,
     name: shopConfig.nameEn,
     alternateName: shopConfig.nameTa,
@@ -91,7 +95,7 @@ export function organizationJsonLd() {
     email: shopConfig.supportEmail,
     priceRange: '₹₹',
     currenciesAccepted: 'INR',
-    paymentAccepted: 'Cash on Delivery, UPI, Credit Card, Debit Card, Net Banking',
+    paymentAccepted: 'Cash, Cash on Delivery',
     foundingDate: String(shopConfig.foundedYear),
     address: {
       '@type': 'PostalAddress',
@@ -101,6 +105,12 @@ export function organizationJsonLd() {
       postalCode: address.pincode,
       addressCountry: 'IN',
     },
+    geo: {
+      '@type': 'GeoCoordinates',
+      latitude: location.latitude,
+      longitude: location.longitude,
+    },
+    hasMap: location.mapUrl,
     areaServed: { '@type': 'State', name: 'Tamil Nadu' },
     openingHoursSpecification: [
       {

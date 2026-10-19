@@ -11,7 +11,6 @@ import { INDIAN_STATES } from '@/lib/india';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { useLocale } from '@/components/providers/LocaleProvider';
 import { useCart } from '@/components/providers/CartProvider';
-import { openRazorpayCheckout } from '@/lib/razorpay-checkout';
 import { shopConfig } from '@/lib/site';
 import { Button } from '@/components/ui/Button';
 import {
@@ -23,6 +22,7 @@ import {
   TextField,
 } from '@/components/ui/Field';
 import { CartSummary } from '@/components/cart/CartSummary';
+import { OnlinePaymentSoonDialog } from './OnlinePaymentSoonDialog';
 import { Alert, LoadingState } from '@/components/ui/Primitives';
 import { CheckIcon, ShieldIcon, TruckIcon, WifiOffIcon } from '@/components/ui/Icons';
 
@@ -38,22 +38,18 @@ import { CheckIcon, ShieldIcon, TruckIcon, WifiOffIcon } from '@/components/ui/I
  */
 /**
  * Where the shopper is in placing the order. Each phase has its own words on
- * the screen, because "please wait" means something different when the order
- * is being written, when the payment window is open, and when the payment is
- * being checked with the gateway.
+ * the screen: the order being written, then the order page on its way.
  */
-type Phase = 'idle' | 'placing' | 'paying' | 'confirming' | 'leaving';
+type Phase = 'idle' | 'placing' | 'leaving';
 
 export function CheckoutForm({
   cart,
   user,
   addresses,
-  onlinePaymentAvailable,
 }: {
   cart: CartView;
   user: SessionUser | null;
   addresses: AddressView[];
-  onlinePaymentAvailable: boolean;
 }) {
   const { t } = useLocale();
   const router = useRouter();
@@ -76,7 +72,11 @@ export function CheckoutForm({
     pincode: defaultAddress?.pincode ?? '',
     notes: '',
   });
-  const [paymentMethod, setPaymentMethod] = useState<'COD' | 'ONLINE'>('COD');
+  // Online payment is "coming soon": its option opens a dialog instead of
+  // being selectable, so every order is placed as cash on delivery.
+  const [onlineInfoOpen, setOnlineInfoOpen] = useState(false);
+  const onlineButtonRef = useRef<HTMLButtonElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
   const [saveAddress, setSaveAddress] = useState(false);
   const [phase, setPhase] = useState<Phase>('idle');
   const [error, setError] = useState<string | null>(null);
@@ -132,100 +132,18 @@ export function CheckoutForm({
     inFlight.current = true;
     setPhase('placing');
     try {
-      const result = await api.post<{
-        order: OrderView;
-        payment: Record<string, string | number> | null;
-      }>('/api/checkout', {
+      const result = await api.post<{ order: OrderView }>('/api/checkout', {
         ...form,
         couponCode: cart.coupon?.code ?? '',
-        paymentMethod,
+        paymentMethod: 'COD',
         saveAddress: saveAddress && Boolean(user),
       });
 
       // The order exists. The server emptied the cart as part of placing it,
-      // so the badge and every "in your cart" button must forget it now —
-      // whatever happens with payment, these goods are no longer in a cart.
+      // so the badge and every "in your cart" button must forget it now.
       clearCartState();
 
-      // Everything from here is about that one order: its total is already
-      // fixed on the server, so nothing the gateway or the browser says can
-      // change what is owed.
-      if (result.payment?.provider === 'razorpay') {
-        const pending = `/order/${result.order.orderNumber}?payment=pending&email=${encodeURIComponent(result.order.customerEmail)}`;
-
-        setPhase('paying');
-        let outcome: Awaited<ReturnType<typeof openRazorpayCheckout>>;
-        try {
-          outcome = await openRazorpayCheckout(
-            {
-              key: String(result.payment.key),
-              amount: Number(result.payment.amount),
-              currency: String(result.payment.currency),
-              razorpayOrderId: String(result.payment.razorpayOrderId),
-              orderNumber: result.order.orderNumber,
-            },
-            {
-              name: form.customerName,
-              email: form.customerEmail,
-              phone: form.customerPhone,
-              shopName: shopConfig.nameEn,
-            },
-          );
-        } catch {
-          // The script could not load — a blocked third party, or no network.
-          // The order stands; it simply has not been paid for yet.
-          setError(t('checkout.payment.gatewayUnavailable'));
-          setPhase('idle');
-          inFlight.current = false;
-          return;
-        }
-
-        if (outcome.status === 'paid') {
-          // The gateway says paid; the shop has not agreed yet. Until the
-          // server has checked the signature nothing on screen may say
-          // "confirmed" — this phase is the honest state in between.
-          setPhase('confirming');
-          try {
-            await api.post('/api/payments/verify', outcome.handshake);
-            leaveFor(
-              `/order/${result.order.orderNumber}?placed=1&email=${encodeURIComponent(result.order.customerEmail)}`,
-            );
-          } catch {
-            // Money may well have left the shopper's account, so this must
-            // never read as "payment failed". The order page is the honest
-            // place for it: the shop can see the payment and reconcile.
-            leaveFor(`${pending}&verify=failed`);
-          }
-          return;
-        }
-
-        // Dismissed or declined. Recorded so the order does not sit in
-        // PENDING with nothing said about why, and best-effort because
-        // failing to record a failure must not lose the order.
-        void api
-          .post('/api/payments/verify', {
-            failed: true,
-            razorpay_order_id: String(result.payment.razorpayOrderId),
-            reason:
-              outcome.status === 'failed' ? outcome.reason : 'Payment window closed',
-          })
-          .catch(() => {});
-
-        setPhase('leaving');
-        leaveFor(pending);
-        return;
-      }
-
       setPhase('leaving');
-      if (result.payment) {
-        // Any other online provider — the mock one in development — has no
-        // browser step, so the order simply waits for confirmation.
-        leaveFor(
-          `/order/${result.order.orderNumber}?payment=pending&email=${encodeURIComponent(result.order.customerEmail)}`,
-        );
-        return;
-      }
-
       leaveFor(
         `/order/${result.order.orderNumber}?placed=1&email=${encodeURIComponent(result.order.customerEmail)}`,
       );
@@ -253,14 +171,6 @@ export function CheckoutForm({
       message: t('checkout.wait.placing'),
       detail: t('checkout.wait.placingDetail'),
     },
-    paying: {
-      message: t('checkout.wait.paying'),
-      detail: t('checkout.wait.payingDetail'),
-    },
-    confirming: {
-      message: t('checkout.wait.confirming'),
-      detail: t('checkout.wait.confirmingDetail'),
-    },
     leaving: {
       message: t('checkout.wait.leaving'),
       detail: t('checkout.wait.leavingDetail'),
@@ -272,14 +182,13 @@ export function CheckoutForm({
 
   return (
     <form
+      ref={formRef}
       onSubmit={submit}
       noValidate
       aria-busy={busy || undefined}
       className="grid gap-6 lg:grid-cols-[1fr_22rem] lg:items-start lg:gap-8"
     >
-      {/* The payment window is the gateway's own; while it is open ours
-          stays out of the way so nothing here can be read as competing. */}
-      {overlay && phase !== 'paying' ? (
+      {overlay ? (
         <LoadingState overlay message={overlay.message} detail={overlay.detail} />
       ) : null}
 
@@ -482,26 +391,54 @@ export function CheckoutForm({
 
           <div className="mt-3 space-y-2.5">
             <PaymentOption
-              checked={paymentMethod === 'COD'}
-              onSelect={() => setPaymentMethod('COD')}
+              checked
               icon={<TruckIcon />}
               title={t('checkout.payment.cod')}
               body={t('checkout.payment.codBody')}
             />
-            <PaymentOption
-              checked={paymentMethod === 'ONLINE'}
-              onSelect={() => setPaymentMethod('ONLINE')}
-              disabled={!onlinePaymentAvailable}
-              icon={<ShieldIcon />}
-              title={t('checkout.payment.online')}
-              body={
-                onlinePaymentAvailable
-                  ? t('checkout.payment.onlineBody')
-                  : t('checkout.payment.onlineUnavailable')
-              }
-            />
+            {/* Looks like the other option, but is a button: it explains,
+                and never selects a way of paying the shop cannot take. */}
+            <button
+              ref={onlineButtonRef}
+              type="button"
+              onClick={() => setOnlineInfoOpen(true)}
+              aria-haspopup="dialog"
+              className="flex w-full items-start gap-3 rounded-xl border border-ink-200 p-3.5 text-left transition-colors hover:border-ink-300"
+            >
+              <span
+                aria-hidden="true"
+                className="mt-1 size-4 shrink-0 rounded-full border border-ink-300 bg-surface"
+              />
+              <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-surface text-lg text-link">
+                <ShieldIcon />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-bold text-ink-900">
+                  {t('checkout.payment.online')}
+                </span>
+                <span className="mt-0.5 block text-sm text-ink-500">
+                  {t('checkout.payment.onlineBody')}
+                </span>
+              </span>
+              <span className="shrink-0 rounded-full bg-ink-100 px-2 py-0.5 text-xs font-bold text-ink-600">
+                {t('checkout.payment.soon')}
+              </span>
+            </button>
           </div>
         </fieldset>
+
+        <OnlinePaymentSoonDialog
+          open={onlineInfoOpen}
+          onClose={() => setOnlineInfoOpen(false)}
+          onChooseCod={() => {
+            setOnlineInfoOpen(false);
+            // Cash on delivery is already the selected method; carry on
+            // exactly as if Place order had been pressed.
+            formRef.current?.requestSubmit();
+          }}
+          returnFocusRef={onlineButtonRef}
+          phone={shopConfig.supportPhone}
+        />
 
         {/* Mobile order total + submit */}
         <div className="lg:hidden">
@@ -533,15 +470,11 @@ export function CheckoutForm({
 
 function PaymentOption({
   checked,
-  onSelect,
-  disabled = false,
   icon,
   title,
   body,
 }: {
   checked: boolean;
-  onSelect: () => void;
-  disabled?: boolean;
   icon: React.ReactNode;
   title: string;
   body: string;
@@ -550,7 +483,6 @@ function PaymentOption({
     <label
       className={cn(
         'flex cursor-pointer items-start gap-3 rounded-xl border p-3.5 transition-colors',
-        disabled && 'cursor-not-allowed opacity-60',
         checked ? 'border-brand-500 bg-success-50' : 'border-ink-200 hover:border-ink-300',
       )}
     >
@@ -558,8 +490,7 @@ function PaymentOption({
         type="radio"
         name="paymentMethod"
         checked={checked}
-        disabled={disabled}
-        onChange={onSelect}
+        readOnly
         className="mt-1 size-4 accent-brand-600"
       />
       <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-surface text-lg text-link">
