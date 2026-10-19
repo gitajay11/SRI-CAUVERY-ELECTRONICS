@@ -1163,13 +1163,28 @@ export class PrismaRepository implements Repository {
       // transaction. The admin panel reconciles the sum of these movements
       // against the stored count, and a sale that skipped the ledger would
       // show up there as unexplained shrinkage.
+      //
+      // The decrement carries its own floor. The check above reads stock
+      // without a lock, so two shoppers buying the last unit can both pass it;
+      // a conditional update is evaluated against the row as it is at write
+      // time, and the second one simply matches nothing.
       for (const item of input.items) {
-        const updated = await tx.product.update({
-          where: { id: item.productId },
+        const moved = await tx.product.updateMany({
+          where: { id: item.productId, stock: { gte: item.quantity } },
           data: {
             stock: { decrement: item.quantity },
             soldCount: { increment: item.quantity },
           },
+        });
+        if (moved.count !== 1) {
+          throw new AppError(
+            `${item.name} has just sold out. Please review your cart.`,
+            409,
+            'insufficient_stock',
+          );
+        }
+        const updated = await tx.product.findUniqueOrThrow({
+          where: { id: item.productId },
           select: { stock: true },
         });
 
