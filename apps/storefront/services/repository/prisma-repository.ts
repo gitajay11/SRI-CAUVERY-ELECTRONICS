@@ -830,6 +830,9 @@ export class PrismaRepository implements Repository {
       await this.db.cartItem.deleteMany({ where: { id: { in: removeIds } } });
     }
     for (const update of clampUpdates) {
+      // A line cut to nothing is in both lists, and already deleted above:
+      // updating it as well fails, and took the whole cart read down with it.
+      if (removeIds.includes(update.id)) continue;
       await this.db.cartItem.update({
         where: { id: update.id },
         data: { quantity: update.quantity },
@@ -1069,8 +1072,25 @@ export class PrismaRepository implements Repository {
   // Orders
   // -------------------------------------------------------------------------
 
-  async placeOrder(input: PlaceOrderInput): Promise<OrderView> {
+  async placeOrder(input: PlaceOrderInput): Promise<{ order: OrderView; replayed: boolean }> {
+    const idempotencyKey = input.userId && input.idempotencyKey ? input.idempotencyKey : null;
+
     const order = await this.db.$transaction(async (tx) => {
+      // One press of "Confirm order", however many times it arrives. The
+      // lock makes a second request with the same key wait for the first to
+      // commit, so it then finds that order rather than placing another.
+      if (idempotencyKey) {
+        await tx.$queryRaw`SELECT 1 AS locked FROM (SELECT pg_advisory_xact_lock(hashtext(${`order:${input.userId}:${idempotencyKey}`}))) AS lock`;
+        const earlier = await tx.payment.findFirst({
+          where: {
+            order: { userId: input.userId },
+            meta: { path: ['idempotencyKey'], equals: idempotencyKey },
+          },
+          select: { order: { select: { orderNumber: true } } },
+        });
+        if (earlier) return { replayOf: earlier.order.orderNumber };
+      }
+
       // Re-read stock inside the transaction; the cart snapshot may be stale.
       for (const item of input.items) {
         const product = await tx.product.findUnique({
@@ -1153,6 +1173,7 @@ export class PrismaRepository implements Repository {
               providerOrderId: input.paymentProviderOrderId,
               amount: input.total,
               status: input.paymentStatus,
+              meta: idempotencyKey ? { idempotencyKey } : {},
             },
           },
         },
@@ -1211,7 +1232,12 @@ export class PrismaRepository implements Repository {
       return created;
     });
 
-    return this.toOrderView(order);
+    if ('replayOf' in order) {
+      const earlier = await this.getOrderForUser(input.userId!, order.replayOf);
+      if (earlier) return { order: earlier, replayed: true };
+      throw new AppError('That order could not be found.', 404, 'order_not_found');
+    }
+    return { order: this.toOrderView(order), replayed: false };
   }
 
   private toOrderView(row: {
@@ -1398,6 +1424,14 @@ export class PrismaRepository implements Repository {
       include: this.orderInclude,
     });
     return rows.map((row) => this.toOrderView(row));
+  }
+
+  async findOrderByIdempotencyKey(userId: string, key: string): Promise<OrderView | null> {
+    const payment = await this.db.payment.findFirst({
+      where: { order: { userId }, meta: { path: ['idempotencyKey'], equals: key } },
+      select: { order: { select: { orderNumber: true } } },
+    });
+    return payment ? this.getOrderForUser(userId, payment.order.orderNumber) : null;
   }
 
   async getOrderForUser(userId: string, orderNumber: string): Promise<OrderView | null> {

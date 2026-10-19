@@ -1,10 +1,13 @@
 import 'server-only';
-import type { OrderView } from '@tamizh/core/types';
+import { createHash } from 'node:crypto';
+import type { CartItemView, CartTotals, OrderView } from '@tamizh/core/types';
 import type { CheckoutInput } from '@/lib/validation';
 import { AppError } from '@tamizh/core/api';
 import { formatINR } from '@tamizh/core/money';
 import { getSessionUser } from '@/lib/auth';
-import { forgetCatalog, getRepository } from './repository';
+import { forgetCatalog, getRepository, type CartOwner } from './repository';
+import { lineKey, type OrderReview, type ReviewLine, type SeenLine } from '@/lib/order-review';
+import { deliveryForPincode, type DeliveryInfo } from './delivery';
 import { calculateTotals, evaluateCoupon, generateOrderNumber } from '@tamizh/core/pricing';
 import { isValidQuantity, quantityRuleFor } from '@tamizh/core/quantity';
 import { resolveCartOwner, setCouponCookie } from './cart';
@@ -25,7 +28,30 @@ export interface PlaceOrderResult {
   order: OrderView;
 }
 
-export async function placeOrder(input: CheckoutInput): Promise<PlaceOrderResult> {
+interface CheckoutQuote {
+  userId: string;
+  owner: CartOwner;
+  items: CartItemView[];
+  coupon: {
+    id: string;
+    code: string;
+    discount: number;
+    waivesShipping: boolean;
+  } | null;
+  totals: CartTotals;
+  delivery: DeliveryInfo | null;
+}
+
+/**
+ * Everything the order would be, worked out from the server's own records:
+ * the cart as it is now, today's prices, the coupon, delivery and the total.
+ *
+ * Both the review and the order itself start here, so the shopper confirms
+ * exactly what placing would create. Anything that would stop the order —
+ * an empty cart, missing stock, a minimum not met, no cash on delivery to
+ * that pincode — is refused here with a reason worth showing.
+ */
+async function quoteCheckout(input: CheckoutInput): Promise<CheckoutQuote> {
   const repo = getRepository();
   const owner = await resolveCartOwner();
   if (!owner) {
@@ -56,6 +82,8 @@ export async function placeOrder(input: CheckoutInput): Promise<PlaceOrderResult
     );
   }
 
+  // Reading the cart also brings it in line with stock: a line that ran out
+  // is dropped and one that ran short is cut, which the review then flags.
   const { items } = await repo.getCart(owner);
   if (items.length === 0) {
     throw new AppError('Your cart is empty.', 409, 'empty_cart');
@@ -83,12 +111,7 @@ export async function placeOrder(input: CheckoutInput): Promise<PlaceOrderResult
 
   const subtotal = items.reduce((sum, item) => sum + item.lineTotal, 0);
 
-  let coupon: {
-    id: string;
-    code: string;
-    discount: number;
-    waivesShipping: boolean;
-  } | null = null;
+  let coupon: CheckoutQuote['coupon'] = null;
   if (input.couponCode) {
     const record = await repo.findCoupon(input.couponCode);
     const result = evaluateCoupon(record, subtotal);
@@ -130,10 +153,122 @@ export async function placeOrder(input: CheckoutInput): Promise<PlaceOrderResult
     );
   }
 
+  // Cash on delivery is per pincode, as the admin's delivery zones say.
+  const delivery = await deliveryForPincode(input.pincode);
+  if (delivery && !delivery.codAvailable) {
+    throw new AppError(
+      `Cash on delivery is not available for PIN code ${input.pincode} yet. Please call the shop to arrange your order.`,
+      409,
+      'cod_unavailable',
+      { pincode: 'Cash on delivery is not available for this PIN code.' },
+    );
+  }
+
+  return { userId: sessionUser.id, owner, items, coupon, totals, delivery };
+}
+
+/** Identifies the order a quote would place: every line, price and total. */
+function fingerprintOf(quote: CheckoutQuote): string {
+  const lines = quote.items
+    .map((item) => `${lineKey(item)}:${item.quantity}:${item.unitPrice}`)
+    .sort();
+  const { subtotal, couponDiscount, shippingFee, total } = quote.totals;
+  return createHash('sha256')
+    .update(
+      [...lines, `coupon:${quote.coupon?.code ?? ''}`, subtotal, couponDiscount, shippingFee, total].join('|'),
+    )
+    .digest('hex');
+}
+
+/**
+ * The order review: what confirming would place, and what has changed
+ * since the shopper last looked.
+ */
+export async function reviewOrder(input: CheckoutInput, seen: SeenLine[]): Promise<OrderReview> {
+  const quote = await quoteCheckout(input);
+  const seenByKey = new Map(seen.map((line) => [lineKey(line), line]));
+  const currentKeys = new Set(quote.items.map((item) => lineKey(item)));
+
+  const lines: ReviewLine[] = quote.items.map((item) => {
+    const before = seenByKey.get(lineKey(item));
+    const changes: ReviewLine['changes'] = [];
+    if (before && before.unitPrice !== item.unitPrice) {
+      changes.push({ type: 'price', previousUnitPrice: before.unitPrice });
+    }
+    if (before && before.quantity !== item.quantity) {
+      changes.push({ type: 'quantity', previousQuantity: before.quantity });
+    }
+    return {
+      productId: item.productId,
+      variantId: item.variantId,
+      slug: item.slug,
+      name: item.name,
+      nameTa: item.nameTa,
+      variantName: item.variantName,
+      image: item.image,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+      lineTotal: item.lineTotal,
+      changes,
+    };
+  });
+  const removed = seen
+    .filter((line) => !currentKeys.has(lineKey(line)))
+    .map(({ productId, variantId }) => ({ productId, variantId }));
+
+  return {
+    lines,
+    removed,
+    totals: quote.totals,
+    coupon: quote.coupon ? { code: quote.coupon.code, discount: quote.coupon.discount } : null,
+    address: {
+      name: input.customerName,
+      phone: input.customerPhone,
+      line1: input.addressLine1,
+      line2: input.addressLine2 || null,
+      city: input.city,
+      district: input.district,
+      state: input.state,
+      pincode: input.pincode,
+    },
+    delivery: quote.delivery
+      ? { earliest: quote.delivery.earliest, latest: quote.delivery.latest }
+      : null,
+    changed: removed.length > 0 || lines.some((line) => line.changes.length > 0),
+    fingerprint: fingerprintOf(quote),
+  };
+}
+
+export async function placeOrder(input: CheckoutInput): Promise<PlaceOrderResult> {
+  const repo = getRepository();
+
+  // A retry of a confirm that already went through — the response was lost,
+  // or the button was pressed twice. The cart is empty by now, so quoting
+  // would fail; the answer is the order that press already placed.
+  if (input.idempotencyKey) {
+    const user = await getSessionUser();
+    const earlier = user ? await repo.findOrderByIdempotencyKey(user.id, input.idempotencyKey) : null;
+    if (earlier) return { order: earlier };
+  }
+
+  const quote = await quoteCheckout(input);
+  const { owner, items, coupon, totals } = quote;
+
+  // The shopper confirmed one particular order. If prices, stock or the
+  // total have moved since, this is not it — ask them to look again rather
+  // than charging something they did not see.
+  if (input.expectedFingerprint && input.expectedFingerprint !== fingerprintOf(quote)) {
+    throw new AppError(
+      'Your order changed while you were reviewing it. Please check the updated details.',
+      409,
+      'review_changed',
+    );
+  }
+
   const orderNumber = generateOrderNumber();
 
-  const order = await repo.placeOrder({
-    userId: sessionUser.id,
+  const { order, replayed } = await repo.placeOrder({
+    userId: quote.userId,
     customerName: input.customerName,
     customerEmail: input.customerEmail,
     customerPhone: input.customerPhone,
@@ -155,7 +290,12 @@ export async function placeOrder(input: CheckoutInput): Promise<PlaceOrderResult
     orderNumber,
     paymentProvider: 'cod',
     paymentProviderOrderId: null,
+    idempotencyKey: input.idempotencyKey ?? null,
   });
+
+  // A second request for the same press, which waited for the first and
+  // found its order: everything below has already happened once.
+  if (replayed) return { order };
 
   // The order exists; the cart and the coupon have served their purpose.
   await repo.clearCart(owner);
@@ -167,7 +307,7 @@ export async function placeOrder(input: CheckoutInput): Promise<PlaceOrderResult
     // Best effort — a failure to save the address book entry must never lose
     // an order that has already been placed.
     try {
-      await repo.createAddress(sessionUser.id, {
+      await repo.createAddress(quote.userId, {
         fullName: input.customerName,
         phone: input.customerPhone,
         line1: input.addressLine1,

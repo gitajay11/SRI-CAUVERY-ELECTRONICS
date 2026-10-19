@@ -1,12 +1,11 @@
 'use client';
 
-import { useRef, useState, useTransition } from 'react';
+import { useCallback, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import type { AddressView, CartView, OrderView, SessionUser } from '@tamizh/core/types';
 import { cn } from '@tamizh/core/utils';
 import { formatINR } from '@tamizh/core/money';
-import { ApiError, api } from '@/lib/http';
 import { INDIAN_STATES } from '@/lib/india';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { useLocale } from '@/components/providers/LocaleProvider';
@@ -23,6 +22,7 @@ import {
 } from '@/components/ui/Field';
 import { CartSummary } from '@/components/cart/CartSummary';
 import { OnlinePaymentSoonDialog } from './OnlinePaymentSoonDialog';
+import { OrderReviewSheet, type CheckoutRequest } from './OrderReviewSheet';
 import { Alert, LoadingState } from '@/components/ui/Primitives';
 import { CheckIcon, ShieldIcon, TruckIcon, WifiOffIcon } from '@/components/ui/Icons';
 
@@ -37,10 +37,10 @@ import { CheckIcon, ShieldIcon, TruckIcon, WifiOffIcon } from '@/components/ui/I
  * server recomputes it from the cart.
  */
 /**
- * Where the shopper is in placing the order. Each phase has its own words on
- * the screen: the order being written, then the order page on its way.
+ * Where the shopper is once the order is placed: on the way to its page.
+ * Placing itself happens in the review sheet, which shows its own progress.
  */
-type Phase = 'idle' | 'placing' | 'leaving';
+type Phase = 'idle' | 'leaving';
 
 export function CheckoutForm({
   cart,
@@ -83,22 +83,22 @@ export function CheckoutForm({
   const [fields, setFields] = useState<Record<string, string>>({});
   const offline = !useOnlineStatus();
 
+  // "Place order" opens the review; only "Confirm order" in it places
+  // anything. The request is fixed when the review opens.
+  const [reviewRequest, setReviewRequest] = useState<CheckoutRequest | null>(null);
+  const placeOrderRef = useRef<HTMLButtonElement>(null);
+  const addressRef = useRef<HTMLFieldSetElement>(null);
+  // Where focus goes when the review closes: back to "Place order", unless
+  // the shopper asked to edit the address.
+  const reviewReturnFocus = useRef<HTMLElement | null>(null);
+
   // The page stays mounted until the confirmation page has actually arrived,
   // and this is how long that takes. The overlay is held up until then so the
   // shopper is never dropped back onto a live checkout form for a beat.
   const [navigating, startNavigation] = useTransition();
 
-  // A second tap can land before the disabled state has rendered. State is
-  // for what the screen shows; this ref is what actually stops a second
-  // order being placed.
-  const inFlight = useRef(false);
-
   const busy = phase !== 'idle' || navigating;
 
-  /** Leaves the form for the order page, keeping the overlay up until it lands. */
-  const leaveFor = (href: string) => {
-    startNavigation(() => router.push(href));
-  };
 
   const set = (key: keyof typeof form) => (value: string) =>
     setForm((current) => ({ ...current, [key]: value }));
@@ -118,9 +118,9 @@ export function CheckoutForm({
     }));
   };
 
-  const submit = async (event: React.FormEvent) => {
+  const submit = (event: React.FormEvent) => {
     event.preventDefault();
-    if (inFlight.current) return;
+    if (reviewRequest || busy) return;
     setError(null);
     setFields({});
 
@@ -129,48 +129,47 @@ export function CheckoutForm({
       return;
     }
 
-    inFlight.current = true;
-    setPhase('placing');
-    try {
-      const result = await api.post<{ order: OrderView }>('/api/checkout', {
-        ...form,
-        couponCode: cart.coupon?.code ?? '',
-        paymentMethod: 'COD',
-        saveAddress: saveAddress && Boolean(user),
-      });
+    reviewReturnFocus.current = placeOrderRef.current;
+    setReviewRequest({
+      ...form,
+      couponCode: cart.coupon?.code ?? '',
+      paymentMethod: 'COD',
+      saveAddress: saveAddress && Boolean(user),
+    });
+  };
 
+  const closeReview = useCallback(() => setReviewRequest(null), []);
+
+  /** The details themselves need fixing: say so on the form, where they are. */
+  const showDetailsProblem = useCallback(
+    (message: string, problems: Record<string, string>) => {
+      setReviewRequest(null);
+      setError(message);
+      setFields(problems);
+      // Scroll the error into view; on a phone the button is far from the top.
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    },
+    [],
+  );
+
+  const orderPlaced = useCallback(
+    (order: OrderView) => {
       // The order exists. The server emptied the cart as part of placing it,
       // so the badge and every "in your cart" button must forget it now.
       clearCartState();
-
       setPhase('leaving');
-      leaveFor(
-        `/order/${result.order.orderNumber}?placed=1&email=${encodeURIComponent(result.order.customerEmail)}`,
+      // Replaces the review's history entry, so back from the order page
+      // comes to the checkout, not to a review of an order already placed.
+      startNavigation(() =>
+        router.replace(
+          `/order/${order.orderNumber}?placed=1&email=${encodeURIComponent(order.customerEmail)}`,
+        ),
       );
-    } catch (caught) {
-      if (caught instanceof ApiError) {
-        setError(caught.message);
-        setFields(caught.fields ?? {});
-        if (caught.code === 'insufficient_stock' || caught.code === 'empty_cart') {
-          router.refresh();
-        }
-      } else {
-        setError(t('checkout.errorGeneric'));
-      }
-      // Scroll the error into view; on a phone the button is far from the top.
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      // Released only on failure. A successful order is leaving this page,
-      // and nothing must be allowed to place a second one on the way out.
-      setPhase('idle');
-      inFlight.current = false;
-    }
-  };
+    },
+    [clearCartState, router],
+  );
 
   const overlayCopy: Record<Exclude<Phase, 'idle'>, { message: string; detail: string }> = {
-    placing: {
-      message: t('checkout.wait.placing'),
-      detail: t('checkout.wait.placingDetail'),
-    },
     leaving: {
       message: t('checkout.wait.leaving'),
       detail: t('checkout.wait.leavingDetail'),
@@ -239,7 +238,7 @@ export function CheckoutForm({
         </fieldset>
 
         {/* Address */}
-        <fieldset className="rounded-card border border-ink-100 bg-surface p-4 sm:p-5">
+        <fieldset ref={addressRef} className="rounded-card border border-ink-100 bg-surface p-4 sm:p-5">
           <legend className="px-1 text-base font-bold text-ink-900">
             {t('checkout.steps.address')}
           </legend>
@@ -440,12 +439,31 @@ export function CheckoutForm({
           phone={shopConfig.supportPhone}
         />
 
+        {reviewRequest ? (
+          <OrderReviewSheet
+            request={reviewRequest}
+            cartItems={cart.items}
+            returnFocusRef={reviewReturnFocus}
+            onClose={closeReview}
+            onEditAddress={() => {
+              reviewReturnFocus.current =
+                addressRef.current?.querySelector<HTMLElement>(
+                  'input:not([type=radio]):not([type=checkbox])',
+                ) ?? placeOrderRef.current;
+            }}
+            onEditCart={() => router.replace('/cart')}
+            onInvalidDetails={showDetailsProblem}
+            onPlaced={orderPlaced}
+          />
+        ) : null}
+
         {/* Mobile order total + submit */}
         <div className="lg:hidden">
           <OrderItems cart={cart} />
         </div>
 
         <Button
+          ref={placeOrderRef}
           type="submit"
           size="lg"
           fullWidth

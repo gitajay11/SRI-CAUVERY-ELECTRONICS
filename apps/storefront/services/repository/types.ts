@@ -97,6 +97,12 @@ export interface PlaceOrderInput {
    * online payment could never be marked paid.
    */
   paymentProviderOrderId: string | null;
+  /**
+   * The browser's key for this one press of "Confirm order". Placing the
+   * same key twice for the same shopper returns the first order instead of
+   * creating a second.
+   */
+  idempotencyKey?: string | null;
 }
 
 export interface Repository {
@@ -161,9 +167,12 @@ export interface Repository {
   findCoupon(code: string): Promise<CouponRule | null>;
 
   // -- orders -------------------------------------------------------------
-  placeOrder(input: PlaceOrderInput): Promise<OrderView>;
+  /** `replayed` is true when the idempotency key had already placed this order. */
+  placeOrder(input: PlaceOrderInput): Promise<{ order: OrderView; replayed: boolean }>;
   listOrdersForUser(userId: string): Promise<OrderView[]>;
   getOrderForUser(userId: string, orderNumber: string): Promise<OrderView | null>;
+  /** The shopper's order placed with this idempotency key, if any. */
+  findOrderByIdempotencyKey(userId: string, key: string): Promise<OrderView | null>;
   /** Guest lookup right after checkout, guarded by the email on the order. */
   getOrderByNumberAndEmail(
     orderNumber: string,

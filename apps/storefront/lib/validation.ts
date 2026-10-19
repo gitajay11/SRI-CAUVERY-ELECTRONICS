@@ -129,9 +129,37 @@ export const checkoutSchema = z.object({
   notes: z.string().trim().max(500).optional().or(z.literal('')),
   couponCode: z.string().trim().toUpperCase().max(32).optional().or(z.literal('')),
   saveAddress: z.boolean().optional().default(false),
+  /** One press of "Confirm order"; a retry with the same key is not a second order. */
+  idempotencyKey: z
+    .string()
+    .regex(/^[A-Za-z0-9-]{16,64}$/)
+    .optional(),
+  /** The reviewed order's fingerprint; placing refuses if the order has changed since. */
+  expectedFingerprint: z
+    .string()
+    .regex(/^[a-f0-9]{64}$/)
+    .optional(),
 });
 
 export type CheckoutInput = z.infer<typeof checkoutSchema>;
+
+/**
+ * The order review: the checkout details plus the cart as the shopper last
+ * saw it. Those lines are only compared against, never priced from.
+ */
+export const orderReviewSchema = checkoutSchema.extend({
+  seen: z
+    .array(
+      z.object({
+        productId: z.string().min(1).max(64),
+        variantId: z.string().min(1).max(64).nullable(),
+        quantity: z.number().int().min(0).max(100_000),
+        unitPrice: z.number().int().min(0),
+      }),
+    )
+    .max(200)
+    .default([]),
+});
 
 export const cancelOrderSchema = z.object({
   reason: z.string().trim().min(3, 'Tell us briefly why').max(300),

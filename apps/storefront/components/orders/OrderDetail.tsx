@@ -201,8 +201,11 @@ export async function OrderDetail({
 
   return (
     <div className="space-y-6">
-      {/* Header card */}
-      <section className="rounded-card border border-ink-100 bg-surface p-4 sm:p-5">
+      {/* Header card — the order's progress; "Track order" lands here. */}
+      <section
+        id="order-tracking"
+        className="scroll-mt-32 rounded-card border border-ink-100 bg-surface p-4 sm:p-5 lg:scroll-mt-44"
+      >
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-ink-400">
