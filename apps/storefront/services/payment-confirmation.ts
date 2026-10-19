@@ -2,8 +2,9 @@ import 'server-only';
 import { getPrisma } from '@tamizh/db';
 import { AppError } from '@tamizh/core/api';
 import { after } from 'next/server';
+import { z } from 'zod';
 import { getSessionUser } from '@/lib/auth';
-import { onlineProvider } from '@/services/payments';
+import { onlineProvider, verifyRazorpayWebhook } from '@/services/payments';
 import { getRepository } from '@/services/repository';
 import { sendOrderEmails } from '@/services/notifications';
 
@@ -19,6 +20,11 @@ import { sendOrderEmails } from '@/services/notifications';
  * The amount is never taken from the request either. It was fixed when the
  * order was placed, from the server's own cart, and this only ever confirms
  * that already-recorded figure.
+ *
+ * The browser is not the only messenger. A shopper whose phone dies, or who
+ * closes the tab the moment the bank says yes, never posts the handshake at
+ * all — so Razorpay's webhook confirms the same payment from its side, and
+ * both paths end in `settlePayment`, which only one of them can win.
  */
 
 export interface ConfirmationInput {
@@ -30,6 +36,83 @@ export interface ConfirmationInput {
 export interface ConfirmationResult {
   orderNumber: string;
   paymentStatus: 'PAID';
+}
+
+interface PaymentToSettle {
+  id: string;
+  order: { id: string; orderNumber: string; userId: string | null };
+}
+
+/**
+ * Marks a payment and its order paid, once.
+ *
+ * The status check and the write are one statement, so the browser handshake
+ * and the webhook arriving together cannot both get through — whichever lands
+ * second matches nothing and returns false. Only the winner sends the
+ * customer's confirmation and the shop's copy, so neither goes out twice.
+ *
+ * A payment recorded as FAILED can still become PAID: a dismissed modal posts
+ * a failure, and the gateway may yet capture a retry on the same order.
+ */
+async function settlePayment(
+  payment: PaymentToSettle,
+  razorpayPaymentId: string,
+  gatewayOrderId: string,
+  via: 'checkout' | 'webhook',
+): Promise<boolean> {
+  const db = getPrisma();
+  const now = new Date();
+
+  const settled = await db.$transaction(async (tx) => {
+    const moved = await tx.payment.updateMany({
+      where: { id: payment.id, status: { not: 'PAID' } },
+      data: {
+        status: 'PAID',
+        paidAt: now,
+        providerPaymentId: razorpayPaymentId,
+        failureReason: null,
+        // The signature is not kept: it is a credential, and it has served its
+        // only purpose by the time this runs.
+        meta: { confirmedVia: via, gatewayOrderId },
+      },
+    });
+    if (moved.count === 0) return false;
+
+    await tx.order.update({
+      where: { id: payment.order.id },
+      data: { paymentStatus: 'PAID' },
+    });
+
+    await tx.orderEvent.create({
+      data: {
+        orderId: payment.order.id,
+        status: 'PENDING',
+        message: `Online payment received (${razorpayPaymentId})`,
+      },
+    });
+    return true;
+  });
+
+  // Now the order is a fact: the customer's confirmation and the shop's copy.
+  // After the response, so the shopper sees their receipt before the mail
+  // server is even asked.
+  const userId = payment.order.userId;
+  if (settled && userId) {
+    after(async () => {
+      const order = await getRepository().getOrderForUser(userId, payment.order.orderNumber);
+      if (order) await sendOrderEmails(order);
+    });
+  }
+
+  return settled;
+}
+
+/** Records a failed attempt, unless the payment has already succeeded. */
+async function markPaymentFailed(paymentId: string, reason: string): Promise<void> {
+  await getPrisma().payment.updateMany({
+    where: { id: paymentId, status: { not: 'PAID' } },
+    data: { status: 'FAILED', failureReason: reason.slice(0, 300) },
+  });
 }
 
 export async function confirmOnlinePayment(
@@ -53,8 +136,7 @@ export async function confirmOnlinePayment(
     select: {
       id: true,
       status: true,
-      amount: true,
-      order: { select: { id: true, orderNumber: true, userId: true, paymentStatus: true } },
+      order: { select: { id: true, orderNumber: true, userId: true } },
     },
   });
 
@@ -82,8 +164,8 @@ export async function confirmOnlinePayment(
       '[payments] signature mismatch for gateway order',
       input.razorpayOrderId,
     );
-    await db.payment.update({
-      where: { id: payment.id },
+    await db.payment.updateMany({
+      where: { id: payment.id, status: { not: 'PAID' } },
       data: { failureReason: 'Signature verification failed' },
     });
     throw new AppError(
@@ -93,50 +175,10 @@ export async function confirmOnlinePayment(
     );
   }
 
-  // Already confirmed — Razorpay can call back more than once, and the shopper
-  // can refresh. Saying yes again is correct; charging or re-recording is not.
-  if (payment.status === 'PAID') {
-    return { orderNumber: payment.order.orderNumber, paymentStatus: 'PAID' };
-  }
-
-  const now = new Date();
-
-  await db.$transaction(async (tx) => {
-    await tx.payment.update({
-      where: { id: payment.id },
-      data: {
-        status: 'PAID',
-        paidAt: now,
-        providerPaymentId: input.razorpayPaymentId,
-        failureReason: null,
-        // The signature is not kept: it is a credential, and it has served its
-        // only purpose by the time this runs.
-        meta: { confirmedVia: 'checkout', gatewayOrderId: input.razorpayOrderId },
-      },
-    });
-
-    await tx.order.update({
-      where: { id: payment.order.id },
-      data: { paymentStatus: 'PAID' },
-    });
-
-    await tx.orderEvent.create({
-      data: {
-        orderId: payment.order.id,
-        status: 'PENDING',
-        message: `Online payment received (${input.razorpayPaymentId})`,
-      },
-    });
-  });
-
-  // Now the order is a fact: the customer's confirmation and the shop's copy.
-  // Once, on this transition — the early return above keeps a second verify
-  // from sending them again. After the response, so the shopper sees their
-  // receipt before the mail server is even asked.
-  after(async () => {
-    const order = await getRepository().getOrderForUser(user.id, payment.order.orderNumber);
-    if (order) await sendOrderEmails(order);
-  });
+  // Already confirmed — by the webhook, or by this endpoint on a refresh.
+  // Saying yes again is correct; re-recording is not, and settlePayment
+  // refuses to.
+  await settlePayment(payment, input.razorpayPaymentId, input.razorpayOrderId, 'checkout');
 
   return { orderNumber: payment.order.orderNumber, paymentStatus: 'PAID' };
 }
@@ -157,8 +199,107 @@ export async function recordPaymentFailure(
   const user = await getSessionUser();
   if (!user || payment.order.userId !== user.id) return;
 
-  await db.payment.update({
-    where: { id: payment.id },
-    data: { status: 'FAILED', failureReason: reason.slice(0, 300) },
+  await markPaymentFailed(payment.id, reason);
+}
+
+// ---------------------------------------------------------------------------
+// Webhook
+// ---------------------------------------------------------------------------
+
+/**
+ * The part of a Razorpay webhook this shop reads. Razorpay sends far more;
+ * anything not named here is ignored rather than rejected, so a new field in
+ * their payload never stops payments being confirmed.
+ */
+const webhookSchema = z.object({
+  event: z.string(),
+  payload: z.object({
+    payment: z
+      .object({
+        entity: z.object({
+          id: z.string(),
+          order_id: z.string().nullish(),
+          amount: z.number().int(),
+          currency: z.string(),
+          error_description: z.string().nullish(),
+        }),
+      })
+      .optional(),
+  }),
+});
+
+export type WebhookOutcome =
+  | 'settled'
+  | 'already_settled'
+  | 'failure_recorded'
+  | 'ignored'
+  | 'unknown_order'
+  | 'amount_mismatch';
+
+/**
+ * Handles one Razorpay webhook delivery.
+ *
+ * The signature is HMAC-SHA256 of the raw body with the webhook secret, so it
+ * is checked before the body is even parsed. After that, everything that is
+ * not a problem with the request answers 200: Razorpay retries anything else
+ * for a day, and retrying an event about an order this shop has never heard
+ * of will not make it any more known.
+ */
+export async function handleRazorpayWebhook(
+  rawBody: string,
+  signature: string | null,
+): Promise<WebhookOutcome> {
+  if (!signature || !verifyRazorpayWebhook(rawBody, signature)) {
+    console.error('[payments] webhook signature mismatch');
+    throw new AppError('Invalid signature.', 400, 'signature_mismatch');
+  }
+
+  let parsed: z.infer<typeof webhookSchema>;
+  try {
+    parsed = webhookSchema.parse(JSON.parse(rawBody));
+  } catch {
+    // Signed by Razorpay but not shaped as expected: an event type this shop
+    // does not use. Nothing to do, and nothing a retry would change.
+    return 'ignored';
+  }
+
+  const { event } = parsed;
+  const entity = parsed.payload.payment?.entity;
+  const handled = event === 'payment.captured' || event === 'order.paid' || event === 'payment.failed';
+  if (!handled || !entity?.order_id) return 'ignored';
+
+  const payment = await getPrisma().payment.findFirst({
+    where: { provider: 'razorpay', providerOrderId: entity.order_id },
+    select: {
+      id: true,
+      status: true,
+      amount: true,
+      order: { select: { id: true, orderNumber: true, userId: true } },
+    },
   });
+  if (!payment) {
+    console.warn('[payments] webhook for an unknown gateway order', entity.order_id);
+    return 'unknown_order';
+  }
+
+  if (event === 'payment.failed') {
+    if (payment.status === 'PAID') return 'already_settled';
+    await markPaymentFailed(payment.id, entity.error_description || 'Payment failed at the gateway');
+    return 'failure_recorded';
+  }
+
+  // The gateway order was created for exactly this amount, so a difference
+  // means something is wrong upstream. Paid for less is not paid; staff can
+  // see the payment in the Razorpay dashboard and settle it by hand.
+  if (entity.amount !== payment.amount || entity.currency !== 'INR') {
+    console.error(
+      '[payments] webhook amount mismatch for',
+      payment.order.orderNumber,
+      { expected: payment.amount, received: entity.amount, currency: entity.currency },
+    );
+    return 'amount_mismatch';
+  }
+
+  const settled = await settlePayment(payment, entity.id, entity.order_id, 'webhook');
+  return settled ? 'settled' : 'already_settled';
 }

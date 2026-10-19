@@ -233,9 +233,30 @@ const providers: Record<string, PaymentProvider> = {
   razorpay: razorpayProvider,
 };
 
-/** The provider used for ONLINE payments, per PAYMENT_PROVIDER. */
+/**
+ * The provider used for ONLINE payments, per PAYMENT_PROVIDER.
+ *
+ * Never falls back to the mock gateway: see `paymentProvider` in lib/env for
+ * when online payment is switched off instead.
+ */
 export function onlineProvider(): PaymentProvider {
-  return providers[paymentProvider] ?? mockProvider;
+  const provider = paymentProvider === 'none' ? undefined : providers[paymentProvider];
+  if (!provider) {
+    throw new AppError(
+      'Online payment is not available right now. Please choose cash on delivery.',
+      409,
+      'online_payment_unavailable',
+    );
+  }
+  return provider;
+}
+
+/**
+ * Checks a Razorpay webhook, whatever PAYMENT_PROVIDER says today: an order
+ * paid through Razorpay before a switch still has its webhooks to come.
+ */
+export function verifyRazorpayWebhook(rawBody: string, signature: string): boolean {
+  return razorpayProvider.verifySignature(rawBody, signature);
 }
 
 export function providerFor(method: 'COD' | 'ONLINE'): PaymentProvider {
@@ -247,6 +268,7 @@ export function providerFor(method: 'COD' | 'ONLINE'): PaymentProvider {
  * Razorpay is only offered once its keys are actually configured.
  */
 export function onlinePaymentAvailable(): boolean {
+  if (paymentProvider === 'none') return false;
   if (paymentProvider === 'razorpay') return razorpay.isConfigured();
   return onlineProvider().supportsOnline;
 }
