@@ -2,6 +2,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { SessionUser } from '@tamizh/core/types';
 import { api } from './api';
+import { unregisterOrderUpdates } from './notifications';
 import { session } from './session';
 
 /**
@@ -84,6 +85,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const signOut = useCallback(async () => {
+    // While the token still works: this phone stops getting this account's orders.
+    await unregisterOrderUpdates();
     await session.setToken(null);
     await session.setCoupon(null);
     setUser(null);

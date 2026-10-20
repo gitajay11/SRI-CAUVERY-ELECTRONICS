@@ -4,6 +4,7 @@ import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { formatINR } from '@tamizh/core/money';
 import type { OrderView } from '@tamizh/core/types';
+import { OrderUpdatesPrompt } from '@/components/OrderUpdatesPrompt';
 import { AppText, Button } from '@/components/ui';
 import { localName } from '@/lib/catalog';
 import { useLocale } from '@/lib/i18n';
@@ -24,7 +25,9 @@ export default function OrderPlacedScreen() {
 
   return (
     <ScrollView style={{ backgroundColor: colors.canvas }} contentContainerStyle={styles.content}>
-      <Stack.Screen options={{ title: t('checkout.title'), headerBackVisible: false, gestureEnabled: false }} />
+      <Stack.Screen
+        options={{ title: t('checkout.title'), headerBackVisible: false, gestureEnabled: false }}
+      />
 
       <View style={styles.hero}>
         <View style={[styles.tick, { backgroundColor: colors.accentSoft }]}>
@@ -73,6 +76,8 @@ export default function OrderPlacedScreen() {
           </>
         ) : null}
       </View>
+
+      <OrderUpdatesPrompt />
 
       <Button label={t('order.continueShopping')} onPress={home} />
     </ScrollView>

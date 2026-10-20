@@ -4,6 +4,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { useColorScheme } from 'react-native';
+import { PushRegistration } from '@/components/PushRegistration';
 import { AuthProvider } from '@/lib/auth';
 import { LocaleProvider } from '@/lib/i18n';
 import { queryClient } from '@/lib/query';
@@ -51,6 +52,7 @@ export default function RootLayout() {
         <LocaleProvider>
           <ThemeProvider value={navigationTheme}>
             <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+            <PushRegistration />
             <Stack
               screenOptions={{
                 headerStyle: { backgroundColor: palette.surface },
