@@ -884,6 +884,33 @@ async function main() {
     (phoneOrders.body?.data?.orders ?? []).filter((order) => order.orderNumber === placedNumber)
       .length === 1,
   );
+  const phoneOrder = await phone.api(`/api/orders/${encodeURIComponent(placedNumber ?? '')}`, {
+    headers: phoneAuth,
+  });
+  check(
+    'one order reads back with its return eligibility',
+    phoneOrder.status === 200 &&
+      phoneOrder.body?.data?.order?.orderNumber === placedNumber &&
+      'returns' in (phoneOrder.body?.data ?? {}),
+    `status ${phoneOrder.status}`,
+  );
+  const strangerOrder = await new Session('stranger').api(
+    `/api/orders/${encodeURIComponent(placedNumber ?? '')}`,
+  );
+  check('an order is not readable without its owner', strangerOrder.status === 401);
+
+  const phoneSaved = await phone.api('/api/wishlist', {
+    method: 'POST',
+    headers: phoneAuth,
+    json: { productId: sample.id },
+  });
+  const phoneWishlist = await phone.api('/api/wishlist', { headers: phoneAuth });
+  check(
+    'wishlist works with a bearer token',
+    phoneSaved.body?.data?.inWishlist === true &&
+      (phoneWishlist.body?.data?.products ?? []).some((product) => product.id === sample.id),
+  );
+  await phone.api('/api/wishlist', { method: 'POST', headers: phoneAuth, json: { productId: sample.id } });
   check('the phone never received a session cookie', !phone.cookies.has('te_session'));
 
   // -----------------------------------------------------------------------
