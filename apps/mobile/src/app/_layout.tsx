@@ -1,0 +1,69 @@
+import { QueryClientProvider } from '@tanstack/react-query';
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
+import { StatusBar } from 'expo-status-bar';
+import { useEffect, useState } from 'react';
+import { useColorScheme } from 'react-native';
+import { LocaleProvider } from '@/lib/i18n';
+import { queryClient } from '@/lib/query';
+import { loadSession } from '@/lib/session';
+import { palettes } from '@/theme/colors';
+
+SplashScreen.preventAutoHideAsync();
+
+export default function RootLayout() {
+  const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
+  const palette = palettes[scheme];
+  const [ready, setReady] = useState(false);
+
+  // Nothing may call the API before the stored token is in memory, or a
+  // signed-in shopper would be served as a guest for the first screen.
+  useEffect(() => {
+    loadSession()
+      .catch(() => {
+        // An unreadable keychain starts the app signed out rather than not at all.
+      })
+      .finally(() => {
+        setReady(true);
+        SplashScreen.hideAsync();
+      });
+  }, []);
+
+  if (!ready) return null;
+
+  const base = scheme === 'dark' ? DarkTheme : DefaultTheme;
+  const navigationTheme = {
+    ...base,
+    colors: {
+      ...base.colors,
+      primary: palette.link,
+      background: palette.canvas,
+      card: palette.surface,
+      text: palette.text,
+      border: palette.border,
+    },
+  };
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <LocaleProvider>
+        <ThemeProvider value={navigationTheme}>
+          <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+          <Stack
+            screenOptions={{
+              headerStyle: { backgroundColor: palette.surface },
+              headerTintColor: palette.text,
+              headerShadowVisible: false,
+              headerBackButtonDisplayMode: 'minimal',
+            }}
+          >
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="search" />
+            <Stack.Screen name="products" />
+            <Stack.Screen name="product/[slug]" />
+          </Stack>
+        </ThemeProvider>
+      </LocaleProvider>
+    </QueryClientProvider>
+  );
+}

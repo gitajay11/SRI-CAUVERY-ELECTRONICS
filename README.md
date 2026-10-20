@@ -7,6 +7,7 @@ one PostgreSQL database:
 | ------------------------ | ---- | ------------- | ----------------- |
 | **Storefront**           | 3000 | Shoppers      | `apps/storefront` |
 | **Admin panel**          | 3001 | Shop staff    | `apps/admin`      |
+| **Mobile app** (Expo)    | —    | Shoppers      | `apps/mobile` — see its README |
 
 Both are bilingual (Tamil / English), mobile-first, installable, and honest
 about what they cannot do offline.

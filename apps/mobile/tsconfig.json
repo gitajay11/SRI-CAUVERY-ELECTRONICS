@@ -1,0 +1,22 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    // The shared packages import their siblings as `./types.ts`.
+    "allowImportingTsExtensions": true,
+    "paths": {
+      "@/*": ["./src/*"],
+      "@/assets/*": ["./assets/*"],
+      // Plain TypeScript shared with the website, read from source. Only the
+      // modules with no server or package dependencies belong in the app:
+      // money, pricing, quantity, types, utils.
+      "@tamizh/core/*": ["../../packages/core/src/*"],
+      "@tamizh/db/enums": ["../../packages/db/src/enums.ts"],
+      // The website's Tamil and English copy, so both apps say the same thing.
+      "@shop/i18n": ["../storefront/i18n/index.ts"],
+      "@shop/i18n/*": ["../storefront/i18n/*"]
+    }
+  },
+  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"]
+}

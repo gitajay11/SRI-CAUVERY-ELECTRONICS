@@ -5,7 +5,8 @@
   "description": "Sri Cauvery Electronics (ஸ்ரீ காவேரி மின்னணுவியல்) — customer storefront PWA and admin PWA, sharing one PostgreSQL database.",
   "workspaces": [
     "packages/*",
-    "apps/*"
+    "apps/storefront",
+    "apps/admin"
   ],
   "scripts": {
     "postinstall": "npm run generate --workspace @tamizh/db",
