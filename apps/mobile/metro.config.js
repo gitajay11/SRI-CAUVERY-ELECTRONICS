@@ -14,6 +14,8 @@ config.watchFolders = [
   path.join(repoRoot, 'packages/core/src'),
   path.join(repoRoot, 'packages/db/src'),
   path.join(repoRoot, 'apps/storefront/i18n'),
+  // Only lib/order-review.ts is imported; Metro bundles nothing else from here.
+  path.join(repoRoot, 'apps/storefront/lib'),
 ];
 
 module.exports = config;

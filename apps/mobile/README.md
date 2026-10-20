@@ -24,6 +24,7 @@ It still shares code with the website, read straight from source through
 | `@tamizh/core/*`  | `packages/core/src` — money, pricing, types, utils |
 | `@tamizh/db/enums`| `packages/db/src/enums.ts`        |
 | `@shop/i18n`      | `apps/storefront/i18n` — the Tamil and English copy |
+| `@shop/order-review` | `apps/storefront/lib/order-review.ts` — the checkout review's shape |
 
 Only import shared modules that need no npm package of their own and no
 server: `money`, `pricing`, `quantity`, `types`, `utils`. Not `api`,

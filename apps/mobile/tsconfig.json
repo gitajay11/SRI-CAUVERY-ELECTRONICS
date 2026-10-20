@@ -15,7 +15,9 @@
       "@tamizh/db/enums": ["../../packages/db/src/enums.ts"],
       // The website's Tamil and English copy, so both apps say the same thing.
       "@shop/i18n": ["../storefront/i18n/index.ts"],
-      "@shop/i18n/*": ["../storefront/i18n/*"]
+      "@shop/i18n/*": ["../storefront/i18n/*"],
+      // The order review's shape, shared with the checkout endpoint that returns it.
+      "@shop/order-review": ["../storefront/lib/order-review.ts"]
     }
   },
   "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"]

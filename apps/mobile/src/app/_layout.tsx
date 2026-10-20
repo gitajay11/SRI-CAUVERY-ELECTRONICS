@@ -4,6 +4,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { useColorScheme } from 'react-native';
+import { AuthProvider } from '@/lib/auth';
 import { LocaleProvider } from '@/lib/i18n';
 import { queryClient } from '@/lib/query';
 import { loadSession } from '@/lib/session';
@@ -46,24 +47,30 @@ export default function RootLayout() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <LocaleProvider>
-        <ThemeProvider value={navigationTheme}>
-          <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
-          <Stack
-            screenOptions={{
-              headerStyle: { backgroundColor: palette.surface },
-              headerTintColor: palette.text,
-              headerShadowVisible: false,
-              headerBackButtonDisplayMode: 'minimal',
-            }}
-          >
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="search" />
-            <Stack.Screen name="products" />
-            <Stack.Screen name="product/[slug]" />
-          </Stack>
-        </ThemeProvider>
-      </LocaleProvider>
+      <AuthProvider>
+        <LocaleProvider>
+          <ThemeProvider value={navigationTheme}>
+            <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+            <Stack
+              screenOptions={{
+                headerStyle: { backgroundColor: palette.surface },
+                headerTintColor: palette.text,
+                headerShadowVisible: false,
+                headerBackButtonDisplayMode: 'minimal',
+              }}
+            >
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen name="search" />
+              <Stack.Screen name="products" />
+              <Stack.Screen name="product/[slug]" />
+              <Stack.Screen name="signin" />
+              <Stack.Screen name="register" />
+              <Stack.Screen name="checkout" />
+              <Stack.Screen name="order-placed" />
+            </Stack>
+          </ThemeProvider>
+        </LocaleProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
