@@ -30,6 +30,11 @@ yarn-error.*
 .DS_Store
 *.pem
 
+# Firebase service-account keys (the FCM V1 key uploaded to EAS) are secret.
+# google-services.json is not: it holds public project identifiers.
+*-firebase-adminsdk-*.json
+*service-account*.json
+
 # local env files
 .env
 .env*.local

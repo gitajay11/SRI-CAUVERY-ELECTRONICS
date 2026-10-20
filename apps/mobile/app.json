@@ -19,7 +19,8 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "in.tamizhelectronics.shop"
+      "package": "in.tamizhelectronics.shop",
+      "googleServicesFile": "./google-services.json"
     },
     "plugins": [
       "expo-router",
