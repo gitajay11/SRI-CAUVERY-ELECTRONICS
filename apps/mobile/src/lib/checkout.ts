@@ -1,5 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { AddressView, CartView, OrderView } from '@tamizh/core/types';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import type { CartView, OrderView } from '@tamizh/core/types';
 import type { OrderReview, SeenLine } from '@shop/order-review';
 import { api } from './api';
 import { CART_KEY } from './cart';
@@ -25,16 +25,6 @@ export interface CheckoutDetails {
   pincode: string;
   notes: string;
   saveAddress: boolean;
-}
-
-export function useAddresses(enabled: boolean) {
-  return useQuery({
-    queryKey: ['account', 'addresses'],
-    queryFn: ({ signal }) =>
-      api.get<{ addresses: AddressView[] }>('/api/account/addresses', signal),
-    select: (data) => data.addresses,
-    enabled,
-  });
 }
 
 function body(details: CheckoutDetails) {

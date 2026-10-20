@@ -7,6 +7,7 @@ import { formatDate } from '@tamizh/core/utils';
 import { ProductGallery } from '@/components/ProductGallery';
 import { ProductRail } from '@/components/ProductRail';
 import { PurchasePanel } from '@/components/PurchasePanel';
+import { WishlistButton } from '@/components/WishlistButton';
 import { StarRating } from '@/components/StarRating';
 import { AppText, ErrorState, StateMessage } from '@/components/ui';
 import { localName, useProduct } from '@/lib/catalog';
@@ -36,7 +37,8 @@ export default function ProductScreen() {
   const name = localName(product, locale);
   const otherName = locale === 'ta' ? product.name : product.nameTa;
   const saved = savings(product.mrp, product.price);
-  const description = locale === 'ta' && product.descriptionTa ? product.descriptionTa : product.description;
+  const description =
+    locale === 'ta' && product.descriptionTa ? product.descriptionTa : product.description;
 
   return (
     <ScrollView
@@ -66,9 +68,12 @@ export default function ProductScreen() {
       />
 
       <View style={styles.padded}>
-        <AppText variant="label" tone="link">
-          {product.brand.toUpperCase()}
-        </AppText>
+        <View style={styles.brandRow}>
+          <AppText variant="label" tone="link" style={styles.flex}>
+            {product.brand.toUpperCase()}
+          </AppText>
+          <WishlistButton product={product} size={24} />
+        </View>
         <AppText variant="title">{name}</AppText>
         {otherName && otherName !== name ? (
           <AppText variant="small" tone="muted">
@@ -152,7 +157,13 @@ function Card({ children }: { children: React.ReactNode }) {
 }
 
 /** One line of the delivery-and-returns promise. */
-function DeliveryLine({ icon, text }: { icon: React.ComponentProps<typeof Ionicons>['name']; text: string }) {
+function DeliveryLine({
+  icon,
+  text,
+}: {
+  icon: React.ComponentProps<typeof Ionicons>['name'];
+  text: string;
+}) {
   const colors = useColors();
   return (
     <View style={styles.promise}>
@@ -216,6 +227,7 @@ function Review({ review }: { review: ReviewView }) {
 const styles = StyleSheet.create({
   content: { paddingBottom: spacing.xxl, gap: spacing.lg },
   padded: { paddingHorizontal: spacing.lg, gap: spacing.xs },
+  brandRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginTop: spacing.xs },
   card: {
     marginHorizontal: spacing.lg,
@@ -228,7 +240,11 @@ const styles = StyleSheet.create({
   price: { fontSize: 30, lineHeight: 36, fontWeight: '800' },
   mrp: { fontSize: 17, textDecorationLine: 'line-through' },
   divider: { height: spacing.sm },
-  offBadge: { paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: radius.pill },
+  offBadge: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.pill,
+  },
   promise: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   specRow: {
     flexDirection: 'row',
@@ -238,7 +254,12 @@ const styles = StyleSheet.create({
   },
   specLabel: { width: '40%' },
   review: { gap: spacing.xs, paddingTop: spacing.md, borderTopWidth: StyleSheet.hairlineWidth },
-  reviewHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
+  reviewHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
   reply: { gap: 2, padding: spacing.md, borderRadius: radius.md, marginTop: spacing.xs },
   flex: { flex: 1 },
   bold: { fontWeight: '700' },

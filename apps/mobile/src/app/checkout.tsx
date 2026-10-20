@@ -20,9 +20,9 @@ import { AppText, Button, StateMessage } from '@/components/ui';
 import { ApiError } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useCart } from '@/lib/cart';
+import { useAddressBook } from '@/lib/account';
 import {
   seenLines,
-  useAddresses,
   usePlaceOrder,
   useReviewOrder,
   type CheckoutDetails,
@@ -60,7 +60,7 @@ export default function CheckoutScreen() {
   const { t } = useLocale();
   const { user, checking } = useAuth();
   const cart = useCart();
-  const addresses = useAddresses(Boolean(user));
+  const addresses = useAddressBook();
 
   if (checking || cart.isPending || (user && addresses.isPending)) {
     return <StateMessage loading />;

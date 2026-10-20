@@ -67,6 +67,12 @@ export default function RootLayout() {
               <Stack.Screen name="register" />
               <Stack.Screen name="checkout" />
               <Stack.Screen name="order-placed" />
+              <Stack.Screen name="orders" />
+              <Stack.Screen name="order/[number]" />
+              <Stack.Screen name="wishlist" />
+              <Stack.Screen name="account/profile" />
+              <Stack.Screen name="account/addresses" />
+              <Stack.Screen name="account/delete" />
             </Stack>
           </ThemeProvider>
         </LocaleProvider>

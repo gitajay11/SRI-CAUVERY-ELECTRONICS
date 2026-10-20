@@ -1,6 +1,7 @@
 import { Tabs } from 'expo-router';
 import { useReducedMotion } from 'react-native-reanimated';
 import { FloatingTabBar } from '@/components/FloatingTabBar';
+import { HeaderWishlist } from '@/components/HeaderWishlist';
 import { useCart } from '@/lib/cart';
 import { useLocale } from '@/lib/i18n';
 import { TabBarProvider } from '@/lib/tab-bar';
@@ -27,7 +28,11 @@ export default function TabsLayout() {
       >
         <Tabs.Screen
           name="index"
-          options={{ title: t('nav.home'), headerTitle: 'Sri Cauvery Electronics' }}
+          options={{
+            title: t('nav.home'),
+            headerTitle: 'Sri Cauvery Electronics',
+            headerRight: () => <HeaderWishlist />,
+          }}
         />
         <Tabs.Screen name="shop" options={{ title: t('nav.shop') }} />
         <Tabs.Screen

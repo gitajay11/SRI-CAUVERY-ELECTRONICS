@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { formatINR } from '@tamizh/core/money';
 import type { ProductCardView } from '@tamizh/core/types';
 import { StarRating } from '@/components/StarRating';
+import { WishlistButton } from '@/components/WishlistButton';
 import { AppText } from '@/components/ui';
 import { localName } from '@/lib/catalog';
 import { assetUrl } from '@/lib/config';
@@ -49,6 +50,9 @@ export function ProductCard({ product }: { product: ProductCardView }) {
             </AppText>
           </View>
         ) : null}
+        <View style={styles.heart}>
+          <WishlistButton product={product} size={18} floating />
+        </View>
       </View>
 
       <View style={styles.body}>
@@ -88,6 +92,7 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: radius.pill,
   },
+  heart: { position: 'absolute', top: spacing.sm, right: spacing.sm },
   body: { padding: spacing.md, gap: spacing.xs },
   name: { minHeight: 36 },
   prices: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm, flexWrap: 'wrap' },
