@@ -786,6 +786,107 @@ async function main() {
   check('a tampered token cannot read orders', (await mobile.api('/api/orders', { headers: forged })).status === 401);
 
   // -----------------------------------------------------------------------
+  section('Mobile app: checkout with a bearer token');
+  // -----------------------------------------------------------------------
+  // The app's own sequence: a guest cart by header, sign-in that merges it,
+  // the review, then placing exactly the reviewed order — twice, as a retry
+  // would, which must not make a second order.
+  const phone = new Session('phone');
+  const phoneGuest = { 'X-Guest-Id': crypto.randomUUID().replace(/-/g, '') };
+  const phoneAdd = await phone.api('/api/cart/items', {
+    method: 'POST',
+    headers: phoneGuest,
+    json: { productId: cheapProduct.id, quantity: 2 },
+  });
+  check('phone guest adds to cart', phoneAdd.status === 200, `status ${phoneAdd.status}`);
+
+  const phoneLogin = await phone.api('/api/auth/login', {
+    method: 'POST',
+    headers: { ...phoneGuest, 'X-Auth-Transport': 'bearer' },
+    json: { email, password: 'correct-horse-99' },
+  });
+  const phoneAuth = {
+    Authorization: `Bearer ${phoneLogin.body?.data?.token}`,
+    'X-Coupon-Code': '',
+  };
+  const phoneCart = await phone.api('/api/cart', { headers: phoneAuth });
+  check(
+    'guest lines are in the account cart after sign-in',
+    (phoneCart.body?.data?.items ?? []).some((item) => item.productId === cheapProduct.id),
+  );
+
+  const phoneDetails = {
+    ...validAddress,
+    customerName: 'Meena Sundaram',
+    customerEmail: email,
+    notes: '',
+    saveAddress: false,
+    couponCode: '',
+  };
+  const seen = (phoneCart.body?.data?.items ?? []).map((item) => ({
+    productId: item.productId,
+    variantId: item.variantId,
+    quantity: item.quantity,
+    unitPrice: item.unitPrice,
+  }));
+  const phoneReview = await phone.api('/api/checkout/review', {
+    method: 'POST',
+    headers: phoneAuth,
+    json: { ...phoneDetails, seen },
+  });
+  const fingerprint = phoneReview.body?.data?.fingerprint;
+  check(
+    'review answers with a fingerprint and nothing changed',
+    phoneReview.status === 200 && /^[a-f0-9]{64}$/.test(fingerprint ?? '') && phoneReview.body?.data?.changed === false,
+    `status ${phoneReview.status} ${JSON.stringify(phoneReview.body?.error ?? {})}`,
+  );
+  check(
+    'review totals match the cart',
+    phoneReview.body?.data?.totals?.total === phoneCart.body?.data?.totals?.total,
+  );
+
+  const signedOutReview = await phone.api('/api/checkout/review', {
+    method: 'POST',
+    headers: { ...phoneGuest, 'X-Coupon-Code': '' },
+    json: { ...phoneDetails, seen },
+  });
+  check(
+    'review without the token asks for sign-in',
+    signedOutReview.status === 401 || signedOutReview.body?.error?.code === 'empty_cart',
+    `status ${signedOutReview.status} ${signedOutReview.body?.error?.code}`,
+  );
+
+  const pressKey = crypto.randomUUID();
+  const placeOnce = () =>
+    phone.api('/api/checkout', {
+      method: 'POST',
+      headers: phoneAuth,
+      json: { ...phoneDetails, expectedFingerprint: fingerprint, idempotencyKey: pressKey },
+    });
+  const phonePlaced = await placeOnce();
+  const placedNumber = phonePlaced.body?.data?.order?.orderNumber;
+  check(
+    'the reviewed order is placed',
+    phonePlaced.status === 201 && /^TE-/.test(placedNumber ?? ''),
+    `status ${phonePlaced.status} ${JSON.stringify(phonePlaced.body?.error ?? {})}`,
+  );
+  const replay = await placeOnce();
+  check(
+    'pressing confirm again returns the same order',
+    replay.status === 201 && replay.body?.data?.order?.orderNumber === placedNumber,
+    `status ${replay.status} ${replay.body?.data?.order?.orderNumber}`,
+  );
+  const afterOrder = await phone.api('/api/cart', { headers: phoneAuth });
+  check('the cart is empty after the order', afterOrder.body?.data?.itemCount === 0);
+  const phoneOrders = await phone.api('/api/orders', { headers: phoneAuth });
+  check(
+    'the order is in the account history once',
+    (phoneOrders.body?.data?.orders ?? []).filter((order) => order.orderNumber === placedNumber)
+      .length === 1,
+  );
+  check('the phone never received a session cookie', !phone.cookies.has('te_session'));
+
+  // -----------------------------------------------------------------------
   section('Account deletion');
   // -----------------------------------------------------------------------
   const busy = await shopper.api('/api/account', {

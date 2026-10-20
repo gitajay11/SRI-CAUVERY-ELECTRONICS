@@ -68,6 +68,7 @@ npm run db:seed
 | ----------------------- | ----------------------------------------------------- |
 | `npm run dev`           | Local database + storefront on :3000                  |
 | `npm run dev:admin`     | Admin panel on :3001                                  |
+| `npm run dev:local`     | Storefront on :3000 against the local database, emails to the console — for testing orders from the mobile app |
 | `npm run dev:db`        | Just the local PostgreSQL                             |
 | `npm run build`         | Production build of both apps                         |
 | `npm run check`         | TypeScript + ESLint across the workspace              |
