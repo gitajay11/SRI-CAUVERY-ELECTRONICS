@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Sri Cauvery Electronics",
-    "slug": "sri-cauvery-electronics",
+    "slug": "tamizh-electronics",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -50,6 +50,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "owner": "ajayak11",
+    "extra": {
+      "eas": {
+        "projectId": "6e92554d-917f-4742-85e6-2dd5e17a4efb"
+      }
     }
   }
 }

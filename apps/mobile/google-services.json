@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1007436621029",
+    "project_id": "sri-cauvery-electronics",
+    "storage_bucket": "sri-cauvery-electronics.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1007436621029:android:abbefa62097ecf751ae00c",
+        "android_client_info": {
+          "package_name": "in.tamizhelectronics.shop"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCFYt2lwz3AjB7st6aw_r0U3qjZJNJ3MUA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
