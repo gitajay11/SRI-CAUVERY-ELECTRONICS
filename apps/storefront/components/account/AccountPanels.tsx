@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import type { AddressView, SessionUser } from '@tamizh/core/types';
 import { cn } from '@tamizh/core/utils';
-import { ApiError, api } from '@/lib/http';
+import { ApiError, api, apiRequest } from '@/lib/http';
 import { INDIAN_STATES, TAMIL_NADU_DISTRICTS } from '@/lib/india';
 import { useLocale } from '@/components/providers/LocaleProvider';
 import { useNavigation } from '@/hooks/useNavigation';
@@ -148,6 +149,114 @@ export function PasswordPanel() {
         {t('account.changePassword')}
       </Button>
     </form>
+  );
+}
+
+/**
+ * Deleting the account, behind a second step and the password.
+ *
+ * The server refuses while an order, return or cancellation is still open;
+ * that refusal is shown with a way to the orders page rather than as a bare
+ * error, because it is the one thing standing between the shopper and done.
+ */
+export function DeleteAccountPanel() {
+  const { t } = useLocale();
+  const { toast } = useToast();
+  const { replace, pending } = useNavigation();
+  const [open, setOpen] = useState(false);
+  const [password, setPassword] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [blocked, setBlocked] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | undefined>();
+
+  const close = () => {
+    setOpen(false);
+    setPassword('');
+    setError(null);
+    setBlocked(false);
+    setPasswordError(undefined);
+  };
+
+  return (
+    <section className="space-y-4 rounded-card border border-danger-500/25 bg-surface p-4 sm:p-5">
+      <div>
+        <h2 className="text-base font-bold text-danger-600">{t('account.delete.title')}</h2>
+        <p className="mt-1 text-sm text-ink-500">{t('account.delete.intro')}</p>
+      </div>
+
+      {!open ? (
+        <Button variant="outline" onClick={() => setOpen(true)}>
+          <TrashIcon className="text-base" />
+          {t('account.delete.start')}
+        </Button>
+      ) : (
+        <form
+          className="space-y-4 rounded-xl bg-danger-50/60 p-4"
+          onSubmit={async (event) => {
+            event.preventDefault();
+            setError(null);
+            setBlocked(false);
+            setPasswordError(undefined);
+            setBusy(true);
+            try {
+              await apiRequest('/api/account', { method: 'DELETE', json: { password } });
+              toast(t('account.delete.done'), { tone: 'info' });
+              // As with signing out: the server tree re-renders signed out,
+              // and this page is not left in history to come back to.
+              replace('/', { refresh: true });
+            } catch (caught) {
+              setBusy(false);
+              if (!(caught instanceof ApiError)) setError(t('error.body'));
+              else if (caught.code === 'invalid_password') {
+                setPasswordError(t('account.delete.wrongPassword'));
+              } else if (caught.code === 'orders_in_progress') setBlocked(true);
+              else setError(caught.message);
+            }
+          }}
+        >
+          <ul className="list-disc space-y-1.5 pl-5 text-sm text-ink-700">
+            <li className="font-semibold text-danger-600">{t('account.delete.removed')}</li>
+            <li>{t('account.delete.kept')}</li>
+          </ul>
+
+          <TextField
+            label={t('account.delete.password')}
+            type="password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            autoComplete="current-password"
+            required
+            error={passwordError}
+          />
+
+          {blocked ? (
+            <FormError>
+              {t('account.delete.ordersInProgress')}{' '}
+              <Link href="/orders" className="font-semibold underline">
+                {t('account.delete.viewOrders')}
+              </Link>
+            </FormError>
+          ) : null}
+          {error ? <FormError>{error}</FormError> : null}
+
+          <div className="flex gap-2">
+            <Button variant="outline" className="flex-1" onClick={close} disabled={busy || pending}>
+              {t('common.back')}
+            </Button>
+            <Button
+              type="submit"
+              variant="danger"
+              className="flex-1"
+              loading={busy || pending}
+              disabled={password.length === 0}
+            >
+              {t('account.delete.confirm')}
+            </Button>
+          </div>
+        </form>
+      )}
+    </section>
   );
 }
 

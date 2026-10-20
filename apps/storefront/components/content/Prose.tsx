@@ -43,14 +43,17 @@ export function LegalPage({
 }
 
 export function Section({
+  id,
   title,
   children,
 }: {
+  /** An anchor other pages can link to, clear of the sticky header. */
+  id?: string;
   title: string;
   children: ReactNode;
 }) {
   return (
-    <section>
+    <section id={id} className={id ? 'scroll-mt-32 lg:scroll-mt-44' : undefined}>
       <h2 className="text-xl font-bold text-ink-900">{title}</h2>
       <div className="mt-3 space-y-3 text-[0.95rem] leading-relaxed text-ink-700">
         {children}

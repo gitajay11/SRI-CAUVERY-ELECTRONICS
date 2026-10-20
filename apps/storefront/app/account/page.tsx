@@ -9,6 +9,7 @@ import { formatINR } from '@tamizh/core/money';
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs';
 import {
   AddressPanel,
+  DeleteAccountPanel,
   PasswordPanel,
   ProfilePanel,
 } from '@/components/account/AccountPanels';
@@ -77,6 +78,7 @@ export default async function AccountPage() {
         <div className="space-y-5">
           <ProfilePanel user={user} />
           <PasswordPanel />
+          <DeleteAccountPanel />
         </div>
         <AddressPanel addresses={addresses} />
       </div>

@@ -426,6 +426,20 @@ export const en = {
   'account.newPassword': 'New password',
   'account.changePassword': 'Change password',
   'account.passwordChanged': 'Your password has been changed.',
+  'account.delete.title': 'Delete account',
+  'account.delete.intro': 'Permanently delete your account and the personal details saved with it.',
+  'account.delete.start': 'Delete my account',
+  'account.delete.removed':
+    'Your profile, saved addresses, cart, wishlist and reviews will be deleted. This cannot be undone.',
+  'account.delete.kept':
+    'Your past orders stay in our sales records, as tax rules require, but are no longer linked to any account.',
+  'account.delete.password': 'Enter your password to confirm',
+  'account.delete.confirm': 'Delete permanently',
+  'account.delete.wrongPassword': 'That password is not correct.',
+  'account.delete.ordersInProgress':
+    'You have an order, return or cancellation still in progress. You can delete your account once it is complete.',
+  'account.delete.viewOrders': 'View my orders',
+  'account.delete.done': 'Your account has been deleted.',
 
   // ---- wishlist ----------------------------------------------------------
   'wishlist.title': 'My wishlist',

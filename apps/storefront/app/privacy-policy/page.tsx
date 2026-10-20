@@ -12,7 +12,7 @@ export const metadata: Metadata = buildMetadata({
   path: '/privacy-policy',
 });
 
-const UPDATED = '2026-09-01';
+const UPDATED = '2026-10-20';
 
 export default async function PrivacyPolicyPage() {
   const { t } = await getI18n();
@@ -94,7 +94,7 @@ export default async function PrivacyPolicyPage() {
       <Section title="How long we keep it">
         <p>
           Order records are retained for eight years to satisfy Indian tax rules. Account
-          details are kept until you ask us to delete the account. Cart and language cookies
+          details are kept until you delete the account. Cart and language cookies
           expire on their own — the cart within 180 days, the language preference within a
           year.
         </p>
@@ -104,10 +104,45 @@ export default async function PrivacyPolicyPage() {
         <List
           items={[
             'You can view and correct your details at any time from My Account.',
-            'You can ask us to delete your account and personal data, other than records we are legally required to retain.',
+            'You can delete your account and personal data yourself, other than records we are legally required to retain — see below.',
             'You can unsubscribe from offer emails using the link in any such email.',
           ]}
         />
+      </Section>
+
+      <Section id="delete-account" title="Deleting your account">
+        <p>
+          Sign in, open{' '}
+          <Link href="/account" className="font-semibold text-link hover:underline">
+            {t('account.title')}
+          </Link>
+          , and choose <strong>Delete my account</strong> at the bottom of the page. You will be
+          asked for your password, and the deletion takes effect at once.
+        </p>
+        <List
+          items={[
+            <>
+              <strong>Deleted straight away</strong> — your name, email address, mobile number,
+              password, saved addresses, cart, wishlist and product reviews.
+            </>,
+            <>
+              <strong>Kept</strong> — your past orders, with the name, contact number and
+              delivery address each was placed with, for eight years as Indian tax rules
+              require. They are no longer linked to any account.
+            </>,
+          ]}
+        />
+        <p>
+          An account cannot be deleted while an order, return or cancellation is still in
+          progress; once it is complete, you can. If you cannot sign in, write to{' '}
+          <a
+            href={`mailto:${shopConfig.supportEmail}`}
+            className="font-semibold text-link hover:underline"
+          >
+            {shopConfig.supportEmail}
+          </a>{' '}
+          from the email address on the account and we will delete it for you.
+        </p>
       </Section>
 
       <Section title="Security">
