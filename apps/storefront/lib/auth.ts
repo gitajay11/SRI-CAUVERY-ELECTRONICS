@@ -1,19 +1,33 @@
 import 'server-only';
 import { createHmac, randomBytes, scrypt, timingSafeEqual } from 'node:crypto';
 import { promisify } from 'node:util';
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
+import { AppError } from '@tamizh/core/api';
 import type { SessionUser } from '@tamizh/core/types';
 import { authSecret, isProduction } from './env';
 
 /**
  * Authentication.
  *
- * Sessions are stateless, signed cookies (HMAC-SHA256 over a compact JSON
+ * Sessions are stateless, signed tokens (HMAC-SHA256 over a compact JSON
  * payload). Passwords are hashed with scrypt from Node's crypto module, so the
- * app carries no auth dependency at all. Two cookies are used:
+ * app carries no auth dependency at all. The browser carries them in two
+ * cookies:
  *
  *   te_session   httpOnly  — the signed session, never readable by scripts
  *   te_anon      httpOnly  — guest cart identifier, created lazily
+ *
+ * The mobile app has no use for cookies, so it carries the same two values in
+ * headers instead:
+ *
+ *   Authorization: Bearer <token>   — the signed session
+ *   X-Guest-Id: <32 hex>            — guest cart identifier, made by the app
+ *
+ * and asks for its token with `X-Auth-Transport: bearer` when it signs in. A
+ * request that sends either header is answered from the header alone, never
+ * from a cookie. Bearer requests need no CSRF guard: a browser never attaches
+ * these headers by itself, and another site cannot add them without a CORS
+ * preflight this app never grants.
  */
 
 const scryptAsync = promisify(scrypt) as (
@@ -24,6 +38,9 @@ const scryptAsync = promisify(scrypt) as (
 
 export const SESSION_COOKIE = 'te_session';
 export const ANON_COOKIE = 'te_anon';
+export const GUEST_ID_HEADER = 'x-guest-id';
+export const AUTH_TRANSPORT_HEADER = 'x-auth-transport';
+const GUEST_ID_PATTERN = /^[a-f0-9]{32}$/;
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 30; // 30 days
 const SCRYPT_KEYLEN = 64;
 
@@ -138,16 +155,54 @@ export async function clearSessionCookie(): Promise<void> {
   store.set(SESSION_COOKIE, '', { ...baseCookieOptions, maxAge: 0 });
 }
 
+/** True when the caller asked to be handed its session token (the mobile app). */
+async function wantsBearerToken(): Promise<boolean> {
+  return (await headers()).get(AUTH_TRANSPORT_HEADER)?.toLowerCase() === 'bearer';
+}
+
 /**
- * The signed-in user, taken straight from the cookie.
+ * Starts a session for `user` the way the caller carries it: a cookie for the
+ * browser, or — for the mobile app — the token itself, returned for the route
+ * to put in its response body. Spread the result into that body.
+ *
+ * The token goes into a body only when asked for, so a page script on the web
+ * never sees what the httpOnly cookie exists to hide.
+ */
+export async function issueSession(user: {
+  id: string;
+  email: string;
+  name: string;
+}): Promise<{ token?: string }> {
+  const token = createSessionToken(user);
+  if (await wantsBearerToken()) return { token };
+  await setSessionCookie(token);
+  return {};
+}
+
+/**
+ * The session token on this request: the Authorization header when one is
+ * sent, otherwise the cookie. A malformed Authorization header is not
+ * quietly replaced by the cookie, so a mobile request is judged on what the
+ * app sent.
+ */
+async function readRequestSessionToken(): Promise<string | undefined> {
+  const authorization = (await headers()).get('authorization');
+  if (authorization !== null) {
+    const match = /^Bearer\s+(\S+)$/i.exec(authorization.trim());
+    return match?.[1];
+  }
+  return (await cookies()).get(SESSION_COOKIE)?.value;
+}
+
+/**
+ * The signed-in user, taken straight from the session token.
  *
  * The payload is trusted for identity display and authorisation because it is
  * HMAC-signed; anything that mutates data still re-reads the user row so a
- * deactivated or demoted account cannot keep acting on an old cookie.
+ * deactivated or demoted account cannot keep acting on an old token.
  */
 export async function getSessionUser(): Promise<SessionUser | null> {
-  const store = await cookies();
-  const payload = readSessionToken(store.get(SESSION_COOKIE)?.value);
+  const payload = readSessionToken(await readRequestSessionToken());
   if (!payload) return null;
   return {
     id: payload.sub,
@@ -164,13 +219,33 @@ export async function requireUser(): Promise<SessionUser> {
 }
 
 /**
+ * The guest id the mobile app sent, or null when it sent none. The app makes
+ * its own (16 random bytes, hex) and keeps it, the way the browser keeps the
+ * cookie; a malformed one is refused rather than swapped for a cookie the app
+ * would never send back.
+ */
+async function headerAnonymousId(): Promise<string | null> {
+  const sent = (await headers()).get(GUEST_ID_HEADER);
+  if (sent === null) return null;
+  const id = sent.trim().toLowerCase();
+  if (!GUEST_ID_PATTERN.test(id)) {
+    throw new AppError('The guest id must be 32 hexadecimal characters.', 400, 'invalid_guest_id');
+  }
+  return id;
+}
+
+/**
  * Stable identifier for a guest's cart. Created on first use and kept in an
- * httpOnly cookie so it cannot be read or spoofed by page scripts.
+ * httpOnly cookie so it cannot be read or spoofed by page scripts — or, for
+ * the mobile app, taken from its X-Guest-Id header.
  */
 export async function getOrCreateAnonymousId(): Promise<string> {
+  const fromHeader = await headerAnonymousId();
+  if (fromHeader) return fromHeader;
+
   const store = await cookies();
   const existing = store.get(ANON_COOKIE)?.value;
-  if (existing && /^[a-f0-9]{32}$/.test(existing)) return existing;
+  if (existing && GUEST_ID_PATTERN.test(existing)) return existing;
 
   const id = randomBytes(16).toString('hex');
   store.set(ANON_COOKIE, id, {
@@ -182,9 +257,12 @@ export async function getOrCreateAnonymousId(): Promise<string> {
 
 /** Reads the guest id without creating one — used on read-only paths. */
 export async function peekAnonymousId(): Promise<string | null> {
+  const fromHeader = await headerAnonymousId();
+  if (fromHeader) return fromHeader;
+
   const store = await cookies();
   const existing = store.get(ANON_COOKIE)?.value;
-  return existing && /^[a-f0-9]{32}$/.test(existing) ? existing : null;
+  return existing && GUEST_ID_PATTERN.test(existing) ? existing : null;
 }
 
 /**

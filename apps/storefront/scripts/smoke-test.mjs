@@ -734,6 +734,94 @@ async function main() {
   );
 
   // -----------------------------------------------------------------------
+  section('Mobile app: headers instead of cookies');
+  // -----------------------------------------------------------------------
+  check('a browser sign-in is not handed its token', registered.body?.data?.token === undefined);
+
+  const mobile = new Session('mobile');
+  const guestId = crypto.randomUUID().replace(/-/g, '');
+  const guestHeaders = { 'X-Guest-Id': guestId };
+
+  const mobileAdd = await mobile.api('/api/cart/items', {
+    method: 'POST',
+    headers: guestHeaders,
+    json: { productId: cheapProduct.id, quantity: 1 },
+  });
+  check('guest cart by X-Guest-Id', mobileAdd.body?.data?.itemCount === 1, `status ${mobileAdd.status}`);
+  check('no guest cookie for a header guest', !mobile.cookies.has('te_anon'));
+  const mobileCart = await mobile.api('/api/cart', { headers: guestHeaders });
+  check('the same header finds the same cart', mobileCart.body?.data?.itemCount === 1);
+
+  const badGuest = await mobile.api('/api/cart', { headers: { 'X-Guest-Id': 'not-hex' } });
+  check('malformed guest id refused', badGuest.status === 400, `status ${badGuest.status}`);
+
+  const couponByHeader = await mobile.api('/api/cart', {
+    headers: { ...guestHeaders, 'X-Coupon-Code': 'WELCOME10' },
+  });
+  check(
+    'coupon read from X-Coupon-Code',
+    couponByHeader.body?.data?.coupon?.code === 'WELCOME10' ||
+      (couponByHeader.body?.data?.notices ?? []).some((n) => n.includes('WELCOME10')),
+    JSON.stringify(couponByHeader.body?.data?.coupon),
+  );
+
+  const otherEmail = `other+${unique}@example.com`;
+  const mobileLogin = await mobile.api('/api/auth/login', {
+    method: 'POST',
+    headers: { ...guestHeaders, 'X-Auth-Transport': 'bearer' },
+    json: { email: otherEmail, password: 'another-good-password' },
+  });
+  const token = mobileLogin.body?.data?.token;
+  check('bearer sign-in returns a token', mobileLogin.status === 200 && typeof token === 'string');
+  check('bearer sign-in sets no session cookie', !mobile.cookies.has('te_session'));
+
+  const bearer = { Authorization: `Bearer ${token}` };
+  const mobileMe = await mobile.api('/api/auth/me', { headers: bearer });
+  check('bearer token identifies the user', mobileMe.body?.data?.user?.email === otherEmail);
+  const mergedCart = await mobile.api('/api/cart', { headers: bearer });
+  check('guest cart merged at bearer sign-in', mergedCart.body?.data?.itemCount === 1);
+
+  const forged = { Authorization: `Bearer ${token}x` };
+  check('a tampered token is no one', (await mobile.api('/api/auth/me', { headers: forged })).body?.data?.user === null);
+  check('a tampered token cannot read orders', (await mobile.api('/api/orders', { headers: forged })).status === 401);
+
+  // -----------------------------------------------------------------------
+  section('Account deletion');
+  // -----------------------------------------------------------------------
+  const busy = await shopper.api('/api/account', {
+    method: 'DELETE',
+    json: { password: 'correct-horse-99' },
+  });
+  check(
+    'refused while a cancellation is pending',
+    busy.status === 409 && busy.body?.error?.code === 'orders_in_progress',
+    `status ${busy.status} ${busy.body?.error?.code}`,
+  );
+
+  const wrongDelete = await mobile.api('/api/account', {
+    method: 'DELETE',
+    headers: bearer,
+    json: { password: 'not-my-password' },
+  });
+  check('deletion needs the password', wrongDelete.status === 401, `status ${wrongDelete.status}`);
+
+  const deleted = await mobile.api('/api/account', {
+    method: 'DELETE',
+    headers: bearer,
+    json: { password: 'another-good-password' },
+  });
+  check('account deleted', deleted.status === 200 && deleted.body?.data?.deleted === true, `status ${deleted.status}`);
+  check(
+    'the old token names no one afterwards',
+    (await mobile.api('/api/auth/me', { headers: bearer })).body?.data?.user === null,
+  );
+  const afterDelete = await new Session('returning').api('/api/auth/login', {
+    method: 'POST',
+    json: { email: otherEmail, password: 'another-good-password' },
+  });
+  check('a deleted account cannot sign in', afterDelete.status === 401, `status ${afterDelete.status}`);
+
+  // -----------------------------------------------------------------------
   section('Admin');
   // -----------------------------------------------------------------------
   const admin = new Session('admin');

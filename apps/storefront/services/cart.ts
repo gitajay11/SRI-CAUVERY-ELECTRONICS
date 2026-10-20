@@ -1,5 +1,5 @@
 import 'server-only';
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import type { AppliedCoupon, CartView } from '@tamizh/core/types';
 import { getOrCreateAnonymousId, getSessionUser, peekAnonymousId } from '@/lib/auth';
 import { getRepository, type CartOwner } from './repository';
@@ -12,9 +12,15 @@ import { getShippingRules } from './settings';
  *
  * The coupon cookie only stores the *code*. The discount is recalculated from
  * the database on every read, so an edited cookie cannot buy anything cheaper.
+ *
+ * The mobile app keeps the code itself and sends it as `X-Coupon-Code` (empty
+ * for none); when that header is present the cookie is not consulted.
  */
 
 export const COUPON_COOKIE = 'te_coupon';
+export const COUPON_HEADER = 'x-coupon-code';
+
+const COUPON_PATTERN = /^[A-Z0-9_-]{3,32}$/;
 
 /**
  * Cart owner for read paths. Returns null when there is neither a session nor
@@ -36,9 +42,12 @@ export async function resolveOrCreateCartOwner(): Promise<CartOwner> {
 }
 
 async function readCouponCode(): Promise<string | null> {
-  const store = await cookies();
-  const value = store.get(COUPON_COOKIE)?.value?.toUpperCase();
-  return value && /^[A-Z0-9_-]{3,32}$/.test(value) ? value : null;
+  const sent = (await headers()).get(COUPON_HEADER);
+  const value =
+    sent !== null
+      ? sent.trim().toUpperCase()
+      : (await cookies()).get(COUPON_COOKIE)?.value?.toUpperCase();
+  return value && COUPON_PATTERN.test(value) ? value : null;
 }
 
 export async function setCouponCookie(code: string | null): Promise<void> {
@@ -60,8 +69,13 @@ export async function setCouponCookie(code: string | null): Promise<void> {
  *
  * Every number here is derived from the catalogue in this request: unit
  * prices, stock clamping, coupon discount, delivery and total.
+ *
+ * `couponCode` overrides the stored code — for the request that has just
+ * applied or removed one, whose own cookie or header still holds the old.
  */
-export async function getCartView(): Promise<CartView> {
+export async function getCartView(
+  options: { couponCode?: string | null } = {},
+): Promise<CartView> {
   const owner = await resolveCartOwner();
   if (!owner) {
     return {
@@ -79,7 +93,7 @@ export async function getCartView(): Promise<CartView> {
   let applied: AppliedCoupon | null = null;
   let discount = 0;
   let waiveShipping = false;
-  const code = await readCouponCode();
+  const code = options.couponCode !== undefined ? options.couponCode : await readCouponCode();
   if (code && items.length > 0) {
     const subtotal = items.reduce((sum, item) => sum + item.lineTotal, 0);
     const coupon = await repo.findCoupon(code);

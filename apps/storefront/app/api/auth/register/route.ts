@@ -2,19 +2,15 @@ import { NextResponse } from 'next/server';
 import { created, handleRouteError, readJson, AppError } from '@tamizh/core/api';
 import { clientKey, consume, LIMITS } from '@tamizh/core/rate-limit';
 import { registerSchema } from '@/lib/validation';
-import {
-  createSessionToken,
-  hashPassword,
-  peekAnonymousId,
-  setSessionCookie,
-} from '@/lib/auth';
+import { hashPassword, issueSession, peekAnonymousId } from '@/lib/auth';
 import { getRepository } from '@/services/repository';
 
 /**
  * POST /api/auth/register — create a customer account and sign in.
  *
  * A guest cart, if there is one, is folded into the new account so nothing a
- * shopper collected before registering is lost.
+ * shopper collected before registering is lost. Like login, it hands the
+ * mobile app its token in the body when asked with `X-Auth-Transport: bearer`.
  */
 export async function POST(request: Request): Promise<NextResponse> {
   try {
@@ -42,7 +38,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     const anonymousId = await peekAnonymousId();
     if (anonymousId) await repo.mergeCarts(anonymousId, user.id);
 
-    await setSessionCookie(createSessionToken(user));
+    const session = await issueSession(user);
 
     return created({
       user: {
@@ -51,6 +47,7 @@ export async function POST(request: Request): Promise<NextResponse> {
         email: user.email,
         phone: user.phone,
       },
+      ...session,
     });
   } catch (error) {
     return handleRouteError(error);

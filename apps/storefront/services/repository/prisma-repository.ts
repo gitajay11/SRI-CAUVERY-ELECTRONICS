@@ -53,6 +53,26 @@ import type {
  *  - Rows are mapped into view models before leaving this file.
  */
 
+/** Order states the shop has not finished with yet; they block account deletion. */
+const OPEN_ORDER_STATUSES = [
+  'PENDING',
+  'CONFIRMED',
+  'PROCESSING',
+  'READY_TO_SHIP',
+  'SHIPPED',
+  'OUT_FOR_DELIVERY',
+  'RETURN_REQUESTED',
+] as const;
+
+/** Return states still awaiting the shop, likewise. */
+const OPEN_RETURN_STATUSES = [
+  'REQUESTED',
+  'APPROVED',
+  'PICKUP_SCHEDULED',
+  'RECEIVED',
+  'REFUND_PENDING',
+] as const;
+
 /** Columns needed to render a product card. */
 const cardSelect = {
   id: true,
@@ -635,6 +655,54 @@ export class PrismaRepository implements Repository {
 
   async updateUserPassword(userId: string, passwordHash: string): Promise<void> {
     await this.db.user.update({ where: { id: userId }, data: { passwordHash } });
+  }
+
+  async deleteUser(userId: string): Promise<{ reviewedProductIds: string[] }> {
+    return this.db.$transaction(async (tx) => {
+      // Deleting the account while the shop still owes the shopper something
+      // would leave them no way to follow it up, so those have to settle first.
+      const unsettled = await tx.order.count({
+        where: {
+          userId,
+          OR: [
+            { status: { in: [...OPEN_ORDER_STATUSES] } },
+            { returnRequests: { some: { status: { in: [...OPEN_RETURN_STATUSES] } } } },
+            { cancellationRequests: { some: { status: 'PENDING' } } },
+          ],
+        },
+      });
+      if (unsettled > 0) {
+        throw new AppError(
+          'You have an order, return or cancellation still in progress. You can delete your account once it is complete.',
+          409,
+          'orders_in_progress',
+        );
+      }
+
+      const reviews = await tx.review.findMany({ where: { userId }, select: { productId: true } });
+      const reviewedProductIds = reviews.map((review) => review.productId);
+
+      // Addresses, carts, the wishlist and reviews cascade; orders and
+      // cancellation requests keep their row with the account link cleared.
+      await tx.user.delete({ where: { id: userId } });
+
+      for (const productId of reviewedProductIds) {
+        const stats = await tx.review.aggregate({
+          where: { productId, status: 'APPROVED' },
+          _avg: { rating: true },
+          _count: { _all: true },
+        });
+        await tx.product.update({
+          where: { id: productId },
+          data: {
+            ratingAvg: Math.round((stats._avg.rating ?? 0) * 10) / 10,
+            ratingCount: stats._count._all,
+          },
+        });
+      }
+
+      return { reviewedProductIds };
+    });
   }
 
   // -------------------------------------------------------------------------

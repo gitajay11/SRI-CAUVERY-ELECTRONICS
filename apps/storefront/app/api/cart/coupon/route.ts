@@ -13,6 +13,8 @@ const noStore = { headers: { 'Cache-Control': 'private, no-store' } };
  *
  * Only the code is stored (in a cookie); the discount is recomputed from the
  * database whenever the cart is priced, so a tampered cookie buys nothing.
+ * The mobile app ignores the cookie, keeps the returned `coupon.code` and sends
+ * it back as `X-Coupon-Code`.
  */
 export async function POST(request: Request): Promise<NextResponse> {
   try {
@@ -33,7 +35,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     }
 
     await setCouponCookie(result.coupon.code);
-    return ok(await getCartView(), noStore);
+    return ok(await getCartView({ couponCode: result.coupon.code }), noStore);
   } catch (error) {
     return handleRouteError(error);
   }
@@ -43,7 +45,7 @@ export async function POST(request: Request): Promise<NextResponse> {
 export async function DELETE(): Promise<NextResponse> {
   try {
     await setCouponCookie(null);
-    return ok(await getCartView(), noStore);
+    return ok(await getCartView({ couponCode: null }), noStore);
   } catch (error) {
     return handleRouteError(error);
   }

@@ -2,12 +2,7 @@ import { NextResponse } from 'next/server';
 import { AppError, handleRouteError, ok, readJson } from '@tamizh/core/api';
 import { clientKey, consume, LIMITS } from '@tamizh/core/rate-limit';
 import { loginSchema } from '@/lib/validation';
-import {
-  createSessionToken,
-  peekAnonymousId,
-  setSessionCookie,
-  verifyPassword,
-} from '@/lib/auth';
+import { issueSession, peekAnonymousId, verifyPassword } from '@/lib/auth';
 import { getRepository } from '@/services/repository';
 
 /**
@@ -17,6 +12,9 @@ import { getRepository } from '@/services/repository';
  * password" so the endpoint cannot be used to enumerate registered emails,
  * and a dummy hash comparison runs for unknown accounts to keep the timing
  * roughly constant.
+ *
+ * The mobile app sends `X-Auth-Transport: bearer` and gets its session back as
+ * `token` in the body instead of a cookie.
  */
 const DUMMY_HASH =
   'scrypt$00000000000000000000000000000000$' + '0'.repeat(128);
@@ -41,7 +39,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     const anonymousId = await peekAnonymousId();
     if (anonymousId) await repo.mergeCarts(anonymousId, user.id);
 
-    await setSessionCookie(createSessionToken(user));
+    const session = await issueSession(user);
 
     return ok({
       user: {
@@ -50,6 +48,7 @@ export async function POST(request: Request): Promise<NextResponse> {
         email: user.email,
         phone: user.phone,
       },
+      ...session,
     });
   } catch (error) {
     return handleRouteError(error);

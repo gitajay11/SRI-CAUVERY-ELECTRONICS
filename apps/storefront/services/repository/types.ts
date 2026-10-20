@@ -131,6 +131,13 @@ export interface Repository {
     data: { name: string; phone: string | null },
   ): Promise<UserRecord>;
   updateUserPassword(id: string, passwordHash: string): Promise<void>;
+  /**
+   * Deletes the account and everything that is only the shopper's: addresses,
+   * carts, wishlist and reviews. Orders stay, detached from the account, with
+   * the contact snapshot they were placed with. Refused with 409 while an
+   * order, return or cancellation is still in progress.
+   */
+  deleteUser(id: string): Promise<{ reviewedProductIds: string[] }>;
 
   // -- addresses ----------------------------------------------------------
   listAddresses(userId: string): Promise<AddressView[]>;

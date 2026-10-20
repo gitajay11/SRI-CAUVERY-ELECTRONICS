@@ -66,6 +66,10 @@ export const changePasswordSchema = z.object({
   newPassword: passwordSchema,
 });
 
+export const deleteAccountSchema = z.object({
+  password: z.string().min(1, 'Enter your password to confirm').max(200),
+});
+
 // ---------------------------------------------------------------------------
 // Addresses
 // ---------------------------------------------------------------------------
