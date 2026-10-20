@@ -6,6 +6,7 @@ import { AppError, notFound } from '@tamizh/core/api';
 import { canTransition } from '@tamizh/core/pricing';
 import { recordAudit } from '@/lib/audit';
 import type { AdminIdentity } from '@/lib/session';
+import { notifyCustomerAboutOrder } from './customer-push';
 import { refreshStorefrontCatalog } from './storefront-cache';
 
 /**
@@ -199,7 +200,17 @@ export async function updateOrderStatus(
   input: OrderStatusInput,
 ) {
   refreshStorefrontCatalog();
-  return db.$transaction((tx) => updateOrderStatusWithin(tx, actor, orderNumber, input));
+  // Read outside the transaction: it only decides whether the shopper's phone
+  // hears about this, and a save that keeps the status (a tracking number
+  // added, say) is not news.
+  const before = await db.order.findUnique({ where: { orderNumber }, select: { status: true } });
+  const result = await db.$transaction((tx) =>
+    updateOrderStatusWithin(tx, actor, orderNumber, input),
+  );
+  if (before && before.status !== result.status) {
+    notifyCustomerAboutOrder(orderNumber, { kind: 'status', status: result.status });
+  }
+  return result;
 }
 
 /**

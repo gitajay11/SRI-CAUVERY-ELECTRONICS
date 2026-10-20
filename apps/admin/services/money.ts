@@ -4,6 +4,7 @@ import type { PaymentStatus, RefundStatus, ReturnStatus } from '@tamizh/db/enums
 import { AppError, notFound } from '@tamizh/core/api';
 import { recordAudit } from '@/lib/audit';
 import type { AdminIdentity } from '@/lib/session';
+import { notifyCustomerAboutOrder } from './customer-push';
 import { notifyStaff } from './notifications';
 import { refreshStorefrontCatalog } from './storefront-cache';
 
@@ -604,6 +605,7 @@ export async function decideRefund(
     );
   }
 
+  let refundedInFull = false;
   await db.$transaction(async (tx) => {
     await tx.refund.update({
       where: { id },
@@ -623,6 +625,7 @@ export async function decideRefund(
       });
       const refundedTotal = settled._sum.amount ?? 0;
       const fullyRefunded = refundedTotal >= refund.order.total;
+      refundedInFull = fullyRefunded;
       const paymentStatus: PaymentStatus = fullyRefunded
         ? 'REFUNDED'
         : 'PARTIALLY_REFUNDED';
@@ -678,6 +681,10 @@ export async function decideRefund(
       tx,
     );
   });
+
+  if (refundedInFull) {
+    notifyCustomerAboutOrder(refund.order.orderNumber, { kind: 'status', status: 'REFUNDED' });
+  }
 
   return { status: decision.status };
 }

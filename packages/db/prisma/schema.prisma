@@ -303,9 +303,31 @@ model User {
   orders               Order[]
   reviews              Review[]
   cancellationRequests CancellationRequest[]
+  pushTokens           CustomerPushToken[]
 
   @@index([createdAt])
   @@index([isActive])
+}
+
+/// A shopper's phone, as the mobile app registers it: an Expo push token,
+/// which the admin panel uses to tell the shopper when an order moves.
+/// One account may have several phones; one phone, one row. Deleted with the
+/// account, and pruned when Expo reports the app was uninstalled.
+model CustomerPushToken {
+  id       String @id @default(cuid())
+  /// ExponentPushToken[…], as Expo issued it.
+  token    String @unique
+  userId   String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// "ios" or "android".
+  platform String
+  /// The app's language when it registered, so the message reads in it.
+  locale   String @default("en")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }
 
 model Address {

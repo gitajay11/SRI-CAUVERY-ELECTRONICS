@@ -10,14 +10,15 @@
  * order, and every confirmation a real email.
  *
  * This starts the local PGlite database (packages/db/.pglite, the one
- * `npm run dev:db` serves and `npm run db:reset` wipes) and the storefront on
- * port 3000 pointed at it, with emails written to the console and the admin
+ * `npm run dev:db` serves and `npm run db:reset` wipes), applies any pending
+ * migrations to it, and starts the storefront on port 3000 pointed at it,
+ * with emails written to the console and the admin
  * panel's order alerts switched off. Variables set here win over every .env
  * file, because the apps never overwrite one that is already set.
  *
  * Phones on the same Wi-Fi reach it at the "Network" address Next prints.
  */
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -42,6 +43,20 @@ const safe = {
   ADMIN_SITE_URL: '',
   INTERNAL_NOTIFY_SECRET: '',
 };
+
+// Bring the local database up to the current schema first. Both URLs are set
+// above, so Prisma's CLI — which prefers DATABASE_URL_UNPOOLED — cannot reach
+// past them to whatever the .env names.
+const migrate = spawnSync('npx prisma migrate deploy', {
+  cwd: path.join(ROOT, 'packages/db'),
+  stdio: 'inherit',
+  shell: true,
+  env: { ...process.env, ...safe },
+});
+if (migrate.status !== 0) {
+  await database.stop();
+  process.exit(migrate.status ?? 1);
+}
 
 // One command string through the shell: npm is a .cmd file on Windows, which
 // Node will only start through a shell, and it warns about argument arrays there.

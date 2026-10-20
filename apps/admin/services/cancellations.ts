@@ -8,6 +8,7 @@ import type { AdminIdentity } from '@/lib/session';
 import { cancellationStage } from '@tamizh/core/cancellation';
 import { refundableAmount, requestRefund } from './money';
 import { updateOrderStatusWithin } from './orders';
+import { notifyCustomerAboutOrder } from './customer-push';
 import { refreshStorefrontCatalog } from './storefront-cache';
 
 /**
@@ -283,6 +284,14 @@ export async function decideCancellation(
 
     return { request, refundRaised: request.order.paymentStatus === 'PAID' };
   });
+
+  // The decision is saved; tell the shopper's phone.
+  notifyCustomerAboutOrder(
+    outcome.request.order.orderNumber,
+    decision.status === 'REJECTED'
+      ? { kind: 'cancellation-declined' }
+      : { kind: 'status', status: 'CANCELLED' },
+  );
 
   // Money taken? Raise the refund into the queue. Outside the transaction on
   // purpose: the cancellation is already true and must stay true even if

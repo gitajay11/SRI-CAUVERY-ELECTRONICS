@@ -911,6 +911,34 @@ async function main() {
       (phoneWishlist.body?.data?.products ?? []).some((product) => product.id === sample.id),
   );
   await phone.api('/api/wishlist', { method: 'POST', headers: phoneAuth, json: { productId: sample.id } });
+  const pushToken = `ExponentPushToken[smoke-${unique}]`;
+  const registeredPhone = await phone.api('/api/account/push-token', {
+    method: 'POST',
+    headers: phoneAuth,
+    json: { token: pushToken, platform: 'android', locale: 'ta' },
+  });
+  check(
+    'the phone registers for order updates',
+    registeredPhone.body?.data?.registered === true,
+    `status ${registeredPhone.status} ${JSON.stringify(registeredPhone.body?.error ?? {})}`,
+  );
+  const badToken = await phone.api('/api/account/push-token', {
+    method: 'POST',
+    headers: phoneAuth,
+    json: { token: 'not-a-push-token', platform: 'android' },
+  });
+  check('a token that is not Expo’s is refused', badToken.status === 422, `status ${badToken.status}`);
+  const anonymousToken = await new Session('anonymous-phone').api('/api/account/push-token', {
+    method: 'POST',
+    json: { token: pushToken, platform: 'ios' },
+  });
+  check('registering needs an account', anonymousToken.status === 401);
+  const removedPhone = await phone.api('/api/account/push-token', {
+    method: 'DELETE',
+    headers: phoneAuth,
+    json: { token: pushToken },
+  });
+  check('signing out removes the phone', removedPhone.body?.data?.removed === true);
   check('the phone never received a session cookie', !phone.cookies.has('te_session'));
 
   // -----------------------------------------------------------------------
