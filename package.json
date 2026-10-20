@@ -13,6 +13,7 @@
     "dev": "npm run dev --workspace @tamizh/storefront",
     "dev:admin": "npm run dev --workspace @tamizh/admin",
     "dev:local": "node --experimental-strip-types scripts/dev-local.mjs",
+    "dev:local:admin": "node --experimental-strip-types scripts/dev-local.mjs admin",
     "dev:db": "npm run start --workspace @tamizh/db",
     "build": "npm run build --workspaces --if-present",
     "build:storefront": "npm run build --workspace @tamizh/storefront",
