@@ -1,6 +1,6 @@
 import Constants from 'expo-constants';
 import * as Device from 'expo-device';
-import * as Notifications from 'expo-notifications';
+import type * as NotificationsModule from 'expo-notifications';
 import * as SecureStore from 'expo-secure-store';
 import { isRunningInExpoGo } from 'expo';
 import { Platform } from 'react-native';
@@ -14,22 +14,16 @@ import { api } from './api';
  * an order is placed — and registers this phone's Expo push token with the
  * account. The admin panel sends through Expo when staff move the order.
  *
- * Where remote push cannot work it quietly does nothing: on a simulator, in
- * Expo Go on Android (Expo removed remote push there in SDK 53), and in any
- * build without an EAS project id. A development or store build has all three.
+ * Remote push needs a development or store build with an EAS project id.
+ * Everywhere else — Expo Go (no remote push on Android since SDK 53, and no
+ * project id to ask for a token with), simulators, builds before `eas init` —
+ * this does nothing, and does not even load expo-notifications, whose import
+ * alone prints Expo Go warnings.
  */
 
-const TOKEN_KEY = 'push.token';
+type Notifications = typeof NotificationsModule;
 
-// Shown while the app is open too: the shopper wants to know the parcel moved.
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowBanner: true,
-    shouldShowList: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-  }),
-});
+const TOKEN_KEY = 'push.token';
 
 function projectId(): string | undefined {
   return Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
@@ -37,24 +31,43 @@ function projectId(): string | undefined {
 
 /** Whether this build can receive remote notifications at all. */
 export function pushSupported(): boolean {
-  if (!Device.isDevice) return false;
-  if (Platform.OS === 'android' && isRunningInExpoGo()) return false;
-  return Boolean(projectId());
+  return Device.isDevice && !isRunningInExpoGo() && Boolean(projectId());
 }
 
-async function ensureChannel(): Promise<void> {
-  if (Platform.OS !== 'android') return;
-  // The admin panel sends to this channel ("channelId: 'orders'").
-  await Notifications.setNotificationChannelAsync('orders', {
-    name: 'Order updates',
-    importance: Notifications.AndroidImportance.HIGH,
-    vibrationPattern: [0, 200, 120, 200],
+let loaded: Promise<Notifications> | null = null;
+
+/**
+ * expo-notifications, loaded on first use and set up once: notifications
+ * show while the app is open too (the shopper wants to know the parcel
+ * moved), and Android gets the "Order updates" channel the admin sends to.
+ */
+export function loadNotifications(): Promise<Notifications> | null {
+  if (!pushSupported()) return null;
+  loaded ??= import('expo-notifications').then(async (Notifications) => {
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowBanner: true,
+        shouldShowList: true,
+        shouldPlaySound: true,
+        shouldSetBadge: false,
+      }),
+    });
+    if (Platform.OS === 'android') {
+      await Notifications.setNotificationChannelAsync('orders', {
+        name: 'Order updates',
+        importance: Notifications.AndroidImportance.HIGH,
+        vibrationPattern: [0, 200, 120, 200],
+      });
+    }
+    return Notifications;
   });
+  return loaded;
 }
 
 export async function permissionGranted(): Promise<boolean> {
-  const { status } = await Notifications.getPermissionsAsync();
-  return status === 'granted';
+  const Notifications = await loadNotifications();
+  if (!Notifications) return false;
+  return (await Notifications.getPermissionsAsync()).status === 'granted';
 }
 
 /**
@@ -64,10 +77,11 @@ export async function permissionGranted(): Promise<boolean> {
  * Resolves to whether the phone is now registered.
  */
 export async function registerForOrderUpdates(locale: Locale, ask: boolean): Promise<boolean> {
-  if (!pushSupported()) return false;
   try {
-    await ensureChannel();
-    let granted = await permissionGranted();
+    const Notifications = await loadNotifications();
+    if (!Notifications) return false;
+
+    let granted = (await Notifications.getPermissionsAsync()).status === 'granted';
     if (!granted && ask) {
       granted = (await Notifications.requestPermissionsAsync()).status === 'granted';
     }
@@ -80,6 +94,7 @@ export async function registerForOrderUpdates(locale: Locale, ask: boolean): Pro
       locale,
     });
     await SecureStore.setItemAsync(TOKEN_KEY, token);
+    if (__DEV__) console.log(`[notifications] registered ${token}`);
     return true;
   } catch (error) {
     if (__DEV__) console.warn('[notifications] could not register', error);
