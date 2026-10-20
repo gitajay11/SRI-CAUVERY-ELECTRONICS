@@ -67,7 +67,12 @@ export function OrderReviewSheet({
       }
     >
       {review.changed ? (
-        <View style={[styles.changed, { backgroundColor: colors.accentSoft, borderColor: colors.action }]}>
+        <View
+          style={[
+            styles.changed,
+            { backgroundColor: colors.accentSoft, borderColor: colors.action },
+          ]}
+        >
           <AppText style={styles.bold}>{t('review.changedTitle')}</AppText>
           <AppText variant="small" tone="muted">
             {t('review.changedBody')}
@@ -144,7 +149,11 @@ function Line({ line }: { line: ReviewLine }) {
     <View style={styles.line}>
       <View style={[styles.thumb, { backgroundColor: colors.raised }]}>
         {line.image ? (
-          <Image source={{ uri: assetUrl(line.image.url) }} style={styles.flex} contentFit="contain" />
+          <Image
+            source={{ uri: assetUrl(line.image.url) }}
+            style={styles.flex}
+            contentFit="contain"
+          />
         ) : null}
       </View>
       <View style={styles.flex}>

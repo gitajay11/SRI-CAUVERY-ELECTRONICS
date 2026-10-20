@@ -7,7 +7,13 @@ import { useLocale } from '@/lib/i18n';
 import { radius, spacing, useColors } from '@/theme/colors';
 
 /** The product's images, a swipe apiece, with dots for where you are. */
-export function ProductGallery({ images, badge }: { images: ProductImageView[]; badge?: React.ReactNode }) {
+export function ProductGallery({
+  images,
+  badge,
+}: {
+  images: ProductImageView[];
+  badge?: React.ReactNode;
+}) {
   const colors = useColors();
   const { t } = useLocale();
   const { width } = useWindowDimensions();

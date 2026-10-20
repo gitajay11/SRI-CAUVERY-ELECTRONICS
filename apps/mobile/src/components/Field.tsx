@@ -13,7 +13,9 @@ export const Field = forwardRef<
     <View style={styles.field}>
       <AppText variant="small" style={styles.label}>
         {label}
-        {optionalLabel ? <AppText variant="small" tone="faint">{` (${optionalLabel})`}</AppText> : null}
+        {optionalLabel ? (
+          <AppText variant="small" tone="faint">{` (${optionalLabel})`}</AppText>
+        ) : null}
       </AppText>
       <TextInput
         ref={ref}
@@ -32,7 +34,12 @@ export const Field = forwardRef<
         ]}
       />
       {error ? (
-        <AppText variant="small" tone="danger">
+        <AppText
+          variant="small"
+          tone="danger"
+          accessibilityLiveRegion="polite"
+          accessibilityRole="alert"
+        >
           {error}
         </AppText>
       ) : hint ? (

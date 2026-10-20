@@ -18,69 +18,74 @@ export function ProductCard({ product }: { product: ProductCardView }) {
   const name = localName(product, locale);
   const soldOut = product.stock <= 0;
 
+  // The heart sits beside the card's pressable area, not inside it: a screen
+  // reader treats an accessible parent as one element, and would never reach it.
   return (
-    <Pressable
-      accessibilityRole="link"
-      onPress={() => router.push({ pathname: '/product/[slug]', params: { slug: product.slug } })}
-      accessibilityLabel={`${name}, ${formatINR(product.price)}`}
-      style={({ pressed }) => [
-        styles.card,
-        {
-          backgroundColor: colors.surface,
-          borderColor: colors.border,
-          opacity: pressed ? 0.85 : 1,
-        },
-      ]}
-    >
-      <View style={[styles.imageWrap, { backgroundColor: colors.raised }]}>
-        {product.image ? (
-          <Image
-            source={{ uri: assetUrl(product.image.url) }}
-            alt={product.image.alt}
-            style={styles.image}
-            contentFit="contain"
-            transition={150}
-            recyclingKey={product.id}
-          />
-        ) : null}
-        {product.discountPercent > 0 ? (
-          <View style={[styles.badge, { backgroundColor: colors.action }]}>
-            <AppText variant="label" style={{ color: colors.onAction }}>
-              {t('product.off', { percent: product.discountPercent })}
-            </AppText>
-          </View>
-        ) : null}
-        <View style={styles.heart}>
-          <WishlistButton product={product} size={18} floating />
+    <View style={styles.wrap}>
+      <Pressable
+        accessibilityRole="link"
+        onPress={() => router.push({ pathname: '/product/[slug]', params: { slug: product.slug } })}
+        accessibilityLabel={`${name}, ${formatINR(product.price)}`}
+        style={({ pressed }) => [
+          styles.card,
+          {
+            backgroundColor: colors.surface,
+            borderColor: colors.border,
+            opacity: pressed ? 0.85 : 1,
+          },
+        ]}
+      >
+        <View style={[styles.imageWrap, { backgroundColor: colors.raised }]}>
+          {product.image ? (
+            <Image
+              source={{ uri: assetUrl(product.image.url) }}
+              alt={product.image.alt}
+              style={styles.image}
+              contentFit="contain"
+              transition={150}
+              recyclingKey={product.id}
+            />
+          ) : null}
+          {product.discountPercent > 0 ? (
+            <View style={[styles.badge, { backgroundColor: colors.action }]}>
+              <AppText variant="label" style={{ color: colors.onAction }}>
+                {t('product.off', { percent: product.discountPercent })}
+              </AppText>
+            </View>
+          ) : null}
         </View>
-      </View>
 
-      <View style={styles.body}>
-        <AppText variant="small" numberOfLines={2} style={styles.name}>
-          {name}
-        </AppText>
-        {product.ratingCount > 0 ? (
-          <StarRating value={product.ratingAvg} count={product.ratingCount} />
-        ) : null}
-        <View style={styles.prices}>
-          <AppText variant="heading">{formatINR(product.price)}</AppText>
-          {product.mrp > product.price ? (
-            <AppText variant="small" tone="faint" style={styles.mrp}>
-              {formatINR(product.mrp)}
+        <View style={styles.body}>
+          <AppText variant="small" numberOfLines={2} style={styles.name}>
+            {name}
+          </AppText>
+          {product.ratingCount > 0 ? (
+            <StarRating value={product.ratingAvg} count={product.ratingCount} />
+          ) : null}
+          <View style={styles.prices}>
+            <AppText variant="heading">{formatINR(product.price)}</AppText>
+            {product.mrp > product.price ? (
+              <AppText variant="small" tone="faint" style={styles.mrp}>
+                {formatINR(product.mrp)}
+              </AppText>
+            ) : null}
+          </View>
+          {soldOut ? (
+            <AppText variant="small" tone="danger">
+              {t('product.outOfStock')}
             </AppText>
           ) : null}
         </View>
-        {soldOut ? (
-          <AppText variant="small" tone="danger">
-            {t('product.outOfStock')}
-          </AppText>
-        ) : null}
+      </Pressable>
+      <View style={styles.heart}>
+        <WishlistButton product={product} size={18} floating />
       </View>
-    </Pressable>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  wrap: { flex: 1 },
   card: { flex: 1, borderWidth: 1, borderRadius: radius.card, overflow: 'hidden' },
   imageWrap: { aspectRatio: 1 },
   image: { flex: 1 },

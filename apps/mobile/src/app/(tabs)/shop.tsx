@@ -5,7 +5,8 @@ import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-n
 import type { CategoryView } from '@tamizh/core/types';
 import { categoryIcon } from '@/components/CategoryTile';
 import { SearchLink } from '@/components/SearchLink';
-import { AppText, ErrorState, StateMessage } from '@/components/ui';
+import { ListSkeleton } from '@/components/Skeleton';
+import { AppText, ErrorState } from '@/components/ui';
 import { localName, useCategories } from '@/lib/catalog';
 import { useLocale } from '@/lib/i18n';
 import { useHideTabBarOnScroll, useTabBarInset } from '@/lib/tab-bar';
@@ -21,7 +22,7 @@ export default function ShopScreen() {
   const onScroll = useHideTabBarOnScroll();
   const bottomInset = useTabBarInset();
 
-  if (categories.isPending) return <StateMessage loading />;
+  if (categories.isPending) return <ListSkeleton count={4} height={180} />;
   if (categories.isError) {
     return <ErrorState error={categories.error} onRetry={() => void categories.refetch()} />;
   }

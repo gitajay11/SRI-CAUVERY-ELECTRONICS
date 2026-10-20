@@ -6,6 +6,7 @@ import { formatINR } from '@tamizh/core/money';
 import type { OrderView } from '@tamizh/core/types';
 import { formatDate } from '@tamizh/core/utils';
 import { OrderStatusBadge } from '@/components/OrderStatusBadge';
+import { ListSkeleton } from '@/components/Skeleton';
 import { AppText, ErrorState, StateMessage } from '@/components/ui';
 import { useOrders } from '@/lib/account';
 import { useAuth } from '@/lib/auth';
@@ -26,7 +27,7 @@ export default function OrdersScreen() {
     <>
       <Stack.Screen options={{ title: t('order.myOrders') }} />
       {orders.isPending ? (
-        <StateMessage loading />
+        <ListSkeleton />
       ) : orders.isError ? (
         <ErrorState error={orders.error} onRetry={() => void orders.refetch()} />
       ) : (

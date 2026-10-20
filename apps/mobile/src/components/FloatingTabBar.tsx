@@ -3,7 +3,14 @@ import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import type { Tabs } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Platform, Pressable, StyleSheet, useColorScheme, View, type LayoutChangeEvent } from 'react-native';
+import {
+  Platform,
+  Pressable,
+  StyleSheet,
+  useColorScheme,
+  View,
+  type LayoutChangeEvent,
+} from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useReducedMotion,
@@ -126,7 +133,11 @@ export function FloatingTabBar({ state, descriptors, navigation }: TabBarProps) 
         >
           {Platform.OS === 'ios' ? (
             <>
-              <BlurView intensity={40} tint={dark ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
+              <BlurView
+                intensity={40}
+                tint={dark ? 'dark' : 'light'}
+                style={StyleSheet.absoluteFill}
+              />
               <View
                 style={[
                   StyleSheet.absoluteFill,
@@ -249,6 +260,8 @@ function TabItem({
         </Animated.View>
         <Animated.Text
           numberOfLines={1}
+          // Larger text grows the label, but only so far: the bar has a fixed height.
+          maxFontSizeMultiplier={1.3}
           style={[styles.label, { color, fontWeight: focused ? '700' : '500' }]}
         >
           {label}
@@ -284,7 +297,12 @@ function Badge({ value, reducedMotion }: { value: number | string; reducedMotion
     <Animated.View
       style={[styles.badge, { backgroundColor: colors.action, borderColor: colors.surface }, style]}
     >
-      <Animated.Text style={[styles.badgeText, { color: colors.onAction }]}>{value}</Animated.Text>
+      <Animated.Text
+        maxFontSizeMultiplier={1.2}
+        style={[styles.badgeText, { color: colors.onAction }]}
+      >
+        {value}
+      </Animated.Text>
     </Animated.View>
   );
 }

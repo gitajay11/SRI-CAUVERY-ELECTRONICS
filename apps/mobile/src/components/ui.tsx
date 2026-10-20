@@ -1,4 +1,5 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, View, type TextProps } from 'react-native';
+import { ApiError } from '@/lib/api';
 import { useLocale } from '@/lib/i18n';
 import { radius, spacing, useColors } from '@/theme/colors';
 
@@ -20,7 +21,16 @@ export function AppText({
     link: colors.link,
     danger: colors.danger,
   }[tone];
-  return <Text {...props} style={[styles[variant], { color }, style]} />;
+  // Titles and headings are headings to a screen reader too, so a shopper
+  // can move through a screen section by section.
+  const heading = variant === 'title' || variant === 'heading';
+  return (
+    <Text
+      accessibilityRole={heading ? 'header' : undefined}
+      {...props}
+      style={[styles[variant], { color }, style]}
+    />
+  );
 }
 
 export function Button({
@@ -94,10 +104,30 @@ export function StateMessage({
   );
 }
 
-/** The standard failed-to-load state, with a retry. */
+/**
+ * The standard failed-to-load state, with a retry. No connection and "not
+ * found" get their own words in the shopper's language; the server's own
+ * message is shown for anything else it explained, and a plain apology for
+ * the rest.
+ */
 export function ErrorState({ error, onRetry }: { error: unknown; onRetry: () => void }) {
   const { t } = useLocale();
-  const message = error instanceof Error && error.message ? error.message : t('error.body');
+  if (error instanceof ApiError && (error.code === 'network_error' || error.status === 0)) {
+    return (
+      <StateMessage
+        title={t('offline.title')}
+        body={t('offline.body')}
+        action={{ label: t('offline.retry'), onPress: onRetry }}
+      />
+    );
+  }
+  if (error instanceof ApiError && error.status === 404) {
+    return <StateMessage title={t('error.notFound.title')} body={error.message} />;
+  }
+  const message =
+    error instanceof ApiError && error.status < 500 && error.message
+      ? error.message
+      : t('error.body');
   return (
     <StateMessage
       title={t('error.title')}

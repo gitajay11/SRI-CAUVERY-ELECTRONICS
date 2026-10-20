@@ -39,7 +39,11 @@ export function CartLine({
         style={[styles.thumb, { backgroundColor: colors.raised }]}
       >
         {item.image ? (
-          <Image source={{ uri: assetUrl(item.image.url) }} style={styles.image} contentFit="contain" />
+          <Image
+            source={{ uri: assetUrl(item.image.url) }}
+            style={styles.image}
+            contentFit="contain"
+          />
         ) : null}
       </Pressable>
 
@@ -131,7 +135,12 @@ const styles = StyleSheet.create({
   prices: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm },
   mrp: { textDecorationLine: 'line-through' },
   controls: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginTop: spacing.xs },
-  stepper: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: radius.pill },
+  stepper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: radius.pill,
+  },
   step: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
   quantity: { minWidth: 32, textAlign: 'center', fontWeight: '700' },
   total: { flex: 1, textAlign: 'right' },

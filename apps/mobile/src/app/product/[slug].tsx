@@ -9,7 +9,8 @@ import { ProductRail } from '@/components/ProductRail';
 import { PurchasePanel } from '@/components/PurchasePanel';
 import { WishlistButton } from '@/components/WishlistButton';
 import { StarRating } from '@/components/StarRating';
-import { AppText, ErrorState, StateMessage } from '@/components/ui';
+import { ProductSkeleton } from '@/components/Skeleton';
+import { AppText, ErrorState } from '@/components/ui';
 import { localName, useProduct } from '@/lib/catalog';
 import { useLocale } from '@/lib/i18n';
 import { radius, spacing, useColors } from '@/theme/colors';
@@ -25,7 +26,7 @@ export default function ProductScreen() {
     return (
       <>
         <Stack.Screen options={{ title: '' }} />
-        <StateMessage loading />
+        <ProductSkeleton />
       </>
     );
   }

@@ -7,7 +7,8 @@ import type { OrderStatus, OrderView } from '@tamizh/core/types';
 import { formatDate } from '@tamizh/core/utils';
 import { CancellationCard, CancelRequest, ReturnRequest } from '@/components/OrderRequests';
 import { OrderStatusBadge } from '@/components/OrderStatusBadge';
-import { AppText, ErrorState, StateMessage } from '@/components/ui';
+import { ListSkeleton } from '@/components/Skeleton';
+import { AppText, ErrorState } from '@/components/ui';
 import { useOrder } from '@/lib/account';
 import { useAuth } from '@/lib/auth';
 import { localName } from '@/lib/catalog';
@@ -36,7 +37,7 @@ export default function OrderScreen() {
   if (!user) {
     return <Redirect href={{ pathname: '/signin', params: { next: `/order/${number}` } }} />;
   }
-  if (query.isPending) return <StateMessage loading />;
+  if (query.isPending) return <ListSkeleton count={3} height={160} />;
   if (query.isError) return <ErrorState error={query.error} onRetry={() => void query.refetch()} />;
 
   const { order, returns } = query.data;

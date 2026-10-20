@@ -1,9 +1,17 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
+import {
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  RefreshControl,
+  StyleSheet,
+  View,
+} from 'react-native';
 import type { SortKey } from '@tamizh/core/types';
 import { FilterSheet, SortSheet } from '@/components/ListingSheets';
 import { ProductCard } from '@/components/ProductCard';
+import { ProductGridSkeleton } from '@/components/Skeleton';
 import { AppText, ErrorState, StateMessage } from '@/components/ui';
 import { activeFilterCount, type ProductFilters, useProductSearch } from '@/lib/catalog';
 import { useLocale } from '@/lib/i18n';
@@ -27,14 +35,19 @@ export function ProductListing({ base }: { base: ProductFilters }) {
   const first = search.data?.pages[0];
   const filterCount = activeFilterCount(extra);
 
-  if (search.isPending) return <StateMessage loading />;
+  if (search.isPending) return <ProductGridSkeleton />;
   if (search.isError && !search.data) {
     return <ErrorState error={search.error} onRetry={() => void search.refetch()} />;
   }
 
   return (
     <View style={[styles.root, { backgroundColor: colors.canvas }]}>
-      <View style={[styles.toolbar, { borderBottomColor: colors.border, backgroundColor: colors.surface }]}>
+      <View
+        style={[
+          styles.toolbar,
+          { borderBottomColor: colors.border, backgroundColor: colors.surface },
+        ]}
+      >
         <AppText variant="small" tone="muted" style={styles.count}>
           {t('search.countResults', { count: first?.total ?? 0 })}
         </AppText>

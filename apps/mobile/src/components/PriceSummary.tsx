@@ -21,7 +21,11 @@ export function PriceSummary({
     <View style={styles.summary}>
       <Row label={t('cart.subtotal')} value={formatINR(totals.mrpTotal)} />
       {totals.productDiscount > 0 ? (
-        <Row label={t('cart.productDiscount')} value={`− ${formatINR(totals.productDiscount)}`} good />
+        <Row
+          label={t('cart.productDiscount')}
+          value={`− ${formatINR(totals.productDiscount)}`}
+          good
+        />
       ) : null}
       {totals.couponDiscount > 0 ? (
         <Row

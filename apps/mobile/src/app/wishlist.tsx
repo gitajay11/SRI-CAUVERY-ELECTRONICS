@@ -3,6 +3,7 @@ import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import { firstQuantity, quantityRuleFor } from '@tamizh/core/quantity';
 import type { ProductCardView } from '@tamizh/core/types';
 import { ProductCard } from '@/components/ProductCard';
+import { ProductGridSkeleton } from '@/components/Skeleton';
 import { AppText, Button, ErrorState, StateMessage } from '@/components/ui';
 import { useToggleWishlist, useWishlist } from '@/lib/account';
 import { useAuth } from '@/lib/auth';
@@ -23,7 +24,7 @@ export default function WishlistScreen() {
     <>
       <Stack.Screen options={{ title: t('wishlist.title') }} />
       {wishlist.isPending ? (
-        <StateMessage loading />
+        <ProductGridSkeleton count={4} />
       ) : wishlist.isError ? (
         <ErrorState error={wishlist.error} onRetry={() => void wishlist.refetch()} />
       ) : (

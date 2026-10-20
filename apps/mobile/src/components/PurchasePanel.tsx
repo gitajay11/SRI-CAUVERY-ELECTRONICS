@@ -69,7 +69,10 @@ export function PurchasePanel({ product }: { product: ProductDetailView }) {
       case 'below_minimum':
         return t('product.bulk.belowMinimum', { min: rule.min });
       case 'not_a_multiple':
-        return t('product.bulk.notMultiple', { step: rule.step, examples: exampleQuantities(rule) });
+        return t('product.bulk.notMultiple', {
+          step: rule.step,
+          examples: exampleQuantities(rule),
+        });
       case 'above_stock':
         return t('product.bulk.aboveStock', { count: max });
     }
@@ -77,10 +80,7 @@ export function PurchasePanel({ product }: { product: ProductDetailView }) {
 
   const add = () => {
     setAdded(false);
-    addToCart.mutate(
-      { productId: product.id, quantity },
-      { onSuccess: () => setAdded(true) },
-    );
+    addToCart.mutate({ productId: product.id, quantity }, { onSuccess: () => setAdded(true) });
   };
 
   if (outOfStock) {
@@ -94,7 +94,11 @@ export function PurchasePanel({ product }: { product: ProductDetailView }) {
   }
 
   const error =
-    addToCart.error instanceof ApiError ? addToCart.error.message : addToCart.error ? t('error.body') : null;
+    addToCart.error instanceof ApiError
+      ? addToCart.error.message
+      : addToCart.error
+        ? t('error.body')
+        : null;
 
   return (
     <View style={styles.panel}>
@@ -125,7 +129,9 @@ export function PurchasePanel({ product }: { product: ProductDetailView }) {
       </View>
 
       {rule.bulk ? (
-        <View style={[styles.bulk, { backgroundColor: colors.accentSoft, borderColor: colors.border }]}>
+        <View
+          style={[styles.bulk, { backgroundColor: colors.accentSoft, borderColor: colors.border }]}
+        >
           <AppText style={styles.bold}>{t('product.bulk.title')}</AppText>
           <AppText variant="small" tone="muted">
             {t('product.bulk.rule', { min: rule.min, step: rule.step })}
@@ -138,7 +144,10 @@ export function PurchasePanel({ product }: { product: ProductDetailView }) {
             accessibilityLabel={t('product.bulk.quantityLabel')}
             style={[
               styles.input,
-              { borderColor: typedProblem ? colors.danger : colors.borderStrong, color: colors.text },
+              {
+                borderColor: typedProblem ? colors.danger : colors.borderStrong,
+                color: colors.text,
+              },
             ]}
           />
           {typedProblem ? (
@@ -219,7 +228,12 @@ function StepButton({
 const styles = StyleSheet.create({
   panel: { gap: spacing.lg },
   quantityRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg, flexWrap: 'wrap' },
-  stepper: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: radius.pill },
+  stepper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: radius.pill,
+  },
   step: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   quantity: { minWidth: 44, textAlign: 'center', fontSize: 16, fontWeight: '700' },
   bulk: { gap: spacing.sm, padding: spacing.lg, borderWidth: 1, borderRadius: radius.card },

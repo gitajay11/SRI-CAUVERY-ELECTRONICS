@@ -12,7 +12,8 @@ import {
 } from 'react-native';
 import type { AddressView } from '@tamizh/core/types';
 import { Field, FormMessage } from '@/components/Field';
-import { AppText, Button, ErrorState, StateMessage } from '@/components/ui';
+import { ListSkeleton } from '@/components/Skeleton';
+import { AppText, Button, ErrorState } from '@/components/ui';
 import {
   useAddAddress,
   useAddressBook,
@@ -44,7 +45,7 @@ export default function AddressesScreen() {
   const [adding, setAdding] = useState(false);
 
   if (!user) return <Redirect href="/signin" />;
-  if (addresses.isPending) return <StateMessage loading />;
+  if (addresses.isPending) return <ListSkeleton count={2} height={140} />;
   if (addresses.isError) {
     return <ErrorState error={addresses.error} onRetry={() => void addresses.refetch()} />;
   }

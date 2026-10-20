@@ -153,7 +153,9 @@ export function FilterSheet({
             value={minText}
             onChangeText={setMinText}
             placeholder={
-              facets ? `${t('shop.filter.min')} ₹${paiseToRupees(facets.priceMin)}` : t('shop.filter.min')
+              facets
+                ? `${t('shop.filter.min')} ₹${paiseToRupees(facets.priceMin)}`
+                : t('shop.filter.min')
             }
             placeholderTextColor={colors.textFaint}
             keyboardType="number-pad"
@@ -165,7 +167,9 @@ export function FilterSheet({
             value={maxText}
             onChangeText={setMaxText}
             placeholder={
-              facets ? `${t('shop.filter.max')} ₹${paiseToRupees(facets.priceMax)}` : t('shop.filter.max')
+              facets
+                ? `${t('shop.filter.max')} ₹${paiseToRupees(facets.priceMax)}`
+                : t('shop.filter.max')
             }
             placeholderTextColor={colors.textFaint}
             keyboardType="number-pad"

@@ -63,6 +63,26 @@ headers on every request (`src/lib/api.ts`):
 | `X-Coupon-Code: …`         | always; empty for no coupon  |
 | `X-Auth-Transport: bearer` | always; sign-in returns the token in the body |
 
+## Links into the app
+
+`sricauvery://…` links open the app today: `sricauvery://product/<slug>`,
+`sricauvery://order/<number>` and so on. `src/app/+native-intent.tsx`
+translates the website's address shapes (`/categories/<slug>`, `/shop?…`,
+`/search?q=…`) into the app's, so a website URL works as well.
+
+For the website's own `https://` links to open the app (Android App Links,
+iOS Universal Links), the shop's production domain is needed:
+
+1. **Android:** in `app.json`, add to `expo.android`
+   `"intentFilters": [{ "action": "VIEW", "autoVerify": true, "data": [{ "scheme": "https", "host": "<domain>" }], "category": ["BROWSABLE", "DEFAULT"] }]`,
+   and serve `/.well-known/assetlinks.json` from the storefront
+   (`apps/storefront/public/.well-known/`) with the package
+   `in.tamizhelectronics.shop` and the SHA-256 fingerprint from
+   `npx eas-cli@latest credentials`.
+2. **iOS:** add `"associatedDomains": ["applinks:<domain>"]` to `expo.ios`,
+   and serve `/.well-known/apple-app-site-association` with the team id and
+   bundle id `in.tamizhelectronics.shop`.
+
 ## Checks
 
 ```bash

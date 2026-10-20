@@ -4,6 +4,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { useColorScheme } from 'react-native';
+import { OfflineBanner } from '@/components/OfflineBanner';
 import { PushRegistration } from '@/components/PushRegistration';
 import { AuthProvider } from '@/lib/auth';
 import { LocaleProvider } from '@/lib/i18n';
@@ -12,6 +13,9 @@ import { loadSession } from '@/lib/session';
 import { palettes } from '@/theme/colors';
 
 SplashScreen.preventAutoHideAsync();
+
+// A crash anywhere below shows a retry screen instead of a blank page.
+export { CrashScreen as ErrorBoundary } from '@/components/CrashScreen';
 
 export default function RootLayout() {
   const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
@@ -75,7 +79,9 @@ export default function RootLayout() {
               <Stack.Screen name="account/profile" />
               <Stack.Screen name="account/addresses" />
               <Stack.Screen name="account/delete" />
+              <Stack.Screen name="+not-found" />
             </Stack>
+            <OfflineBanner />
           </ThemeProvider>
         </LocaleProvider>
       </AuthProvider>

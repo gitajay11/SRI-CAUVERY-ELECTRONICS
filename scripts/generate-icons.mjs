@@ -241,7 +241,70 @@ async function main() {
   console.log('og-image   1200x630 (storefront share card)');
 }
 
-main().catch((error) => {
-  console.error('Icon generation failed:', error);
-  process.exit(1);
-});
+/**
+ * The crest as a white silhouette on transparency, for the places Android
+ * draws an icon in its own colour: themed launcher icons and the status-bar
+ * notification icon. The gold lifts cleanly off the black ground with a
+ * brightness threshold.
+ */
+async function silhouette(size) {
+  const mask = await crest()
+    .resize(size, size, { fit: 'contain', background: BLACK })
+    .greyscale()
+    .threshold(60)
+    .toColourspace('b-w')
+    .raw()
+    .toBuffer();
+  return sharp({
+    create: { width: size, height: size, channels: 3, background: { r: 255, g: 255, b: 255 } },
+  })
+    .joinChannel(mask, { raw: { width: size, height: size, channels: 1 } })
+    .png({ compressionLevel: 9 })
+    .toBuffer();
+}
+
+/** `inner` centred on a transparent square of `size`. */
+async function centred(inner, size) {
+  return sharp({
+    create: { width: size, height: size, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } },
+  })
+    .composite([{ input: inner, gravity: 'center' }])
+    .png({ compressionLevel: 9 })
+    .toBuffer();
+}
+
+/**
+ * The mobile app's icons and splash (apps/mobile/assets/images), from the same
+ * crest. Android's adaptive icon keeps the crest inside the middle 62% — the
+ * launcher crops to its own shape — over the logo's black.
+ */
+async function mobileIcons() {
+  const dir = path.join(ROOT, 'apps', 'mobile', 'assets', 'images');
+  await mkdir(dir, { recursive: true });
+  const files = {
+    'icon.png': await icon(1024),
+    'android-icon-foreground.png': await maskable(1024),
+    'android-icon-background.png': await sharp({
+      create: { width: 1024, height: 1024, channels: 4, background: BLACK },
+    })
+      .png()
+      .toBuffer(),
+    'android-icon-monochrome.png': await centred(await silhouette(634), 1024),
+    'splash-icon.png': await crest()
+      .resize(1024, 1024, { fit: 'contain', background: BLACK })
+      .png({ compressionLevel: 9 })
+      .toBuffer(),
+    'notification-icon.png': await centred(await silhouette(80), 96),
+  };
+  for (const [name, data] of Object.entries(files)) {
+    await writeFile(path.join(dir, name), data);
+  }
+  console.log(`mobile      ${Object.keys(files).length} files`);
+}
+
+main()
+  .then(mobileIcons)
+  .catch((error) => {
+    console.error('Icon generation failed:', error);
+    process.exit(1);
+  });

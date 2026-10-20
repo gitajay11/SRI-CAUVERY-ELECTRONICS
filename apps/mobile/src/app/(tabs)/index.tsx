@@ -5,7 +5,8 @@ import { FlatList, RefreshControl, ScrollView, StyleSheet, View } from 'react-na
 import { CategoryTile } from '@/components/CategoryTile';
 import { ProductRail } from '@/components/ProductRail';
 import { SearchLink } from '@/components/SearchLink';
-import { AppText, ErrorState, StateMessage } from '@/components/ui';
+import { HomeSkeleton } from '@/components/Skeleton';
+import { AppText, ErrorState } from '@/components/ui';
 import { useHome } from '@/lib/catalog';
 import { useLocale } from '@/lib/i18n';
 import { useHideTabBarOnScroll, useTabBarInset } from '@/lib/tab-bar';
@@ -21,7 +22,7 @@ export default function HomeScreen() {
   const onScroll = useHideTabBarOnScroll();
   const bottomInset = useTabBarInset();
 
-  if (home.isPending) return <StateMessage loading />;
+  if (home.isPending) return <HomeSkeleton />;
   if (home.isError) return <ErrorState error={home.error} onRetry={() => void home.refetch()} />;
 
   const { categories, featured, bestSellers, newArrivals, returnGifts, bestOffers } = home.data;

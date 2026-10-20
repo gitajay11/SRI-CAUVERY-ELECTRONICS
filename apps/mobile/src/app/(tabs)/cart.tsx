@@ -6,6 +6,7 @@ import { formatINR } from '@tamizh/core/money';
 import { CartLine } from '@/components/CartLine';
 import { FormMessage } from '@/components/Field';
 import { PriceSummary } from '@/components/PriceSummary';
+import { ListSkeleton } from '@/components/Skeleton';
 import { AppText, Button, ErrorState, StateMessage } from '@/components/ui';
 import { ApiError } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
@@ -26,7 +27,7 @@ export default function CartScreen() {
   const onScroll = useHideTabBarOnScroll();
   const bottomInset = useTabBarInset();
 
-  if (cart.isPending) return <StateMessage loading />;
+  if (cart.isPending) return <ListSkeleton count={3} height={110} />;
   if (cart.isError) return <ErrorState error={cart.error} onRetry={() => void cart.refetch()} />;
 
   const { items, totals, coupon, notices, itemCount } = cart.data;
