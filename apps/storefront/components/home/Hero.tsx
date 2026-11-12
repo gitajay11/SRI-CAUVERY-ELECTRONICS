@@ -81,11 +81,13 @@ export async function Hero({
           <div className="relative mx-auto w-full max-w-md lg:max-w-none">
             <div className="grid grid-cols-2 gap-3 sm:gap-4">
               <div className="space-y-3 sm:space-y-4">
+                {/* Square tiles: product photos are square, so nothing is cropped
+                    away — a TV in a tall tile would show only its screen. */}
                 <ShowcaseTile item={showcase[0]!} priority className="aspect-square" />
-                <ShowcaseTile item={showcase[2]!} className="aspect-[4/5]" />
+                <ShowcaseTile item={showcase[2]!} className="aspect-square" />
               </div>
               <div className="space-y-3 pt-8 sm:space-y-4">
-                <ShowcaseTile item={showcase[1]!} priority className="aspect-[4/5]" />
+                <ShowcaseTile item={showcase[1]!} priority className="aspect-square" />
                 {showcase[3] ? (
                   <ShowcaseTile item={showcase[3]} className="aspect-square" />
                 ) : null}

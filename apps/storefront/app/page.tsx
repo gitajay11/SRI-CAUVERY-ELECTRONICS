@@ -37,8 +37,10 @@ export default async function HomePage() {
       repo.listBestOffers(8),
     ]);
 
-  const showcase = featured
-    .filter((product) => product.image)
+  // Featured products first; if the shop has featured fewer than four with a
+  // photo, the newest products fill the rest, so the hero never stands empty.
+  const showcase = [...featured, ...newArrivals]
+    .filter((product, index, all) => product.image && all.findIndex((p) => p.id === product.id) === index)
     .slice(0, 4)
     .map((product) => ({
       url: product.image!.url,
